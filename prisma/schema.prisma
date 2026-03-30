@@ -1,0 +1,116 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+    USER
+    ADMIN
+    SUPERADMIN
+    GLOBALADMIN
+}
+
+enum SubscriptionType {
+    FREE_TRIAL
+    PREMIUM
+    PREMIUM_PLUS
+}
+
+enum BusinessCategory {
+    GENERAL_STORE
+    RESTAURANT
+    SERVICE
+}
+
+enum BusinessStatus {
+    PENDING
+    APPROVED
+}
+
+model User {
+    id              String            @id @default(cuid())
+    fullName        String
+    email           String            @unique
+    role            UserRole          @default(USER)
+    avatarUrl       String?
+    ownedBusinesses Business[]        @relation("OwnedBusinesses")
+    managedLinks    BusinessManager[]
+    reviews         Review[]
+    createdAt       DateTime          @default(now())
+    updatedAt       DateTime          @updatedAt
+}
+
+model Business {
+    id               String            @id @default(cuid())
+    name             String
+    description      String
+    category         BusinessCategory
+    lat              Float
+    lng              Float
+    zone             String
+    address          String
+    profileImage     String
+    bannerImage      String
+    subscriptionType SubscriptionType
+    status           BusinessStatus    @default(PENDING)
+    whatsappNumber   String
+    ownerId          String
+    owner            User              @relation("OwnedBusinesses", fields: [ownerId], references: [id])
+    managers         BusinessManager[]
+    products         Product[]
+    promotions       Promotion[]
+    reviews          Review[]
+    lastUpdated      DateTime          @updatedAt
+    createdAt        DateTime          @default(now())
+}
+
+model BusinessManager {
+    businessId String
+    userId     String
+    business   Business @relation(fields: [businessId], references: [id])
+    user       User     @relation(fields: [userId], references: [id])
+
+    @@id([businessId, userId])
+}
+
+model Product {
+    id          String   @id @default(cuid())
+    name        String
+    description String
+    images      String[]
+    price       Float?
+    isFeatured  Boolean  @default(false)
+    businessId  String
+    business    Business @relation(fields: [businessId], references: [id])
+    lastUpdated DateTime @updatedAt
+    createdAt   DateTime @default(now())
+}
+
+model Promotion {
+    id            String   @id @default(cuid())
+    title         String
+    description   String
+    promoPrice    Float
+    originalPrice Float
+    validUntil    DateTime
+    image         String
+    businessId    String
+    business      Business @relation(fields: [businessId], references: [id])
+    lastUpdated   DateTime @updatedAt
+    createdAt     DateTime @default(now())
+}
+
+model Review {
+    id         String   @id @default(cuid())
+    rating     Int
+    comment    String
+    userId     String
+    businessId String
+    user       User     @relation(fields: [userId], references: [id])
+    business   Business @relation(fields: [businessId], references: [id])
+    createdAt  DateTime @default(now())
+}
