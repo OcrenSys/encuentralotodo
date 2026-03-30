@@ -1,0 +1,25 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Deploy web to Vercel production
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
+        run: |
+          npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+          npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
