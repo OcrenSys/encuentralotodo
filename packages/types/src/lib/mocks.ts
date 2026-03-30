@@ -1,0 +1,223 @@
+import type { MarketplaceSeedData } from './domain';
+
+const now = new Date('2026-03-29T12:00:00.000Z');
+
+export const marketplaceSeed: MarketplaceSeedData = {
+    users: [
+        {
+            id: 'user-ana',
+            fullName: 'Ana Mercado',
+            email: 'ana@encuentralotodo.app',
+            role: 'USER',
+            avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+        },
+        {
+            id: 'admin-luis',
+            fullName: 'Luis Admin',
+            email: 'luis@encuentralotodo.app',
+            role: 'ADMIN',
+            avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+        },
+        {
+            id: 'owner-sofia',
+            fullName: 'Sofia Rivas',
+            email: 'sofia@encuentralotodo.app',
+            role: 'USER',
+            avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80',
+        },
+        {
+            id: 'manager-carlos',
+            fullName: 'Carlos Mena',
+            email: 'carlos@encuentralotodo.app',
+            role: 'USER',
+            avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80',
+        },
+    ],
+    businesses: [
+        {
+            id: 'biz-casa-norte',
+            name: 'Casa Norte Market',
+            description: 'Tienda general con abarrotes, snacks, productos de limpieza y entregas rápidas dentro de la zona norte.',
+            category: 'GENERAL_STORE',
+            location: {
+                lat: 18.4861,
+                lng: -69.9312,
+                zone: 'Zona Norte',
+                address: 'Av. Charles Summer 42, Santo Domingo',
+            },
+            images: {
+                profile: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=300&q=80',
+                banner: 'https://images.unsplash.com/photo-1516594798947-e65505dbb29d?auto=format&fit=crop&w=1400&q=80',
+            },
+            subscriptionType: 'PREMIUM_PLUS',
+            ownerId: 'owner-sofia',
+            managers: ['manager-carlos'],
+            status: 'APPROVED',
+            whatsappNumber: '18095550101',
+            promoBadge: 'Envío en 30 min',
+            lastUpdated: now.toISOString(),
+        },
+        {
+            id: 'biz-sabor-urbano',
+            name: 'Sabor Urbano',
+            description: 'Cocina casual con bowls, wraps y combos ejecutivos para almuerzo con recogida o delivery por WhatsApp.',
+            category: 'RESTAURANT',
+            location: {
+                lat: 18.4702,
+                lng: -69.9078,
+                zone: 'Naco',
+                address: 'Calle Fantino Falco 11, Santo Domingo',
+            },
+            images: {
+                profile: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=300&q=80',
+                banner: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1400&q=80',
+            },
+            subscriptionType: 'PREMIUM',
+            ownerId: 'owner-sofia',
+            managers: [],
+            status: 'APPROVED',
+            whatsappNumber: '18095550102',
+            promoBadge: 'Combo del día',
+            lastUpdated: now.toISOString(),
+        },
+        {
+            id: 'biz-fixit-pro',
+            name: 'FixIt Pro Servicios',
+            description: 'Servicios técnicos a domicilio para electrodomésticos, instalaciones y mantenimiento preventivo.',
+            category: 'SERVICE',
+            location: {
+                lat: 18.4567,
+                lng: -69.9524,
+                zone: 'Bella Vista',
+                address: 'Av. Sarasota 101, Santo Domingo',
+            },
+            images: {
+                profile: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=300&q=80',
+                banner: 'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1400&q=80',
+            },
+            subscriptionType: 'FREE_TRIAL',
+            ownerId: 'user-ana',
+            managers: [],
+            status: 'PENDING',
+            whatsappNumber: '18095550103',
+            promoBadge: 'Diagnóstico inicial',
+            lastUpdated: now.toISOString(),
+        },
+    ],
+    products: [
+        {
+            id: 'prod-cereal',
+            businessId: 'biz-casa-norte',
+            name: 'Pack familiar de cereales',
+            description: 'Selección variada de cereales y granolas para consumo semanal.',
+            images: [
+                'https://images.unsplash.com/photo-1515543904379-3d757afe72e2?auto=format&fit=crop&w=800&q=80',
+            ],
+            price: 12.5,
+            isFeatured: true,
+            lastUpdated: now.toISOString(),
+        },
+        {
+            id: 'prod-limpieza',
+            businessId: 'biz-casa-norte',
+            name: 'Kit limpieza hogar',
+            description: 'Combo con detergente, cloro y multiusos para reposición semanal.',
+            images: [
+                'https://images.unsplash.com/photo-1585421514738-01798e348b17?auto=format&fit=crop&w=800&q=80',
+            ],
+            price: 19.9,
+            isFeatured: true,
+            lastUpdated: now.toISOString(),
+        },
+        {
+            id: 'prod-bowl',
+            businessId: 'biz-sabor-urbano',
+            name: 'Bowl criollo grill',
+            description: 'Arroz, proteína a la plancha, vegetales y salsa de la casa.',
+            images: [
+                'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
+            ],
+            price: 8.9,
+            isFeatured: true,
+            lastUpdated: now.toISOString(),
+        },
+        {
+            id: 'prod-wrap',
+            businessId: 'biz-sabor-urbano',
+            name: 'Wrap spicy chicken',
+            description: 'Wrap con pollo sazonado, lechuga fresca y aderezo de cilantro.',
+            images: [
+                'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=800&q=80',
+            ],
+            price: 7.5,
+            isFeatured: false,
+            lastUpdated: now.toISOString(),
+        },
+        {
+            id: 'prod-diagnostico',
+            businessId: 'biz-fixit-pro',
+            name: 'Diagnóstico de lavadora',
+            description: 'Revisión técnica con presupuesto enviado por WhatsApp.',
+            images: [
+                'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=800&q=80',
+            ],
+            price: 15,
+            isFeatured: true,
+            lastUpdated: now.toISOString(),
+        },
+    ],
+    promotions: [
+        {
+            id: 'promo-casa-norte',
+            businessId: 'biz-casa-norte',
+            title: '2x1 en snacks seleccionados',
+            description: 'Promoción válida para marcas participantes hasta agotar existencias.',
+            promoPrice: 4.99,
+            originalPrice: 9.98,
+            validUntil: '2026-04-12T23:59:59.000Z',
+            image: 'https://images.unsplash.com/photo-1604719312566-8912e9c8a213?auto=format&fit=crop&w=900&q=80',
+            lastUpdated: now.toISOString(),
+        },
+        {
+            id: 'promo-sabor-urbano',
+            businessId: 'biz-sabor-urbano',
+            title: 'Combo ejecutivo express',
+            description: 'Bowl más bebida por tiempo limitado entre 12 PM y 3 PM.',
+            promoPrice: 10.5,
+            originalPrice: 13.9,
+            validUntil: '2026-04-05T23:59:59.000Z',
+            image: 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=900&q=80',
+            lastUpdated: now.toISOString(),
+        },
+    ],
+    reviews: [
+        {
+            id: 'review-1',
+            rating: 5,
+            comment: 'Pedido rápido y atención muy clara por WhatsApp.',
+            userId: 'user-ana',
+            businessId: 'biz-casa-norte',
+            createdAt: '2026-03-20T15:45:00.000Z',
+        },
+        {
+            id: 'review-2',
+            rating: 4,
+            comment: 'El combo llegó bien presentado y a buen precio.',
+            userId: 'manager-carlos',
+            businessId: 'biz-sabor-urbano',
+            createdAt: '2026-03-22T18:10:00.000Z',
+        },
+        {
+            id: 'review-3',
+            rating: 5,
+            comment: 'Muy responsables con la visita técnica y el seguimiento.',
+            userId: 'owner-sofia',
+            businessId: 'biz-fixit-pro',
+            createdAt: '2026-03-24T10:00:00.000Z',
+        },
+    ],
+};
+
+export function cloneMarketplaceSeed(): MarketplaceSeedData {
+    return JSON.parse(JSON.stringify(marketplaceSeed)) as MarketplaceSeedData;
+}
