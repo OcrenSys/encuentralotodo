@@ -92,9 +92,7 @@ export function Topbar({
                 type="button"
                 aria-expanded={isMobilePanelOpen}
                 aria-label={
-                  isMobilePanelOpen
-                    ? 'Ocultar controles'
-                    : 'Mostrar controles'
+                  isMobilePanelOpen ? 'Ocultar controles' : 'Mostrar controles'
                 }
                 className="inline-flex size-10 items-center justify-center rounded-full border border-[rgba(31,60,90,0.08)] bg-[rgba(255,255,255,0.72)] text-[var(--color-primary)] shadow-[0_10px_24px_rgba(17,39,60,0.08)] lg:hidden"
                 onClick={toggleMobilePanel}
@@ -172,7 +170,8 @@ export function Topbar({
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(31,60,90,0.08)] bg-[rgba(31,60,90,0.05)] px-3 py-2 text-xs font-semibold text-[var(--color-primary)]">
                   <ShieldCheck className="size-4" />
-                  Este cambio solo afecta la vista. Los permisos reales no cambian.
+                  Este cambio solo afecta la vista. Los permisos reales no
+                  cambian.
                 </div>
               </div>
             </div>

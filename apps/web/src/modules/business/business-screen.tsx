@@ -109,7 +109,8 @@ export function BusinessScreen() {
               WhatsApp principal: {selectedBusiness.whatsappNumber}
             </p>
             <p className="text-sm leading-6 text-[var(--color-text-muted)]">
-              Plan actual: {formatSubscriptionLabel(selectedBusiness.subscriptionType)}
+              Plan actual:{' '}
+              {formatSubscriptionLabel(selectedBusiness.subscriptionType)}
             </p>
           </Card>
           <Card className="space-y-3 hover:translate-y-0">

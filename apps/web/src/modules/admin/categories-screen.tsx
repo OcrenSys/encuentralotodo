@@ -6,12 +6,14 @@ import { ModuleHeader } from '../../components/management/module-header';
 const categoryCards = [
   {
     title: 'Categorías actuales',
-    description: 'Tienda general, restaurante y servicios son la base actual del catálogo. El siguiente paso será ampliar y ordenar esta estructura.',
+    description:
+      'Tienda general, restaurante y servicios son la base actual del catálogo. El siguiente paso será ampliar y ordenar esta estructura.',
     icon: Layers2,
   },
   {
     title: 'Controles editoriales',
-    description: 'Vista inicial para definir orden, nombres alternativos y visibilidad por categoría en la app móvil.',
+    description:
+      'Vista inicial para definir orden, nombres alternativos y visibilidad por categoría en la app móvil.',
     icon: Tags,
   },
 ];
@@ -33,8 +35,12 @@ export function CategoriesScreen() {
                 <Icon className="size-5" />
               </div>
               <div>
-                <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">{card.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">{card.description}</p>
+                <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
+                  {card.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">
+                  {card.description}
+                </p>
               </div>
             </Card>
           );

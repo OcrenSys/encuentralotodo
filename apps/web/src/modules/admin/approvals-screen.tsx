@@ -51,7 +51,9 @@ export function ApprovalsScreen() {
       ) : pendingQuery.data?.length ? (
         <>
           <div className="hidden lg:block">
-            <SurfaceTable columns={['Negocio', 'Responsable', 'Plan', 'Estado', 'Acción']}>
+            <SurfaceTable
+              columns={['Negocio', 'Responsable', 'Plan', 'Estado', 'Acción']}
+            >
               {pendingQuery.data.map((business) => (
                 <div
                   className="grid grid-cols-5 gap-4 border-b border-[var(--color-border)] px-5 py-4 last:border-b-0 hover:bg-white/70"
@@ -59,16 +61,31 @@ export function ApprovalsScreen() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-start gap-3">
-                      <img alt={business.name} className="size-14 rounded-[18px] object-cover" src={business.images.profile} />
+                      <img
+                        alt={business.name}
+                        className="size-14 rounded-[18px] object-cover"
+                        src={business.images.profile}
+                      />
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-[var(--color-primary)]">{business.name}</p>
-                        <p className="mt-1 text-sm text-[var(--color-text-muted)]">{formatBusinessCategoryLabel(business.category)} · {business.location.zone}</p>
-                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--color-text-muted)]">{business.description}</p>
+                        <p className="truncate font-semibold text-[var(--color-primary)]">
+                          {business.name}
+                        </p>
+                        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                          {formatBusinessCategoryLabel(business.category)} ·{' '}
+                          {business.location.zone}
+                        </p>
+                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--color-text-muted)]">
+                          {business.description}
+                        </p>
                       </div>
                     </div>
                   </div>
-                  <div className="self-center text-sm text-[var(--color-text-muted)]">{formatOwnerLabel(business.ownerId)}</div>
-                  <div className="self-center text-sm text-[var(--color-text-muted)]">{formatSubscriptionLabel(business.subscriptionType)}</div>
+                  <div className="self-center text-sm text-[var(--color-text-muted)]">
+                    {formatOwnerLabel(business.ownerId)}
+                  </div>
+                  <div className="self-center text-sm text-[var(--color-text-muted)]">
+                    {formatSubscriptionLabel(business.subscriptionType)}
+                  </div>
                   <div className="self-center">
                     <StatusBadge status={business.status} />
                   </div>
@@ -76,7 +93,12 @@ export function ApprovalsScreen() {
                     <Button
                       className="w-full justify-center"
                       disabled={approveBusiness.isPending}
-                      onClick={() => approveBusiness.mutate({ approvedBy: 'admin-luis', businessId: business.id })}
+                      onClick={() =>
+                        approveBusiness.mutate({
+                          approvedBy: 'admin-luis',
+                          businessId: business.id,
+                        })
+                      }
                     >
                       Aprobar
                     </Button>
@@ -89,19 +111,37 @@ export function ApprovalsScreen() {
           <div className="grid gap-4 lg:hidden">
             {pendingQuery.data.map((business) => (
               <Card className="space-y-4 p-4" key={business.id}>
-                <img alt={business.name} className="h-40 w-full rounded-[18px] object-cover" src={business.images.banner} />
+                <img
+                  alt={business.name}
+                  className="h-40 w-full rounded-[18px] object-cover"
+                  src={business.images.banner}
+                />
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">{business.name}</h3>
+                    <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
+                      {business.name}
+                    </h3>
                     <StatusBadge status={business.status} />
                   </div>
-                  <p className="text-sm text-[var(--color-text-muted)]">{formatBusinessCategoryLabel(business.category)} · {business.location.zone}</p>
-                  <p className="text-sm text-[var(--color-text-muted)]">Responsable: {formatOwnerLabel(business.ownerId)}</p>
-                  <p className="text-sm leading-6 text-[var(--color-text-muted)]">{business.description}</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">
+                    {formatBusinessCategoryLabel(business.category)} ·{' '}
+                    {business.location.zone}
+                  </p>
+                  <p className="text-sm text-[var(--color-text-muted)]">
+                    Responsable: {formatOwnerLabel(business.ownerId)}
+                  </p>
+                  <p className="text-sm leading-6 text-[var(--color-text-muted)]">
+                    {business.description}
+                  </p>
                 </div>
                 <Button
                   disabled={approveBusiness.isPending}
-                  onClick={() => approveBusiness.mutate({ approvedBy: 'admin-luis', businessId: business.id })}
+                  onClick={() =>
+                    approveBusiness.mutate({
+                      approvedBy: 'admin-luis',
+                      businessId: business.id,
+                    })
+                  }
                 >
                   Aprobar negocio
                 </Button>

@@ -55,8 +55,8 @@ export function AnalyticsScreen() {
             Próximos ingresos y conversión
           </h3>
           <div className="surface-inset grid h-72 place-items-center rounded-[24px] text-sm text-[var(--color-text-muted)]">
-            Próximo paso: conectar series de conversiones, tickets e ingresos por
-            periodo.
+            Próximo paso: conectar series de conversiones, tickets e ingresos
+            por periodo.
           </div>
         </Card>
         <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">

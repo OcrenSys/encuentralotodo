@@ -113,7 +113,8 @@ export function ProductsScreen() {
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-[var(--color-text-muted)]">
-                  Estado del negocio: {formatStatusLabel(product.businessStatus)}
+                  Estado del negocio:{' '}
+                  {formatStatusLabel(product.businessStatus)}
                 </span>
                 <GhostButton type="button">Editar después</GhostButton>
               </div>

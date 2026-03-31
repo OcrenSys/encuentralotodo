@@ -6,12 +6,14 @@ import { ModuleHeader } from '../../components/management/module-header';
 const planCards = [
   {
     title: 'Matriz de planes',
-    description: 'Prueba gratis, Premium y Premium Plus siguen siendo la base actual. El siguiente paso será mostrar límites y beneficios de forma clara.',
+    description:
+      'Prueba gratis, Premium y Premium Plus siguen siendo la base actual. El siguiente paso será mostrar límites y beneficios de forma clara.',
     icon: CreditCard,
   },
   {
     title: 'Sugerencias de mejora',
-    description: 'Vista inicial para futuras campañas internas y recomendaciones comerciales según el plan.',
+    description:
+      'Vista inicial para futuras campañas internas y recomendaciones comerciales según el plan.',
     icon: Sparkles,
   },
 ];
@@ -33,8 +35,12 @@ export function PlansScreen() {
                 <Icon className="size-5" />
               </div>
               <div>
-                <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">{card.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">{card.description}</p>
+                <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
+                  {card.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">
+                  {card.description}
+                </p>
               </div>
             </Card>
           );

@@ -22,8 +22,10 @@ const defaultValues: CreateBusinessInput = {
     lng: -69.9,
   },
   images: {
-    profile: 'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=300&q=80',
-    banner: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1400&q=80',
+    profile:
+      'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=300&q=80',
+    banner:
+      'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1400&q=80',
   },
   subscriptionType: 'FREE_TRIAL',
   ownerId: 'user-ana',
@@ -74,66 +76,132 @@ export function SubmitBusinessForm() {
       <Card>
         <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Nombre del negocio</span>
-            <input className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('name')} />
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Nombre del negocio
+            </span>
+            <input
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              {...form.register('name')}
+            />
           </label>
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Descripción</span>
-            <textarea className="min-h-32 w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('description')} />
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Descripción
+            </span>
+            <textarea
+              className="min-h-32 w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              {...form.register('description')}
+            />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Categoría</span>
-            <select className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('category')}>
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Categoría
+            </span>
+            <select
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              {...form.register('category')}
+            >
               <option value="GENERAL_STORE">Tiendas físicas generales</option>
               <option value="RESTAURANT">Restaurantes / comida</option>
               <option value="SERVICE">Servicios</option>
             </select>
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Suscripción</span>
-            <select className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('subscriptionType')}>
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Suscripción
+            </span>
+            <select
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              {...form.register('subscriptionType')}
+            >
               <option value="FREE_TRIAL">FREE_TRIAL</option>
               <option value="PREMIUM">PREMIUM</option>
               <option value="PREMIUM_PLUS">PREMIUM_PLUS</option>
             </select>
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Zona</span>
-            <input className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('location.zone')} />
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Zona
+            </span>
+            <input
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              {...form.register('location.zone')}
+            />
           </label>
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Dirección</span>
-            <input className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('location.address')} />
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Dirección
+            </span>
+            <input
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              {...form.register('location.address')}
+            />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Latitud</span>
-            <input className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" step="0.0001" type="number" {...form.register('location.lat', { valueAsNumber: true })} />
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Latitud
+            </span>
+            <input
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              step="0.0001"
+              type="number"
+              {...form.register('location.lat', { valueAsNumber: true })}
+            />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Longitud</span>
-            <input className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" step="0.0001" type="number" {...form.register('location.lng', { valueAsNumber: true })} />
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Longitud
+            </span>
+            <input
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              step="0.0001"
+              type="number"
+              {...form.register('location.lng', { valueAsNumber: true })}
+            />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Imagen perfil</span>
-            <input className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('images.profile')} />
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Imagen perfil
+            </span>
+            <input
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              {...form.register('images.profile')}
+            />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Imagen banner</span>
-            <input className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('images.banner')} />
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Imagen banner
+            </span>
+            <input
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              {...form.register('images.banner')}
+            />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Responsable principal</span>
-            <select className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('ownerId')}>
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Responsable principal
+            </span>
+            <select
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              {...form.register('ownerId')}
+            >
               <option value="user-ana">Ana Mercado</option>
               <option value="owner-sofia">Sofia Rivas</option>
             </select>
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">WhatsApp</span>
-            <input className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('whatsappNumber')} />
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              WhatsApp
+            </span>
+            <input
+              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
+              {...form.register('whatsappNumber')}
+            />
           </label>
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Encargados</span>
+            <span className="text-sm font-semibold text-[var(--color-primary)]">
+              Encargados
+            </span>
             <input
               className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
               onChange={(event) => setManagers(event.target.value)}
@@ -143,7 +211,9 @@ export function SubmitBusinessForm() {
           </label>
           <div className="md:col-span-2 flex justify-end">
             <Button disabled={createBusiness.isPending} type="submit">
-              {createBusiness.isPending ? 'Enviando...' : 'Enviar para aprobación'}
+              {createBusiness.isPending
+                ? 'Enviando...'
+                : 'Enviar para aprobación'}
             </Button>
           </div>
         </form>

@@ -6,22 +6,26 @@ import { ModuleHeader } from '../../components/management/module-header';
 const settingsSections = [
   {
     title: 'Notificaciones',
-    description: 'Configura avisos operativos, asignación de leads y alertas de aprobación.',
+    description:
+      'Configura avisos operativos, asignación de leads y alertas de aprobación.',
     icon: BellRing,
   },
   {
     title: 'Reglas de visibilidad',
-    description: 'Ajustes de publicación, revisión y exposición por plan o estado.',
+    description:
+      'Ajustes de publicación, revisión y exposición por plan o estado.',
     icon: Globe2,
   },
   {
     title: 'Control de acceso',
-    description: 'Vista inicial para permisos más detallados y una futura gestión real de roles.',
+    description:
+      'Vista inicial para permisos más detallados y una futura gestión real de roles.',
     icon: LockKeyhole,
   },
   {
     title: 'Automatización',
-    description: 'Flujos futuros para seguimiento, incorporación y reactivación comercial.',
+    description:
+      'Flujos futuros para seguimiento, incorporación y reactivación comercial.',
     icon: Workflow,
   },
 ];
@@ -43,8 +47,12 @@ export function SettingsScreen() {
                 <Icon className="size-5" />
               </div>
               <div>
-                <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">{section.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">{section.description}</p>
+                <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
+                  {section.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">
+                  {section.description}
+                </p>
               </div>
             </Card>
           );

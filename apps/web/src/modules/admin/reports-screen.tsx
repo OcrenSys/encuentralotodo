@@ -6,12 +6,14 @@ import { ModuleHeader } from '../../components/management/module-header';
 const reportCards = [
   {
     title: 'Incidentes de plataforma',
-    description: 'Vista inicial para alertas de calidad, moderación y fallas de integridad en el catálogo.',
+    description:
+      'Vista inicial para alertas de calidad, moderación y fallas de integridad en el catálogo.',
     icon: AlertTriangle,
   },
   {
     title: 'Salud operativa',
-    description: 'Vista inicial para seguimiento de aprobaciones, carga acumulada y actividad crítica.',
+    description:
+      'Vista inicial para seguimiento de aprobaciones, carga acumulada y actividad crítica.',
     icon: ShieldAlert,
   },
 ];
@@ -33,8 +35,12 @@ export function ReportsScreen() {
                 <Icon className="size-5" />
               </div>
               <div>
-                <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">{card.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">{card.description}</p>
+                <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
+                  {card.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">
+                  {card.description}
+                </p>
               </div>
             </Card>
           );
