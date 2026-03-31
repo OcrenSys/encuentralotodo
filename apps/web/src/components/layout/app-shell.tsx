@@ -11,6 +11,7 @@ import {
   routeEyebrows,
 } from '../../lib/management-navigation';
 import { useRoleView } from '../../lib/role-view';
+import { ActiveSimulationFloating } from './active-simulation-floating';
 import { BottomNav } from './bottom-nav';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
@@ -42,6 +43,7 @@ export function AppShell({
   return (
     <div className="management-shell min-h-screen lg:grid lg:grid-cols-[300px_minmax(0,1fr)]">
       <Sidebar activePath={activePath} items={sidebarItems} />
+      <ActiveSimulationFloating />
 
       <div className="min-w-0 pb-24 lg:pb-0">
         <Topbar

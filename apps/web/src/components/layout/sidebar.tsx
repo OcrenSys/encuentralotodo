@@ -1,10 +1,6 @@
 'use client';
 
-import { PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
-import { useState } from 'react';
-
 import { quickLinks } from '../../lib/management-navigation';
-import { roleProfiles, useRoleView } from '../../lib/role-view';
 import { cn } from 'utils';
 
 import type { NavigationItem } from '../../lib/management-navigation';
@@ -16,10 +12,6 @@ export function Sidebar({
   items: NavigationItem[];
   activePath: string;
 }) {
-  const { roleView } = useRoleView();
-  const currentProfile = roleProfiles[roleView];
-  const [isSimulationOpen, setIsSimulationOpen] = useState(true);
-
   return (
     <aside className="relative hidden border-r border-[rgba(131,149,173,0.18)] bg-[linear-gradient(180deg,rgba(244,248,252,0.95),rgba(236,242,248,0.88))] shadow-[inset_-1px_0_0_rgba(255,255,255,0.4)] backdrop-blur lg:block">
       <div className="sticky top-0 flex h-screen flex-col px-5 py-6">
@@ -100,73 +92,6 @@ export function Sidebar({
           </div>
         </div>
 
-        <div className="pointer-events-none fixed bottom-6 left-6 z-40 w-[300px]">
-          <div className="pointer-events-auto flex flex-col items-start gap-3">
-            <button
-              className="surface-panel-elevated inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-[var(--color-primary)] hover:-translate-y-0.5"
-              onClick={() => setIsSimulationOpen((current) => !current)}
-              type="button"
-            >
-              {isSimulationOpen ? (
-                <PanelLeftClose className="size-4" />
-              ) : (
-                <PanelLeftOpen className="size-4" />
-              )}
-              Active simulation
-            </button>
-
-            <div
-              className={cn(
-                'surface-panel-elevated w-full origin-bottom-left rounded-[30px] p-5 transition-all duration-200',
-                isSimulationOpen
-                  ? 'translate-y-0 scale-100 opacity-100'
-                  : 'pointer-events-none translate-y-4 scale-95 opacity-0',
-              )}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-secondary)]">
-                    Active simulation
-                  </p>
-                  <p className="mt-2 font-display text-2xl font-semibold text-[var(--color-primary)]">
-                    {currentProfile.fullName}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-[var(--color-text-muted)]">
-                    {currentProfile.label}
-                  </p>
-                </div>
-                <div className="inline-flex size-12 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,rgba(35,69,101,0.12),rgba(35,69,101,0.05))] text-[var(--color-primary)]">
-                  <Sparkles className="size-5" />
-                </div>
-              </div>
-
-              <div className="surface-inset mt-5 space-y-3 rounded-[24px] p-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                    Role label
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-[var(--color-primary)]">
-                    {currentProfile.label}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                    Contact
-                  </p>
-                  <p className="mt-1 break-all text-sm text-[var(--color-text-muted)]">
-                    {currentProfile.email}
-                  </p>
-                </div>
-              </div>
-
-              <p className="mt-4 text-sm leading-6 text-[var(--color-text-muted)]">
-                Estado visible de la simulación actual para validar UX,
-                navegación y permisos visuales sin perder contexto mientras
-                operas la consola.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </aside>
   );

@@ -260,26 +260,26 @@ export function ProductCard({
 
 export function BusinessHero({ business }: { business: BusinessDetails }) {
   return (
-    <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_20px_48px_rgba(17,39,60,0.14)]">
-      <div className="relative h-56 overflow-hidden bg-[var(--color-primary)] sm:h-72">
+    <section className="surface-panel overflow-hidden rounded-[32px]">
+      <div className="relative h-56 overflow-hidden bg-[var(--color-primary)] sm:h-72 lg:h-[22rem]">
         <img
           alt={business.name}
           className="h-full w-full object-cover opacity-80"
           src={business.images.banner}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(19,39,59,0.88)] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(19,39,59,0.92)] via-[rgba(19,39,59,0.28)] to-transparent" />
       </div>
-      <div className="relative px-5 pb-6 pt-0 sm:px-8">
-        <div className="-mt-10 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex items-end gap-4">
+      <div className="relative px-4 pb-5 pt-0 sm:px-6 lg:px-8 xl:px-10">
+        <div className="-mt-12 rounded-[28px] border border-white/70 bg-[rgba(255,255,255,0.94)] px-4 py-4 shadow-[0_18px_44px_rgba(17,39,60,0.12)] backdrop-blur-sm sm:-mt-16 sm:px-6 sm:py-5 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-6 xl:px-7">
+          <div className="flex min-w-0 items-end gap-4">
             <img
               alt={`${business.name} logo`}
-              className="size-24 rounded-[28px] border-4 border-white object-cover shadow-xl"
+              className="size-20 rounded-[24px] border-4 border-white object-cover shadow-xl sm:size-24"
               src={business.images.profile}
             />
-            <div className="space-y-2 pb-1">
+            <div className="min-w-0 space-y-2 pb-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-3xl font-semibold text-[var(--color-primary)]">
+                <h1 className="font-display text-2xl font-semibold text-[var(--color-primary)] sm:text-3xl lg:max-w-[26rem] xl:max-w-[34rem]">
                   {business.name}
                 </h1>
                 <Badge className="bg-[var(--color-secondary)] text-white">
@@ -299,7 +299,7 @@ export function BusinessHero({ business }: { business: BusinessDetails }) {
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2 lg:mt-0 lg:justify-end">
             <a
               href={buildWhatsAppLink(
                 business.whatsappNumber,
@@ -329,9 +329,6 @@ export function BusinessHero({ business }: { business: BusinessDetails }) {
             </a>
           </div>
         </div>
-        <p className="mt-5 max-w-3xl text-sm leading-7 text-[var(--color-text-muted)]">
-          {business.description}
-        </p>
       </div>
     </section>
   );
