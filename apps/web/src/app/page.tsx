@@ -1,5 +1,5 @@
-import { MarketplaceHomeScreen } from '../components/home-screen';
+import { redirect } from 'next/navigation';
 
 export default function IndexPage() {
-  return <MarketplaceHomeScreen />;
+  redirect('/dashboard');
 }

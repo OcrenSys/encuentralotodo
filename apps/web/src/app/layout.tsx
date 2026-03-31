@@ -16,8 +16,9 @@ const bodyFont = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: 'EncuentraloTodo',
-  description: 'Marketplace local para descubrir negocios, promociones y productos con conversión por WhatsApp.',
+  title: 'EncuentraloTodo Console',
+  description:
+    'Consola web para administrar negocios, operaciones, promociones y workflows de EncuentraloTodo.',
 };
 
 export default function RootLayout({
@@ -27,7 +28,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={`${displayFont.variable} ${bodyFont.variable} font-body antialiased`}>
+      <body
+        className={`${displayFont.variable} ${bodyFont.variable} font-body antialiased`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

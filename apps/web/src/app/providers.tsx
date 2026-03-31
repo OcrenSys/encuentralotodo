@@ -7,6 +7,7 @@ import { Toaster } from 'sonner';
 
 import { getApiBaseUrl } from 'config';
 
+import { RoleViewProvider } from '../lib/role-view';
 import { trpc } from '../lib/trpc';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -23,13 +24,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
         }),
       ],
-    })
+    }),
   );
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <RoleViewProvider>{children}</RoleViewProvider>
         <Toaster richColors position="top-center" />
       </QueryClientProvider>
     </trpc.Provider>
