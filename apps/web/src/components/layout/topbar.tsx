@@ -20,11 +20,11 @@ export function Topbar({
   const { roleProfile } = useRoleView();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[var(--color-background)]/92 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-[rgba(140,156,177,0.16)] bg-[rgba(244,248,252,0.74)] backdrop-blur-xl">
       <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-secondary)] shadow-sm">
+            <div className="surface-panel-soft inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-secondary)]">
               <Layers3 className="size-3.5" />
               {eyebrow}
             </div>
@@ -40,7 +40,7 @@ export function Topbar({
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <RoleSwitcher />
-            <div className="rounded-[24px] border border-[var(--color-border)] bg-white px-4 py-3 shadow-sm">
+            <div className="surface-panel-soft rounded-[24px] px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
                 Simulated operator
               </p>
@@ -54,7 +54,7 @@ export function Topbar({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-[28px] border border-white/80 bg-white/88 px-4 py-3 shadow-[0_12px_32px_rgba(17,39,60,0.08)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="shell-chrome flex flex-col gap-3 rounded-[28px] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
               Current surface
@@ -63,7 +63,7 @@ export function Topbar({
               {routeSearchLabels[activePath] ?? 'Workspace navigation'}
             </p>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-primary)]/6 px-3 py-2 text-xs font-semibold text-[var(--color-primary)]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(31,60,90,0.08)] bg-[rgba(31,60,90,0.05)] px-3 py-2 text-xs font-semibold text-[var(--color-primary)]">
             <ShieldCheck className="size-4" />
             UI role switcher only. Backend auth remains unchanged.
           </div>

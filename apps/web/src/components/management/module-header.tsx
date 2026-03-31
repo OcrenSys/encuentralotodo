@@ -10,7 +10,7 @@ export function ModuleHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="surface-panel-soft flex flex-col gap-4 rounded-[30px] px-5 py-5 lg:flex-row lg:items-end lg:justify-between lg:px-6">
       <div className="space-y-2">
         <h2 className="font-display text-2xl font-semibold text-[var(--color-primary)] sm:text-3xl">
           {title}

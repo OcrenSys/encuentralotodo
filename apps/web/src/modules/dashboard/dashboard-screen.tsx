@@ -42,6 +42,7 @@ export function DashboardScreen() {
             helper:
               'Negocios visibles y pendientes bajo monitoreo de plataforma.',
             icon: Building2,
+            variant: 'blue' as const,
           },
           {
             label: 'Pending approvals',
@@ -49,18 +50,21 @@ export function DashboardScreen() {
             helper:
               'Perfiles que todavía necesitan revisión antes de salir en móvil.',
             icon: CheckCheck,
+            variant: 'amber' as const,
           },
           {
             label: 'Active promotions',
             value: managedPromotions.length,
             helper: 'Promociones activas a nivel de plataforma.',
             icon: Megaphone,
+            variant: 'green' as const,
           },
           {
             label: 'Platform health',
             value: platformHealth,
             helper: 'Lectura rápida del estado operativo del catálogo.',
             icon: Activity,
+            variant: 'neutral' as const,
           },
         ]
       : roleView === 'OWNER'
@@ -70,24 +74,28 @@ export function DashboardScreen() {
               value: accessibleBusinesses.length,
               helper: 'Negocios que dependen del owner actual.',
               icon: BriefcaseBusiness,
+              variant: 'blue' as const,
             },
             {
               label: 'Featured products',
               value: managedProducts.length,
               helper: 'Productos visibles y listos para mantenimiento.',
               icon: Package,
+              variant: 'neutral' as const,
             },
             {
               label: 'Active promotions',
               value: managedPromotions.length,
               helper: 'Campañas vigentes bajo control comercial.',
               icon: Megaphone,
+              variant: 'green' as const,
             },
             {
               label: 'Open leads',
               value: leads.filter((lead) => lead.status !== 'CLOSED').length,
               helper: 'Conversaciones y oportunidades por responder.',
               icon: Inbox,
+              variant: 'amber' as const,
             },
           ]
         : [
@@ -96,24 +104,28 @@ export function DashboardScreen() {
               value: tasks.length,
               helper: 'Acciones tácticas asignadas al manager.',
               icon: CheckCheck,
+              variant: 'amber' as const,
             },
             {
               label: 'Products to review',
               value: managedProducts.length,
               helper: 'Catálogo que requiere revisión operativa.',
               icon: Package,
+              variant: 'neutral' as const,
             },
             {
               label: 'Active promotions',
               value: managedPromotions.length,
               helper: 'Promos que necesitan seguimiento diario.',
               icon: Megaphone,
+              variant: 'green' as const,
             },
             {
               label: 'New leads',
               value: leads.filter((lead) => lead.status === 'NEW').length,
               helper: 'Mensajes nuevos esperando primera respuesta.',
               icon: Inbox,
+              variant: 'blue' as const,
             },
           ];
 
@@ -206,7 +218,7 @@ export function DashboardScreen() {
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <QuickActionsPanel items={quickActions} title="Immediate next steps" />
 
-        <Card className="space-y-4 hover:translate-y-0">
+        <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
@@ -222,7 +234,7 @@ export function DashboardScreen() {
           <div className="space-y-3">
             {tasks.map((task) => (
               <div
-                className="rounded-[20px] border border-[var(--color-border)] bg-[var(--color-background)]/75 p-4"
+                className="interactive-row rounded-[20px] border border-[rgba(140,156,177,0.12)] p-4"
                 key={task.id}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -241,7 +253,7 @@ export function DashboardScreen() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="space-y-4 hover:translate-y-0">
+        <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
               Recent activity
@@ -254,7 +266,7 @@ export function DashboardScreen() {
           <div className="space-y-3">
             {recentActivity.map((item) => (
               <div
-                className="rounded-[20px] border border-[var(--color-border)] bg-white/75 p-4"
+                className="interactive-row rounded-[20px] border border-[rgba(140,156,177,0.12)] p-4"
                 key={item.id}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -275,7 +287,7 @@ export function DashboardScreen() {
           </div>
         </Card>
 
-        <Card className="space-y-4 hover:translate-y-0">
+        <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
               Live summary
@@ -286,7 +298,7 @@ export function DashboardScreen() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <div className="rounded-[22px] bg-[var(--color-primary)] text-white p-4">
+            <div className="rounded-[22px] bg-[linear-gradient(180deg,#234565_0%,#1c3957_100%)] p-4 text-white shadow-[0_14px_30px_rgba(17,39,60,0.16)]">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
                 Navigation
               </p>
@@ -295,7 +307,7 @@ export function DashboardScreen() {
                 mezclar flujos de consumidor.
               </p>
             </div>
-            <div className="rounded-[22px] bg-white/75 p-4">
+            <div className="surface-inset rounded-[22px] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
                 Dashboard payload
               </p>

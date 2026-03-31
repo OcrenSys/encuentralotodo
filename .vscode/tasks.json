@@ -69,6 +69,18 @@
 				"api"
 			],
 			"isBackground": true
+		},
+		{
+			"label": "web-typecheck-visual-refinement",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"tsc",
+				"--noEmit",
+				"-p",
+				"apps/web/tsconfig.json"
+			],
+			"isBackground": false
 		}
 	]
 }

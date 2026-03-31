@@ -11,7 +11,7 @@ export function RoleSwitcher() {
         View as
       </span>
       <select
-        className="h-11 rounded-2xl border border-[var(--color-border)] bg-white px-4 text-sm font-medium text-[var(--color-primary)] outline-none transition-colors focus:border-[var(--color-secondary)]"
+        className="control-surface h-11 rounded-2xl px-4 text-sm font-medium text-[var(--color-primary)] outline-none"
         value={roleView}
         onChange={(event) => setRoleView(event.target.value as typeof roleView)}
       >

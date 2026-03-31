@@ -10,9 +10,9 @@ export function SurfaceTable({
   children: ReactNode;
 }) {
   return (
-    <Card className="overflow-hidden p-0 hover:translate-y-0 hover:shadow-[0_12px_36px_rgba(17,39,60,0.08)]">
+    <Card className="overflow-hidden border-[rgba(140,156,177,0.18)] p-0 hover:translate-y-0 hover:shadow-[var(--shadow-md)]">
       <div
-        className="grid gap-4 border-b border-[var(--color-border)] bg-[var(--color-background)] px-5 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+        className="grid gap-4 border-b border-[rgba(140,156,177,0.16)] bg-[linear-gradient(180deg,rgba(245,248,252,0.96),rgba(238,243,248,0.88))] px-5 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
         style={{
           gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
         }}
