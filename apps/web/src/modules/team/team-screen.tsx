@@ -13,12 +13,12 @@ export function TeamScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Team"
-        description="Placeholder funcional para coordinación owner-manager. La siguiente fase puede conectar invitaciones, permisos granulares y cambios persistentes."
+        title="Equipo"
+        description="Vista inicial para coordinar al propietario y a los encargados del negocio con una estructura simple y clara."
         actions={
           <>
-            <GhostButton type="button">Export roster</GhostButton>
-            <Button type="button">Invite teammate</Button>
+            <GhostButton type="button">Exportar lista</GhostButton>
+            <Button type="button">Invitar integrante</Button>
           </>
         }
       />
@@ -51,17 +51,17 @@ export function TeamScreen() {
               />
               <span className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
                 <ShieldCheck className="size-4" />
-                Simulated access
+                Acceso simulado
               </span>
             </div>
             <div className="flex gap-2">
               <GhostButton className="flex-1" type="button">
                 <Mail className="mr-2 size-4" />
-                Message
+                Mensaje
               </GhostButton>
               <Button className="flex-1" type="button">
                 <Users className="mr-2 size-4" />
-                Permissions
+                Permisos
               </Button>
             </div>
           </Card>

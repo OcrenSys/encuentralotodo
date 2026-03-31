@@ -122,7 +122,7 @@ export function SubmitBusinessForm() {
             <input className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('images.banner')} />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Owner</span>
+            <span className="text-sm font-semibold text-[var(--color-primary)]">Responsable principal</span>
             <select className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('ownerId')}>
               <option value="user-ana">Ana Mercado</option>
               <option value="owner-sofia">Sofia Rivas</option>
@@ -133,11 +133,11 @@ export function SubmitBusinessForm() {
             <input className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3" {...form.register('whatsappNumber')} />
           </label>
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">Managers</span>
+            <span className="text-sm font-semibold text-[var(--color-primary)]">Encargados</span>
             <input
               className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
               onChange={(event) => setManagers(event.target.value)}
-              placeholder="manager-carlos, user-ana"
+              placeholder="carlos, ana"
               value={managers}
             />
           </label>

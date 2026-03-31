@@ -6,6 +6,10 @@ import { EmptyState, LoadingSkeleton, Card } from 'ui';
 
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
+import {
+  formatBusinessCategoryLabel,
+  formatSubscriptionLabel,
+} from '../../lib/display-labels';
 import { useManagementData } from '../../lib/management-data';
 
 export function BusinessScreen() {
@@ -30,7 +34,7 @@ export function BusinessScreen() {
   if (!selectedBusiness) {
     return (
       <EmptyState
-        title="No business assigned"
+        title="No tienes un negocio asignado"
         description="El rol actual no tiene negocios asociados para administrar en esta simulación."
       />
     );
@@ -39,8 +43,8 @@ export function BusinessScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Business workspace"
-        description="Gestiona branding, contacto, ubicación y estado de publicación desde una superficie operativa, no desde una ficha pública de discovery."
+        title="Centro de gestión del negocio"
+        description="Administra marca, contacto, ubicación y publicación desde una vista operativa pensada para trabajar rápido y con claridad."
         actions={
           accessibleBusinesses.length > 1 ? (
             <select
@@ -80,7 +84,7 @@ export function BusinessScreen() {
                     {selectedBusiness.name}
                   </h3>
                   <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-                    {selectedBusiness.category.replace('_', ' ')}
+                    {formatBusinessCategoryLabel(selectedBusiness.category)}
                   </p>
                 </div>
               </div>
@@ -99,13 +103,13 @@ export function BusinessScreen() {
               <PhoneCall className="size-5" />
             </div>
             <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
-              Contact & publishing
+              Contacto y publicación
             </h3>
             <p className="text-sm leading-6 text-[var(--color-text-muted)]">
               WhatsApp principal: {selectedBusiness.whatsappNumber}
             </p>
             <p className="text-sm leading-6 text-[var(--color-text-muted)]">
-              Plan actual: {selectedBusiness.subscriptionType.replace('_', ' ')}
+              Plan actual: {formatSubscriptionLabel(selectedBusiness.subscriptionType)}
             </p>
           </Card>
           <Card className="space-y-3 hover:translate-y-0">
@@ -113,7 +117,7 @@ export function BusinessScreen() {
               <Clock3 className="size-5" />
             </div>
             <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
-              Hours
+              Horarios
             </h3>
             <p className="text-sm leading-6 text-[var(--color-text-muted)]">
               Placeholder de horarios operativos para la fase 2.
@@ -128,7 +132,7 @@ export function BusinessScreen() {
             <Palette className="size-5" />
           </div>
           <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
-            Branding
+            Identidad visual
           </h3>
           <p className="text-sm leading-6 text-[var(--color-text-muted)]">
             Logo, banner y assets vigentes listos para un futuro editor de
@@ -140,7 +144,7 @@ export function BusinessScreen() {
             <MapPinned className="size-5" />
           </div>
           <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
-            Location
+            Ubicación
           </h3>
           <p className="text-sm leading-6 text-[var(--color-text-muted)]">
             {selectedBusiness.location.zone}
@@ -154,7 +158,7 @@ export function BusinessScreen() {
             <Store className="size-5" />
           </div>
           <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
-            Publication status
+            Estado de publicación
           </h3>
           <p className="text-sm leading-6 text-[var(--color-text-muted)]">
             Promos activas: {selectedBusiness.activePromotions.length}

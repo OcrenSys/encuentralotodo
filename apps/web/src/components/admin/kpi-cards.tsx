@@ -79,25 +79,25 @@ export function KpiCards() {
       <KpiCard
         helper="Negocios esperando aprobación antes de aparecer en discovery."
         icon="pending"
-        label="Pending approvals"
+        label="Aprobaciones pendientes"
         value={pendingQuery.data?.length ?? 0}
       />
       <KpiCard
         helper="Negocios aprobados y visibles para usuarios finales."
         icon="businesses"
-        label="Total businesses"
+        label="Negocios totales"
         value={businessQuery.data?.length ?? 0}
       />
       <KpiCard
         helper="Promociones activas listas para mostrarse en la vitrina actual."
         icon="promotions"
-        label="Active promotions"
+        label="Promociones activas"
         value={promotionsQuery.data?.length ?? 0}
       />
       <KpiCard
         helper="Sesión demo actual usada para validar permisos y experiencia."
         icon="role"
-        label="Account role"
+        label="Rol de la cuenta"
         value={sessionQuery.data?.user?.role ?? 'USER'}
       />
     </section>

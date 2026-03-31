@@ -5,23 +5,23 @@ import { ModuleHeader } from '../../components/management/module-header';
 
 const settingsSections = [
   {
-    title: 'Notifications',
+    title: 'Notificaciones',
     description: 'Configura avisos operativos, asignación de leads y alertas de aprobación.',
     icon: BellRing,
   },
   {
-    title: 'Visibility rules',
+    title: 'Reglas de visibilidad',
     description: 'Ajustes de publicación, revisión y exposición por plan o estado.',
     icon: Globe2,
   },
   {
-    title: 'Access control',
-    description: 'Placeholder para permisos granulares y reemplazo futuro del role switcher.',
+    title: 'Control de acceso',
+    description: 'Vista inicial para permisos más detallados y una futura gestión real de roles.',
     icon: LockKeyhole,
   },
   {
-    title: 'Automation',
-    description: 'Workflows futuros para seguimiento, onboarding y reactivación comercial.',
+    title: 'Automatización',
+    description: 'Flujos futuros para seguimiento, incorporación y reactivación comercial.',
     icon: Workflow,
   },
 ];
@@ -30,8 +30,8 @@ export function SettingsScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Settings"
-        description="Centro de configuración operativo. Esta primera iteración define la estructura y la jerarquía de ajustes para reemplazar más adelante la configuración ad hoc del MVP."
+        title="Configuración"
+        description="Centro de ajustes operativos. Esta primera versión organiza mejor las opciones clave para que resulten claras desde el inicio."
       />
 
       <section className="grid gap-4 md:grid-cols-2">

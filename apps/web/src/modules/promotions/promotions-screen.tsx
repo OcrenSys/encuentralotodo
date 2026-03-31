@@ -31,14 +31,14 @@ export function PromotionsScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Promotions"
+        title="Promociones"
         description="Gestión de campañas activas y expiración comercial. La creación real ya existe en API; esta fase deja lista la superficie de administración para integrarla con formularios posteriores."
         actions={
           <>
-            <GhostButton type="button">View expired</GhostButton>
+            <GhostButton type="button">Ver vencidas</GhostButton>
             <Button type="button">
               <Plus className="mr-2 size-4" />
-              New promotion
+              Nueva promoción
             </Button>
           </>
         }
@@ -95,14 +95,14 @@ export function PromotionsScreen() {
                   {formatDateLabel(promotion.validUntil)}
                 </div>
               </div>
-              <GhostButton type="button">Edit campaign</GhostButton>
+              <GhostButton type="button">Editar campaña</GhostButton>
             </Card>
           ))}
         </section>
       ) : (
         <EmptyState
-          title="No promotions found"
-          description="Refina la búsqueda para encontrar campañas activas en la vista de gestión."
+          title="No se encontraron promociones"
+          description="Ajusta la búsqueda para encontrar campañas activas en esta vista."
         />
       )}
     </div>

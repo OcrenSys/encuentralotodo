@@ -32,21 +32,21 @@ const storageKey = 'encuentralotodo.web.role-view';
 export const roleProfiles: Record<ManagementRole, RoleProfile> = {
   SUPERADMIN: {
     role: 'SUPERADMIN',
-    label: 'SuperAdmin',
+    label: 'Administrador general',
     fullName: 'Luis Admin',
     email: 'luis@encuentralotodo.app',
     userId: 'admin-luis',
   },
   OWNER: {
     role: 'OWNER',
-    label: 'Owner',
+    label: 'Propietario',
     fullName: 'Sofia Rivas',
     email: 'sofia@encuentralotodo.app',
     userId: 'owner-sofia',
   },
   MANAGER: {
     role: 'MANAGER',
-    label: 'Manager',
+    label: 'Encargado',
     fullName: 'Carlos Mena',
     email: 'carlos@encuentralotodo.app',
     userId: 'manager-carlos',

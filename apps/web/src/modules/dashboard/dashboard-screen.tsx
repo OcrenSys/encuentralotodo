@@ -37,7 +37,7 @@ export function DashboardScreen() {
     roleView === 'SUPERADMIN'
       ? [
           {
-            label: 'Total businesses',
+            label: 'Negocios totales',
             value: allBusinesses.length,
             helper:
               'Negocios visibles y pendientes bajo monitoreo de plataforma.',
@@ -45,7 +45,7 @@ export function DashboardScreen() {
             variant: 'blue' as const,
           },
           {
-            label: 'Pending approvals',
+            label: 'Aprobaciones pendientes',
             value: pendingBusinessesQuery.data?.length ?? 0,
             helper:
               'Perfiles que todavía necesitan revisión antes de salir en móvil.',
@@ -53,14 +53,14 @@ export function DashboardScreen() {
             variant: 'amber' as const,
           },
           {
-            label: 'Active promotions',
+            label: 'Promociones activas',
             value: managedPromotions.length,
             helper: 'Promociones activas a nivel de plataforma.',
             icon: Megaphone,
             variant: 'green' as const,
           },
           {
-            label: 'Platform health',
+            label: 'Salud de la plataforma',
             value: platformHealth,
             helper: 'Lectura rápida del estado operativo del catálogo.',
             icon: Activity,
@@ -70,28 +70,28 @@ export function DashboardScreen() {
       : roleView === 'OWNER'
         ? [
             {
-              label: 'Managed businesses',
+              label: 'Negocios a cargo',
               value: accessibleBusinesses.length,
-              helper: 'Negocios que dependen del owner actual.',
+              helper: 'Negocios que dependen del propietario actual.',
               icon: BriefcaseBusiness,
               variant: 'blue' as const,
             },
             {
-              label: 'Featured products',
+              label: 'Productos destacados',
               value: managedProducts.length,
               helper: 'Productos visibles y listos para mantenimiento.',
               icon: Package,
               variant: 'neutral' as const,
             },
             {
-              label: 'Active promotions',
+              label: 'Promociones activas',
               value: managedPromotions.length,
               helper: 'Campañas vigentes bajo control comercial.',
               icon: Megaphone,
               variant: 'green' as const,
             },
             {
-              label: 'Open leads',
+              label: 'Contactos abiertos',
               value: leads.filter((lead) => lead.status !== 'CLOSED').length,
               helper: 'Conversaciones y oportunidades por responder.',
               icon: Inbox,
@@ -100,28 +100,28 @@ export function DashboardScreen() {
           ]
         : [
             {
-              label: 'Assigned tasks',
+              label: 'Tareas asignadas',
               value: tasks.length,
-              helper: 'Acciones tácticas asignadas al manager.',
+              helper: 'Acciones tácticas asignadas al encargado.',
               icon: CheckCheck,
               variant: 'amber' as const,
             },
             {
-              label: 'Products to review',
+              label: 'Productos por revisar',
               value: managedProducts.length,
               helper: 'Catálogo que requiere revisión operativa.',
               icon: Package,
               variant: 'neutral' as const,
             },
             {
-              label: 'Active promotions',
+              label: 'Promociones activas',
               value: managedPromotions.length,
               helper: 'Promos que necesitan seguimiento diario.',
               icon: Megaphone,
               variant: 'green' as const,
             },
             {
-              label: 'New leads',
+              label: 'Contactos nuevos',
               value: leads.filter((lead) => lead.status === 'NEW').length,
               helper: 'Mensajes nuevos esperando primera respuesta.',
               icon: Inbox,
@@ -133,19 +133,19 @@ export function DashboardScreen() {
     roleView === 'SUPERADMIN'
       ? [
           {
-            label: 'Review approvals',
+            label: 'Revisar aprobaciones',
             helper:
               'Atiende la cola pendiente y publica solo perfiles completos.',
             href: '/admin/approvals',
             primary: true,
           },
           {
-            label: 'Audit business catalog',
+            label: 'Revisar catálogo de negocios',
             helper: 'Revisa negocios activos y estados de publicación.',
             href: '/admin/businesses',
           },
           {
-            label: 'Open reports',
+            label: 'Ver reportes',
             helper: 'Consulta incidencias de salud y reportes de plataforma.',
             href: '/admin/reports',
           },
@@ -153,36 +153,36 @@ export function DashboardScreen() {
       : roleView === 'OWNER'
         ? [
             {
-              label: 'Update business info',
+              label: 'Actualizar negocio',
               helper: 'Ajusta branding, contacto, horarios y dirección.',
               href: '/business',
               primary: true,
             },
             {
-              label: 'Review leads',
+              label: 'Revisar contactos',
               helper: 'Da seguimiento a mensajes de alto valor.',
               href: '/leads',
             },
             {
-              label: 'Launch promotion',
+              label: 'Lanzar promoción',
               helper: 'Revisa campañas activas y próximas expiraciones.',
               href: '/promotions',
             },
           ]
         : [
             {
-              label: 'Review product queue',
+              label: 'Revisar productos',
               helper: 'Verifica productos destacados y cambios pendientes.',
               href: '/products',
               primary: true,
             },
             {
-              label: 'Handle leads',
+              label: 'Atender contactos',
               helper: 'Prioriza nuevos contactos con respuesta rápida.',
               href: '/leads',
             },
             {
-              label: 'Check business info',
+              label: 'Revisar negocio',
               helper: 'Confirma datos operativos visibles al cliente final.',
               href: '/business',
             },
@@ -205,8 +205,8 @@ export function DashboardScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Role-aware management dashboard"
-        description="La entrada principal de la web ahora es un workspace operativo: KPIs, seguimiento y quick actions por rol, sin patrones de marketplace o discovery como experiencia principal."
+        title="Panel de gestión por rol"
+        description="La entrada principal de la web ahora es un centro operativo con indicadores, seguimiento y acciones rápidas según el rol."
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -216,16 +216,16 @@ export function DashboardScreen() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <QuickActionsPanel items={quickActions} title="Immediate next steps" />
+        <QuickActionsPanel items={quickActions} title="Siguientes pasos" />
 
         <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
-                Queue overview
+                Resumen de tareas
               </p>
               <h3 className="mt-2 font-display text-xl font-semibold text-[var(--color-primary)]">
-                Active operational focus
+                Prioridades operativas
               </h3>
             </div>
             <BarChart3 className="size-5 text-[var(--color-primary)]" />
@@ -244,7 +244,7 @@ export function DashboardScreen() {
                   <StatusBadge status={task.state} />
                 </div>
                 <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-                  Owner: {task.owner}
+                  Responsable: {task.owner}
                 </p>
               </div>
             ))}
@@ -256,10 +256,10 @@ export function DashboardScreen() {
         <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
-              Recent activity
+              Actividad reciente
             </p>
             <h3 className="mt-2 font-display text-xl font-semibold text-[var(--color-primary)]">
-              Operational timeline
+              Línea de tiempo operativa
             </h3>
           </div>
 
@@ -290,17 +290,17 @@ export function DashboardScreen() {
         <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
-              Live summary
+              Resumen en vivo
             </p>
             <h3 className="mt-2 font-display text-xl font-semibold text-[var(--color-primary)]">
-              What changes with the role switcher
+              Qué cambia según el rol visible
             </h3>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <div className="rounded-[22px] bg-[linear-gradient(180deg,#234565_0%,#1c3957_100%)] p-4 text-white shadow-[0_14px_30px_rgba(17,39,60,0.16)]">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-                Navigation
+                Navegación
               </p>
               <p className="mt-2 text-sm leading-6 text-white/82">
                 Sidebar y bottom nav filtran módulos por rol visible, sin
@@ -309,7 +309,7 @@ export function DashboardScreen() {
             </div>
             <div className="surface-inset rounded-[22px] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-                Dashboard payload
+                Contenido del panel
               </p>
               <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">
                 Cada rol recibe KPIs, quick actions y módulos orientados a su

@@ -6,6 +6,7 @@ import { Button, Card, EmptyState, GhostButton, LoadingSkeleton } from 'ui';
 
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
+import { formatStatusLabel } from '../../lib/display-labels';
 import { useManagementData } from '../../lib/management-data';
 
 export function ProductsScreen() {
@@ -42,14 +43,14 @@ export function ProductsScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Products"
-        description="Catálogo operativo con filtros, estado visual y punto de entrada para altas futuras. El backend aún no expone CRUD completo de edición, así que esta fase prioriza visibilidad y estructura."
+        title="Productos"
+        description="Catálogo operativo con filtros, estado visual y punto de partida para futuras altas y ediciones."
         actions={
           <>
-            <GhostButton type="button">Import catalog</GhostButton>
+            <GhostButton type="button">Importar catálogo</GhostButton>
             <Button type="button">
               <Plus className="mr-2 size-4" />
-              New product
+              Nuevo producto
             </Button>
           </>
         }
@@ -73,8 +74,8 @@ export function ProductsScreen() {
           }
         >
           <option value="ALL">Todos</option>
-          <option value="FEATURED">Featured</option>
-          <option value="CATALOG">Catalog</option>
+          <option value="FEATURED">Destacados</option>
+          <option value="CATALOG">Catálogo</option>
         </select>
       </section>
 
@@ -112,17 +113,17 @@ export function ProductsScreen() {
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-[var(--color-text-muted)]">
-                  Business status: {product.businessStatus}
+                  Estado del negocio: {formatStatusLabel(product.businessStatus)}
                 </span>
-                <GhostButton type="button">Edit later</GhostButton>
+                <GhostButton type="button">Editar después</GhostButton>
               </div>
             </Card>
           ))}
         </section>
       ) : (
         <EmptyState
-          title="No products match the current filters"
-          description="Ajusta el texto de búsqueda o el estado para ver más catálogo en esta fase inicial."
+          title="No hay productos para esos filtros"
+          description="Cambia la búsqueda o el estado para ver más opciones del catálogo."
         />
       )}
     </div>

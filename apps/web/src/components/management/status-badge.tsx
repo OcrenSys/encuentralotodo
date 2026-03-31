@@ -1,3 +1,4 @@
+import { formatStatusLabel } from '../../lib/display-labels';
 import { cn } from 'utils';
 
 export function StatusBadge({ status }: { status: string }) {
@@ -20,7 +21,7 @@ export function StatusBadge({ status }: { status: string }) {
               : 'border-[rgba(31,60,90,0.12)] bg-[linear-gradient(180deg,rgba(241,246,251,0.96),rgba(246,249,253,0.92))] text-[var(--color-primary)]',
       )}
     >
-      {status.replaceAll('_', ' ')}
+      {formatStatusLabel(status)}
     </span>
   );
 }

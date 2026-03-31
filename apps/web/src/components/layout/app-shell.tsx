@@ -49,8 +49,8 @@ export function AppShell({
         <Topbar
           activePath={activePath}
           description={route?.description ?? 'Ruta de gestión.'}
-          eyebrow={routeEyebrows[activePath] ?? 'Workspace'}
-          title={route?.label ?? 'Management'}
+          eyebrow={routeEyebrows[activePath] ?? 'Gestión'}
+          title={route?.label ?? 'Gestión'}
         />
 
         <main className="px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
@@ -61,7 +61,7 @@ export function AppShell({
           ) : (
             <EmptyState
               title="Esta vista no está disponible para el rol actual"
-              description={`Cambia el role switcher o vuelve a ${fallbackPath} para continuar en una ruta válida.`}
+              description={`Cambia la vista de rol o vuelve a ${fallbackPath} para continuar en una ruta válida.`}
             />
           )}
         </main>

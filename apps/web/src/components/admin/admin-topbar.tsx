@@ -2,6 +2,7 @@
 
 import { Menu, Plus } from 'lucide-react';
 
+import { formatStatusLabel } from '../../lib/display-labels';
 import type { UserProfile } from 'types';
 import { Button, GhostButton } from 'ui';
 
@@ -40,7 +41,7 @@ export function AdminTopbar({
           </button>
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-secondary)]">
-              Admin workspace
+              Centro de administración
             </p>
             <h1 className="truncate font-display text-2xl font-semibold text-[var(--color-primary)]">
               {title}
@@ -62,7 +63,7 @@ export function AdminTopbar({
                 {user?.fullName ?? 'Usuario demo'}
               </p>
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                {user?.role ?? 'USER'}
+                {formatStatusLabel(user?.role ?? 'USER')}
               </p>
             </div>
             {user?.avatarUrl ? (

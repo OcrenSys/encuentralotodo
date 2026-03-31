@@ -14,7 +14,7 @@ export function AnalyticsScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Analytics"
+        title="Analítica"
         description="Capa inicial de métricas para dirección y negocio. Los gráficos avanzados quedan preparados como placeholders hasta integrar series reales."
       />
 
@@ -22,28 +22,28 @@ export function AnalyticsScreen() {
         <StatCard
           helper="Negocios visibles dentro del rol actual."
           icon={BarChart3}
-          label="Businesses in scope"
+          label="Negocios en seguimiento"
           value={accessibleBusinesses.length}
           variant="blue"
         />
         <StatCard
           helper="Productos actualmente visibles en la superficie operativa."
           icon={ChartColumnIncreasing}
-          label="Products in scope"
+          label="Productos en seguimiento"
           value={managedProducts.length}
           variant="neutral"
         />
         <StatCard
           helper="Promos activas que impactan conversión."
           icon={TrendingUp}
-          label="Active promotions"
+          label="Promociones activas"
           value={managedPromotions.length}
           variant="green"
         />
         <StatCard
           helper="Leads observados por la simulación actual."
           icon={BarChart3}
-          label="Tracked leads"
+          label="Contactos monitoreados"
           value={leads.length}
           variant="amber"
         />
@@ -52,16 +52,16 @@ export function AnalyticsScreen() {
       <section className="grid gap-4 xl:grid-cols-2">
         <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
           <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
-            Revenue / conversion placeholder
+            Próximos ingresos y conversión
           </h3>
           <div className="surface-inset grid h-72 place-items-center rounded-[24px] text-sm text-[var(--color-text-muted)]">
-            Próximo paso: conectar series de conversiones, tickets y revenue por
+            Próximo paso: conectar series de conversiones, tickets e ingresos por
             periodo.
           </div>
         </Card>
         <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
           <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
-            Channel performance placeholder
+            Próximo rendimiento por canal
           </h3>
           <div className="surface-inset grid h-72 place-items-center rounded-[24px] text-sm text-[var(--color-text-muted)]">
             Próximo paso: desglosar leads por fuente y eficiencia de campañas.

@@ -5,13 +5,13 @@ import { ModuleHeader } from '../../components/management/module-header';
 
 const categoryCards = [
   {
-    title: 'Current categories',
-    description: 'GENERAL_STORE, RESTAURANT y SERVICE son la base actual del catálogo. Próximo paso: CRUD editorial y taxonomía expandible.',
+    title: 'Categorías actuales',
+    description: 'Tienda general, restaurante y servicios son la base actual del catálogo. El siguiente paso será ampliar y ordenar esta estructura.',
     icon: Layers2,
   },
   {
-    title: 'Editorial controls',
-    description: 'Placeholder para reglas de orden, alias y visibilidad por categoría en la app móvil.',
+    title: 'Controles editoriales',
+    description: 'Vista inicial para definir orden, nombres alternativos y visibilidad por categoría en la app móvil.',
     icon: Tags,
   },
 ];
@@ -20,8 +20,8 @@ export function CategoriesScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Categories"
-        description="Scaffold de gobierno editorial para categorías. Esta pantalla deja listo el módulo sin acoplarlo todavía a mutations que no existen."
+        title="Categorías"
+        description="Módulo inicial para ordenar y gobernar las categorías del catálogo sin complicar todavía la operación."
       />
 
       <section className="grid gap-4 md:grid-cols-2">

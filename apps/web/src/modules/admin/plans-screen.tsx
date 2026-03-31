@@ -5,13 +5,13 @@ import { ModuleHeader } from '../../components/management/module-header';
 
 const planCards = [
   {
-    title: 'Plan matrix',
-    description: 'FREE_TRIAL, PREMIUM y PREMIUM_PLUS continúan como fuente actual. Próximo paso: UI para límites y beneficios por plan.',
+    title: 'Matriz de planes',
+    description: 'Prueba gratis, Premium y Premium Plus siguen siendo la base actual. El siguiente paso será mostrar límites y beneficios de forma clara.',
     icon: CreditCard,
   },
   {
-    title: 'Upgrade prompts',
-    description: 'Placeholder para campañas internas de upgrade y recomendaciones comerciales.',
+    title: 'Sugerencias de mejora',
+    description: 'Vista inicial para futuras campañas internas y recomendaciones comerciales según el plan.',
     icon: Sparkles,
   },
 ];
@@ -20,8 +20,8 @@ export function PlansScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Plans"
-        description="Módulo inicial de monetización y packaging. Preparado para crecer sin acoplar la consola a decisiones finales de billing."
+        title="Planes"
+        description="Módulo inicial para monetización y beneficios. Está preparado para crecer sin complicar esta primera versión."
       />
 
       <section className="grid gap-4 md:grid-cols-2">

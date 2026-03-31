@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { ChevronDown, Layers3, ShieldCheck } from 'lucide-react';
 
+import { formatRoleLabel } from '../../lib/display-labels';
 import { routeSearchLabels } from '../../lib/management-navigation';
 import { useRoleView } from '../../lib/role-view';
 import { RoleSwitcher } from './role-switcher';
@@ -24,7 +25,7 @@ export function Topbar({
   const lastScrollYRef = useRef(0);
   const panelOpenedAtScrollYRef = useRef(0);
   const ignoreScrollUntilRef = useRef(0);
-  const activeSurface = routeSearchLabels[activePath] ?? 'Workspace navigation';
+  const activeSurface = routeSearchLabels[activePath] ?? 'Navegación principal';
 
   const toggleMobilePanel = () => {
     setIsMobilePanelOpen((open) => {
@@ -92,8 +93,8 @@ export function Topbar({
                 aria-expanded={isMobilePanelOpen}
                 aria-label={
                   isMobilePanelOpen
-                    ? 'Hide workspace controls'
-                    : 'Show workspace controls'
+                    ? 'Ocultar controles'
+                    : 'Mostrar controles'
                 }
                 className="inline-flex size-10 items-center justify-center rounded-full border border-[rgba(31,60,90,0.08)] bg-[rgba(255,255,255,0.72)] text-[var(--color-primary)] shadow-[0_10px_24px_rgba(17,39,60,0.08)] lg:hidden"
                 onClick={toggleMobilePanel}
@@ -119,13 +120,13 @@ export function Topbar({
             <RoleSwitcher />
             <div className="surface-panel-soft rounded-[24px] px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-                Simulated operator
+                Usuario simulado
               </p>
               <p className="mt-2 text-sm font-semibold text-[var(--color-primary)]">
                 {roleProfile.fullName}
               </p>
               <p className="text-xs text-[var(--color-text-muted)]">
-                {roleProfile.email}
+                {formatRoleLabel(roleProfile.role)} · {roleProfile.email}
               </p>
             </div>
           </div>
@@ -151,19 +152,19 @@ export function Topbar({
               </div>
               <div className="surface-panel-soft rounded-[24px] px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-                  Simulated operator
+                  Usuario simulado
                 </p>
                 <p className="mt-2 text-sm font-semibold text-[var(--color-primary)]">
                   {roleProfile.fullName}
                 </p>
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  {roleProfile.email}
+                  {formatRoleLabel(roleProfile.role)} · {roleProfile.email}
                 </p>
               </div>
               <div className="shell-chrome flex flex-col gap-3 rounded-[28px] px-4 py-3">
                 <div className="space-y-1">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-                    Current surface
+                    Vista actual
                   </p>
                   <p className="text-sm font-medium text-[var(--color-primary)]">
                     {activeSurface}
@@ -171,7 +172,7 @@ export function Topbar({
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(31,60,90,0.08)] bg-[rgba(31,60,90,0.05)] px-3 py-2 text-xs font-semibold text-[var(--color-primary)]">
                   <ShieldCheck className="size-4" />
-                  UI role switcher only. Backend auth remains unchanged.
+                  Este cambio solo afecta la vista. Los permisos reales no cambian.
                 </div>
               </div>
             </div>
@@ -181,7 +182,7 @@ export function Topbar({
         <div className="hidden shell-chrome flex-col gap-3 rounded-[28px] px-4 py-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-              Current surface
+              Vista actual
             </p>
             <p className="text-sm font-medium text-[var(--color-primary)]">
               {activeSurface}
@@ -189,7 +190,7 @@ export function Topbar({
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(31,60,90,0.08)] bg-[rgba(31,60,90,0.05)] px-3 py-2 text-xs font-semibold text-[var(--color-primary)]">
             <ShieldCheck className="size-4" />
-            UI role switcher only. Backend auth remains unchanged.
+            Este cambio solo afecta la vista. Los permisos reales no cambian.
           </div>
         </div>
       </div>

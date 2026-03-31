@@ -21,12 +21,12 @@ export function Sidebar({
               EncuentraloTodo
             </p>
             <h1 className="mt-2 font-display text-2xl font-semibold text-[var(--color-primary)]">
-              Management Console
+              Consola de gestión
             </h1>
           </div>
           <p className="text-sm leading-6 text-[var(--color-text-muted)]">
-            Workspace operativo para administrar negocio, campañas y procesos
-            internos.
+            Centro operativo para administrar el negocio, las campañas y los
+            procesos internos.
           </p>
         </div>
 
@@ -78,7 +78,7 @@ export function Sidebar({
         <div className="surface-panel-soft mt-auto space-y-3 rounded-[28px] p-4">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-              Quick links
+              Accesos rápidos
             </p>
             {quickLinks.map((item) => (
               <a

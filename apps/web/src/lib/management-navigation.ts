@@ -31,16 +31,16 @@ export type NavigationItem = {
 export const navigationItems: NavigationItem[] = [
     {
         key: 'dashboard',
-        label: 'Dashboard',
+        label: 'Panel principal',
         href: '/dashboard',
         icon: LayoutDashboard,
-        description: 'Resumen operativo, KPIs y quick actions por rol.',
+        description: 'Resumen operativo, indicadores clave y accesos rápidos según el rol.',
         roles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
         mobilePriority: 1,
     },
     {
         key: 'approvals',
-        label: 'Approvals',
+        label: 'Aprobaciones',
         href: '/admin/approvals',
         icon: CheckCheck,
         description: 'Moderación y aprobaciones antes de publicar negocios.',
@@ -49,7 +49,7 @@ export const navigationItems: NavigationItem[] = [
     },
     {
         key: 'businesses-admin',
-        label: 'Businesses',
+        label: 'Negocios',
         href: '/admin/businesses',
         icon: Building2,
         description: 'Vista global de todos los negocios registrados.',
@@ -58,7 +58,7 @@ export const navigationItems: NavigationItem[] = [
     },
     {
         key: 'categories',
-        label: 'Categories',
+        label: 'Categorías',
         href: '/admin/categories',
         icon: Shapes,
         description: 'Gobierno de categorías y estructura editorial.',
@@ -66,7 +66,7 @@ export const navigationItems: NavigationItem[] = [
     },
     {
         key: 'plans',
-        label: 'Plans',
+        label: 'Planes',
         href: '/admin/plans',
         icon: CreditCard,
         description: 'Matriz de planes, beneficios y límites comerciales.',
@@ -74,7 +74,7 @@ export const navigationItems: NavigationItem[] = [
     },
     {
         key: 'reports',
-        label: 'Reports',
+        label: 'Reportes',
         href: '/admin/reports',
         icon: FileBarChart2,
         description: 'Alertas de operación, salud de plataforma y reportes.',
@@ -83,16 +83,16 @@ export const navigationItems: NavigationItem[] = [
     },
     {
         key: 'business',
-        label: 'My Business',
+        label: 'Mi negocio',
         href: '/business',
         icon: BriefcaseBusiness,
-        description: 'Branding, ubicación, horarios y estado de publicación.',
+        description: 'Marca, ubicación, horarios y estado de publicación.',
         roles: ['OWNER', 'MANAGER'],
         mobilePriority: 2,
     },
     {
         key: 'products',
-        label: 'Products',
+        label: 'Productos',
         href: '/products',
         icon: Package,
         description: 'Catálogo, filtros y estado comercial del inventario.',
@@ -101,7 +101,7 @@ export const navigationItems: NavigationItem[] = [
     },
     {
         key: 'promotions',
-        label: 'Promotions',
+        label: 'Promociones',
         href: '/promotions',
         icon: Megaphone,
         description: 'Campañas activas, expiradas y puntos de creación.',
@@ -110,7 +110,7 @@ export const navigationItems: NavigationItem[] = [
     },
     {
         key: 'leads',
-        label: 'Leads',
+        label: 'Contactos',
         href: '/leads',
         icon: Inbox,
         description: 'Seguimiento comercial, fuente y estado de atención.',
@@ -119,24 +119,24 @@ export const navigationItems: NavigationItem[] = [
     },
     {
         key: 'team',
-        label: 'Team',
+        label: 'Equipo',
         href: '/team',
         icon: Users,
-        description: 'Coordinación de owner y managers por negocio.',
+        description: 'Coordinación entre propietario y encargados por negocio.',
         roles: ['OWNER'],
     },
     {
         key: 'analytics',
-        label: 'Analytics',
+        label: 'Analítica',
         href: '/analytics',
         icon: BarChart3,
-        description: 'Performance comercial, tráfico y conversión.',
+        description: 'Rendimiento comercial, tráfico y conversión.',
         roles: ['SUPERADMIN', 'OWNER'],
         mobilePriority: 5,
     },
     {
         key: 'settings',
-        label: 'Settings',
+        label: 'Configuración',
         href: '/settings',
         icon: Settings,
         description: 'Preferencias, notificaciones y operación.',
@@ -169,11 +169,11 @@ export function getDefaultPathForRole(role: ManagementRole) {
 }
 
 export const routeSearchLabels: Partial<Record<string, string>> = {
-    '/dashboard': 'Buscar insights o acciones rápidas',
+    '/dashboard': 'Buscar ideas o acciones rápidas',
     '/business': 'Buscar secciones del negocio',
     '/products': 'Buscar productos o SKU',
     '/promotions': 'Buscar promociones activas o expiradas',
-    '/leads': 'Buscar leads, estados o canales',
+    '/leads': 'Buscar contactos, estados o canales',
     '/team': 'Buscar miembros del equipo',
     '/analytics': 'Buscar métricas o periodos',
     '/settings': 'Buscar ajustes',
@@ -185,26 +185,26 @@ export const routeSearchLabels: Partial<Record<string, string>> = {
 };
 
 export const routeEyebrows: Partial<Record<string, string>> = {
-    '/dashboard': 'Overview',
-    '/business': 'Business Workspace',
-    '/products': 'Catalog Ops',
-    '/promotions': 'Campaign Ops',
-    '/leads': 'Lead Desk',
-    '/team': 'Team Ops',
-    '/analytics': 'Performance',
-    '/settings': 'Configuration',
-    '/admin/approvals': 'Platform Ops',
-    '/admin/businesses': 'Platform Ops',
-    '/admin/categories': 'Platform Ops',
-    '/admin/plans': 'Revenue Ops',
-    '/admin/reports': 'Platform Health',
+    '/dashboard': 'Resumen general',
+    '/business': 'Operación del negocio',
+    '/products': 'Gestión de catálogo',
+    '/promotions': 'Gestión de campañas',
+    '/leads': 'Atención comercial',
+    '/team': 'Gestión de equipo',
+    '/analytics': 'Rendimiento',
+    '/settings': 'Configuración',
+    '/admin/approvals': 'Operación de plataforma',
+    '/admin/businesses': 'Operación de plataforma',
+    '/admin/categories': 'Operación de plataforma',
+    '/admin/plans': 'Ingresos y planes',
+    '/admin/reports': 'Salud de plataforma',
 };
 
 export const quickLinks = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Legacy discovery', href: '/discovery' },
-    { label: 'Submit business', href: '/submit-business' },
-    { label: 'Approval queue', href: '/admin/approvals' },
+    { label: 'Panel principal', href: '/dashboard' },
+    { label: 'Vista pública', href: '/discovery' },
+    { label: 'Registrar negocio', href: '/submit-business' },
+    { label: 'Cola de aprobaciones', href: '/admin/approvals' },
 ] as const;
 
 export const adminPrefixes = ['/admin/approvals', '/admin/businesses', '/admin/categories', '/admin/plans', '/admin/reports'];

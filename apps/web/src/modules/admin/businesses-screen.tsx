@@ -5,6 +5,10 @@ import { Card, LoadingSkeleton } from 'ui';
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
 import { SurfaceTable } from '../../components/management/surface-table';
+import {
+  formatBusinessCategoryLabel,
+  formatSubscriptionLabel,
+} from '../../lib/display-labels';
 import { useManagementData } from '../../lib/management-data';
 
 export function AdminBusinessesScreen() {
@@ -17,20 +21,20 @@ export function AdminBusinessesScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="All businesses"
-        description="Vista platform-wide de negocios, owners y estado de publicación. Sustituye la navegación de discovery por una lectura administrativa orientada a control y operaciones."
+        title="Todos los negocios"
+        description="Vista global de negocios, responsables y estado de publicación. Está pensada para control y operación diaria."
       />
 
       <div className="hidden lg:block">
-        <SurfaceTable columns={['Business', 'Zone', 'Plan', 'Owner', 'Status']}>
+        <SurfaceTable columns={['Negocio', 'Zona', 'Plan', 'Responsable', 'Estado']}>
           {allBusinesses.map((business) => (
             <div className="grid grid-cols-5 gap-4 border-b border-[var(--color-border)] px-5 py-4 last:border-b-0 hover:bg-white/70" key={business.id}>
               <div className="min-w-0">
                 <p className="truncate font-semibold text-[var(--color-primary)]">{business.name}</p>
-                <p className="mt-1 text-sm text-[var(--color-text-muted)]">{business.category.replace('_', ' ')}</p>
+                <p className="mt-1 text-sm text-[var(--color-text-muted)]">{formatBusinessCategoryLabel(business.category)}</p>
               </div>
               <div className="self-center text-sm text-[var(--color-text-muted)]">{business.location.zone}</div>
-              <div className="self-center text-sm text-[var(--color-text-muted)]">{business.subscriptionType.replace('_', ' ')}</div>
+              <div className="self-center text-sm text-[var(--color-text-muted)]">{formatSubscriptionLabel(business.subscriptionType)}</div>
               <div className="self-center text-sm text-[var(--color-text-muted)]">{business.ownerId.replace('owner-', '').replace('user-', '').replace('-', ' ')}</div>
               <div className="self-center">
                 <StatusBadge status={business.status} />
@@ -48,7 +52,7 @@ export function AdminBusinessesScreen() {
               <StatusBadge status={business.status} />
             </div>
             <p className="text-sm text-[var(--color-text-muted)]">{business.location.zone}</p>
-            <p className="text-sm text-[var(--color-text-muted)]">Plan: {business.subscriptionType.replace('_', ' ')}</p>
+            <p className="text-sm text-[var(--color-text-muted)]">Plan: {formatSubscriptionLabel(business.subscriptionType)}</p>
           </Card>
         ))}
       </div>

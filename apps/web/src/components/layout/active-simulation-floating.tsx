@@ -3,6 +3,7 @@
 import { PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
+import { formatRoleLabel } from '../../lib/display-labels';
 import { roleProfiles, useRoleView } from '../../lib/role-view';
 import { cn } from 'utils';
 
@@ -28,13 +29,13 @@ export function ActiveSimulationFloating() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-secondary)]">
-                Active simulation
+                Simulación activa
               </p>
               <p className="mt-2 font-display text-2xl font-semibold text-[var(--color-primary)]">
                 {currentProfile.fullName}
               </p>
               <p className="mt-1 text-sm font-medium text-[var(--color-text-muted)]">
-                {currentProfile.label}
+                {formatRoleLabel(currentProfile.role)}
               </p>
             </div>
             <div className="inline-flex size-12 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,rgba(35,69,101,0.12),rgba(35,69,101,0.05))] text-[var(--color-primary)]">
@@ -45,15 +46,15 @@ export function ActiveSimulationFloating() {
           <div className="surface-inset mt-5 space-y-3 rounded-[24px] p-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                Role label
+                Rol visible
               </p>
               <p className="mt-1 text-sm font-semibold text-[var(--color-primary)]">
-                {currentProfile.label}
+                {formatRoleLabel(currentProfile.role)}
               </p>
             </div>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                Contact
+                Contacto
               </p>
               <p className="mt-1 break-all text-sm text-[var(--color-text-muted)]">
                 {currentProfile.email}
@@ -78,7 +79,7 @@ export function ActiveSimulationFloating() {
           ) : (
             <PanelLeftOpen className="size-4" />
           )}
-          Active simulation
+          Simulación activa
         </button>
       </div>
     </div>

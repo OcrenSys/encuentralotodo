@@ -18,7 +18,7 @@ export function QuickActionsPanel({
     <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.96),rgba(243,247,252,0.92))] hover:translate-y-0">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
-          Quick actions
+          Acciones rápidas
         </p>
         <h3 className="mt-2 font-display text-xl font-semibold text-[var(--color-primary)]">
           {title}

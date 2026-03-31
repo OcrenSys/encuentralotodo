@@ -16,6 +16,11 @@ import {
 import { buildWhatsAppLink, formatDateLabel } from 'utils';
 import type { BusinessDetails } from 'types';
 
+import {
+  formatBusinessCategoryLabel,
+  formatStatusLabel,
+  formatSubscriptionLabel,
+} from '../lib/display-labels';
 import { trpc } from '../lib/trpc';
 import { BusinessMapCard } from './business-map-card';
 
@@ -51,7 +56,7 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
         <SectionHeading
           eyebrow="Descripción"
           title="Qué ofrece este negocio"
-          description="Perfil pensado para discovery: contexto suficiente para decidir si vale la pena abrir el chat."
+          description="Información clave para entender el negocio y decidir si quieres contactarlo."
         />
         <Card className="space-y-5 lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:gap-6 lg:space-y-0">
           <div className="space-y-4 lg:space-y-5">
@@ -66,7 +71,7 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
                   Categoría
                 </p>
                 <p className="mt-2 text-base font-semibold text-[var(--color-primary)]">
-                  {business.category.replace('_', ' ')}
+                  {formatBusinessCategoryLabel(business.category)}
                 </p>
               </div>
               <div className="surface-panel-soft rounded-[22px] p-4">
@@ -82,7 +87,7 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
                   Plan
                 </p>
                 <p className="mt-2 text-base font-semibold text-[var(--color-primary)]">
-                  {business.subscriptionType.replace('_', ' ')}
+                  {formatSubscriptionLabel(business.subscriptionType)}
                 </p>
               </div>
             </div>
@@ -109,7 +114,7 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
                 Estado
               </p>
               <p className="mt-2 font-display text-2xl font-semibold text-[var(--color-primary)]">
-                {business.status}
+                {formatStatusLabel(business.status)}
               </p>
             </div>
           </div>
@@ -120,7 +125,7 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
         <SectionHeading
           eyebrow="Productos"
           title="Catálogo visible"
-          description="El catálogo cambia según el plan del negocio y las reglas del MVP."
+          description="Estos son los productos que el negocio tiene visibles en este momento."
         />
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {business.products.map((product) => (
@@ -137,7 +142,7 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
         <SectionHeading
           eyebrow="Promociones"
           title="Promos vigentes"
-          description="Ofertas con precio promocional, precio original y vigencia clara."
+          description="Ofertas activas con su precio especial y fecha de vigencia."
         />
         <div className="grid gap-4 md:grid-cols-2">
           {business.promotions.map((promotion) => (
@@ -154,9 +159,9 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
 
       <section className="space-y-5">
         <SectionHeading
-          eyebrow="Reviews"
+          eyebrow="Reseñas"
           title="Lo que dice la gente"
-          description="Prueba social ligera para ayudar a la conversión sin convertir la app en un e-commerce pesado."
+          description="Opiniones reales para ayudar a tomar una decisión con más confianza."
         />
         <div className="grid gap-4 md:grid-cols-2">
           {business.reviews.map((review) => (

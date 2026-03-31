@@ -6,6 +6,7 @@ import { Card } from 'ui';
 
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
+import { formatStatusLabel } from '../../lib/display-labels';
 import { useManagementData } from '../../lib/management-data';
 
 export function LeadsScreen() {
@@ -24,8 +25,8 @@ export function LeadsScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Leads"
-        description="Bandeja operativa para seguimiento comercial. Esta fase usa datos simulados de leads para desbloquear UX y navegación mientras llega la fuente real desde backend."
+        title="Contactos"
+        description="Bandeja operativa para seguimiento comercial. Esta etapa usa datos simulados mientras se conecta la fuente real."
       />
 
       <section className="grid gap-4 xl:grid-cols-[1fr_360px]">
@@ -62,19 +63,19 @@ export function LeadsScreen() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-              Lead detail
+              Detalle del contacto
             </p>
             <h3 className="mt-2 font-display text-xl font-semibold text-[var(--color-primary)]">
-              {selectedLead?.name ?? 'Selecciona un lead'}
+              {selectedLead?.name ?? 'Selecciona un contacto'}
             </h3>
           </div>
 
           {selectedLead ? (
             <div className="space-y-3 text-sm leading-6 text-[var(--color-text-muted)]">
-              <p>Business: {selectedLead.businessName}</p>
-              <p>Source: {selectedLead.source}</p>
-              <p>Status: {selectedLead.status}</p>
-              <p>Last update: {selectedLead.updatedAt}</p>
+              <p>Negocio: {selectedLead.businessName}</p>
+              <p>Canal: {selectedLead.source}</p>
+              <p>Estado: {formatStatusLabel(selectedLead.status)}</p>
+              <p>Última actualización: {selectedLead.updatedAt}</p>
               <div className="rounded-[20px] bg-[var(--color-background)] p-4">
                 <p>{selectedLead.summary}</p>
               </div>

@@ -5,13 +5,13 @@ import { ModuleHeader } from '../../components/management/module-header';
 
 const reportCards = [
   {
-    title: 'Platform incidents',
-    description: 'Placeholder para banderas de calidad, moderación y fallas de integridad en el catálogo.',
+    title: 'Incidentes de plataforma',
+    description: 'Vista inicial para alertas de calidad, moderación y fallas de integridad en el catálogo.',
     icon: AlertTriangle,
   },
   {
-    title: 'Operational health',
-    description: 'Placeholder para SLA de aprobaciones, backlog y actividad crítica.',
+    title: 'Salud operativa',
+    description: 'Vista inicial para seguimiento de aprobaciones, carga acumulada y actividad crítica.',
     icon: ShieldAlert,
   },
 ];
@@ -20,7 +20,7 @@ export function ReportsScreen() {
   return (
     <div className="space-y-6">
       <ModuleHeader
-        title="Reports"
+        title="Reportes"
         description="Superficie inicial para incidentes, backlog y salud de la plataforma. El objetivo es separar claramente la operación interna del antiguo feed público."
       />
 
