@@ -18,6 +18,16 @@ jest.mock('../src/lib/role-view', () => ({
   useRoleView: jest.fn(),
 }));
 
+jest.mock('../src/lib/trpc', () => ({
+  trpc: {
+    auth: {
+      me: {
+        useQuery: jest.fn(),
+      },
+    },
+  },
+}));
+
 jest.mock('../src/components/layout/sidebar', () => ({
   Sidebar: () => <div>Sidebar</div>,
 }));
@@ -42,6 +52,16 @@ const { useRoleView } = jest.requireMock('../src/lib/role-view') as {
   useRoleView: jest.Mock;
 };
 
+const { trpc } = jest.requireMock('../src/lib/trpc') as {
+  trpc: {
+    auth: {
+      me: {
+        useQuery: jest.Mock;
+      };
+    };
+  };
+};
+
 describe('AppShell', () => {
   beforeEach(() => {
     replaceMock.mockReset();
@@ -49,6 +69,17 @@ describe('AppShell', () => {
     useRoleView.mockReturnValue({
       roleView: 'SUPERADMIN',
       isReady: true,
+    });
+
+    trpc.auth.me.useQuery.mockReturnValue({
+      data: {
+        user: {
+          id: 'superadmin-1',
+          role: 'SUPERADMIN',
+          isActive: true,
+        },
+      },
+      isLoading: false,
     });
   });
 
@@ -85,5 +116,57 @@ describe('AppShell', () => {
 
     expect(view.getByText('Private content')).toBeTruthy();
     expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it('blocks disabled backend accounts even with an authenticated Firebase session', () => {
+    useCurrentAuthUser.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      provider: 'firebase',
+    });
+    trpc.auth.me.useQuery.mockReturnValue({
+      data: {
+        user: {
+          id: 'user-ana',
+          role: 'USER',
+          isActive: false,
+        },
+      },
+      isLoading: false,
+    });
+
+    const view = render(
+      <AppShell activePath="/dashboard">
+        <div>Private content</div>
+      </AppShell>,
+    );
+
+    expect(view.getByText('Tu cuenta está deshabilitada')).toBeTruthy();
+  });
+
+  it('blocks the platform users screen for non-superadmin backend roles', () => {
+    useCurrentAuthUser.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      provider: 'firebase',
+    });
+    trpc.auth.me.useQuery.mockReturnValue({
+      data: {
+        user: {
+          id: 'admin-luis',
+          role: 'ADMIN',
+          isActive: true,
+        },
+      },
+      isLoading: false,
+    });
+
+    const view = render(
+      <AppShell activePath="/admin/users">
+        <div>Private content</div>
+      </AppShell>,
+    );
+
+    expect(view.getByText('Esta vista requiere permisos de SuperAdmin')).toBeTruthy();
   });
 });

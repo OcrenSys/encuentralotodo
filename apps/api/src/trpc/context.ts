@@ -20,6 +20,8 @@ import { PromotionRepository } from '../lib/promotion/promotion.repository';
 import { PromotionService } from '../lib/promotion/promotion.service';
 import { ReviewRepository } from '../lib/review/review.repository';
 import { ReviewService } from '../lib/review/review.service';
+import { UserAdminRepository } from '../lib/user/user-admin.repository';
+import { UserAdminService } from '../lib/user/user-admin.service';
 import { getPrismaClient } from '../lib/prisma';
 import { marketplaceStore } from '../lib/store';
 
@@ -54,6 +56,7 @@ export interface TrpcContext {
   promotionService: PromotionService;
   leadService: LeadService;
   reviewService: ReviewService;
+  userAdminService: UserAdminService;
 }
 
 function resolveMockCurrentUser(identity: VerifiedIdentity | null) {
@@ -71,6 +74,7 @@ function resolveMockCurrentUser(identity: VerifiedIdentity | null) {
       email: identity.email ?? `${identity.externalUserId}@mock.encuentralotodo.local`,
       role: 'USER',
       avatarUrl: identity.avatarUrl,
+      isActive: true,
       authProvider: identity.provider,
       externalAuthId: identity.externalUserId,
       emailVerified: identity.emailVerified,
@@ -83,6 +87,7 @@ function resolveMockCurrentUser(identity: VerifiedIdentity | null) {
     email: seededUser.email,
     role: seededUser.role,
     avatarUrl: seededUser.avatarUrl,
+      isActive: seededUser.isActive ?? true,
     authProvider: identity.provider,
     externalAuthId: identity.externalUserId,
     emailVerified: identity.emailVerified,
@@ -134,6 +139,7 @@ export async function createTrpcContext({ req, env }: { req: Request; res: Respo
   const productRepository = new ProductRepository(prisma);
   const promotionRepository = new PromotionRepository(prisma);
   const reviewRepository = new ReviewRepository(prisma);
+  const userAdminRepository = new UserAdminRepository(prisma);
   const { currentUser, verifiedIdentity } = await resolveRequestAuthContext({
     req,
     env,
@@ -180,6 +186,10 @@ export async function createTrpcContext({ req, env }: { req: Request; res: Respo
     reviewService: new ReviewService({
       repository: reviewRepository,
       businessRepository,
+      currentUser,
+    }),
+    userAdminService: new UserAdminService({
+      repository: userAdminRepository,
       currentUser,
     }),
   };

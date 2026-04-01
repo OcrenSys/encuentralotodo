@@ -58,6 +58,11 @@ function createBaseContext() {
             listByBusiness: jest.fn(),
             create: jest.fn(),
         } as any,
+        userAdminService: {
+            listUsers: jest.fn(),
+            updateUserRole: jest.fn(),
+            setUserActive: jest.fn(),
+        } as any,
     };
 }
 

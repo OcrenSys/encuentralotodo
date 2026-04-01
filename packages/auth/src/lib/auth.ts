@@ -78,6 +78,7 @@ export function createCurrentUser(input: {
   email: string;
   role: UserRole;
   avatarUrl?: string | null;
+  isActive?: boolean;
   authProvider: AuthProviderName;
   externalAuthId: string;
   emailVerified: boolean;
@@ -88,6 +89,7 @@ export function createCurrentUser(input: {
     email: input.email,
     role: input.role,
     avatarUrl: input.avatarUrl ?? undefined,
+    isActive: input.isActive ?? true,
     authProvider: input.authProvider,
     externalAuthId: input.externalAuthId,
     emailVerified: input.emailVerified,

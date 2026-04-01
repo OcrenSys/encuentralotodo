@@ -24,6 +24,7 @@ async function main() {
         email: user.email,
         role: user.role,
         avatarUrl: user.avatarUrl,
+        isActive: user.isActive ?? true,
         identities: {
           create: {
             provider: 'MOCK',

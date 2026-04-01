@@ -68,11 +68,82 @@ describe('admin router', () => {
                 listByBusiness: jest.fn(),
                 create: jest.fn(),
             } as any,
+            userAdminService: {
+                listUsers: jest.fn(async () => []),
+                updateUserRole: jest.fn(),
+                setUserActive: jest.fn(),
+            } as any,
         });
 
         await expect(caller.admin.approveBusiness({ businessId: 'biz-casa-norte', approvedBy: 'user-ana' })).rejects.toMatchObject({
             code: 'FORBIDDEN',
             message: 'Admin access required.',
+        });
+    });
+
+    it('rejects non-superadmin callers for platform users', async () => {
+        const caller = appRouter.createCaller({
+            env: baseEnv,
+            currentUser: createCurrentUser({
+                id: 'admin-luis',
+                fullName: 'Luis Admin',
+                email: 'luis@encuentralotodo.app',
+                role: 'ADMIN',
+                authProvider: 'mock',
+                externalAuthId: 'admin-luis',
+                emailVerified: true,
+            }),
+            verifiedIdentity: null,
+            authProvider: createAuthProvider('mock'),
+            store: marketplaceStore,
+            emailService: createEmailService(),
+            businessService: {
+                listBusinesses: jest.fn(),
+                getBusinessById: jest.fn(),
+                createBusiness: jest.fn(),
+                listPendingBusinesses: jest.fn(async () => []),
+                approveBusiness: jest.fn(),
+            } as any,
+            businessAnalyticsService: {
+                getOverview: jest.fn(),
+            } as any,
+            productService: {
+                listByBusiness: jest.fn(),
+                getById: jest.fn(),
+                create: jest.fn(),
+                update: jest.fn(),
+                delete: jest.fn(),
+            } as any,
+            platformAnalyticsService: {
+                getOverview: jest.fn(),
+            } as any,
+            promotionService: {
+                listActive: jest.fn(),
+                listByBusiness: jest.fn(),
+                getById: jest.fn(),
+                create: jest.fn(),
+                update: jest.fn(),
+                delete: jest.fn(),
+            } as any,
+            leadService: {
+                create: jest.fn(),
+                listByBusiness: jest.fn(),
+                getById: jest.fn(),
+            } as any,
+            reviewService: {
+                listByBusiness: jest.fn(),
+                create: jest.fn(),
+            } as any,
+            userAdminService: {
+                listUsers: jest.fn(async () => []),
+                updateUserRole: jest.fn(),
+                setUserActive: jest.fn(),
+            } as any,
+        });
+
+        await expect(caller.admin.listUsers()).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            message: 'SuperAdmin access required.',
         });
     });
 });

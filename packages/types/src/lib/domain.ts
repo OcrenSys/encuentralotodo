@@ -38,6 +38,7 @@ export interface UserProfile {
     email: string;
     role: UserRole;
     avatarUrl?: string;
+    isActive?: boolean;
 }
 
 export interface BusinessLocation {
@@ -147,6 +148,25 @@ export interface BusinessListFilters {
 export interface AuthSession {
     provider: 'mock' | 'firebase' | 'cognito';
     user: UserProfile | null;
+}
+
+export interface PlatformUserIdentity {
+    provider: 'mock' | 'firebase' | 'cognito';
+    externalUserId: string;
+    email?: string;
+    emailVerified: boolean;
+}
+
+export interface PlatformUser {
+    id: string;
+    fullName: string;
+    email: string;
+    role: UserRole;
+    avatarUrl?: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    identities: PlatformUserIdentity[];
 }
 
 export interface AnalyticsTrendPoint {

@@ -15,10 +15,15 @@ import {
 } from '../../lib/management-navigation';
 import { useCurrentAuthUser } from '../../lib/auth-context';
 import { useRoleView } from '../../lib/role-view';
+import { trpc } from '../../lib/trpc';
 import { ActiveSimulationFloating } from './active-simulation-floating';
 import { BottomNav } from './bottom-nav';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
+
+function hasPlatformUserManagementAccess(role: string | undefined) {
+  return role === 'SUPERADMIN' || role === 'GLOBALADMIN';
+}
 
 export function AppShell({
   activePath,
@@ -40,6 +45,15 @@ export function AppShell({
   const isAllowed = isPathAllowedForRole(activePath, roleView);
   const fallbackPath = getDefaultPathForRole(roleView);
   const requiresAuth = provider !== 'mock';
+  const sessionQuery = trpc.auth.me.useQuery(undefined, {
+    enabled: requiresAuth && isAuthenticated,
+    retry: false,
+  });
+  const backendUser = sessionQuery.data?.user;
+  const isBackendSessionLoading = requiresAuth && isAuthenticated && sessionQuery.isLoading;
+  const isAccountDisabled = backendUser?.isActive === false;
+  const requiresPlatformUserManagementAccess = activePath === '/admin/users';
+  const hasPlatformUserAccess = hasPlatformUserManagementAccess(backendUser?.role);
 
   useEffect(() => {
     if (!requiresAuth || isAuthLoading || isAuthenticated) {
@@ -49,7 +63,7 @@ export function AppShell({
     router.replace(`/login?next=${encodeURIComponent(activePath)}`);
   }, [activePath, isAuthenticated, isAuthLoading, requiresAuth, router]);
 
-  if (!isReady || (requiresAuth && (isAuthLoading || !isAuthenticated))) {
+  if (!isReady || (requiresAuth && (isAuthLoading || !isAuthenticated || isBackendSessionLoading))) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
         <LoadingSkeleton className="h-32" />
@@ -73,10 +87,20 @@ export function AppShell({
         />
 
         <main className="px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
-          {isAllowed ? (
+          {isAccountDisabled ? (
+            <EmptyState
+              title="Tu cuenta está deshabilitada"
+              description="Un SuperAdmin debe reactivar tu acceso antes de que puedas continuar usando la consola."
+            />
+          ) : isAllowed && (!requiresPlatformUserManagementAccess || hasPlatformUserAccess) ? (
             <div className="surface-soft space-y-6 rounded-xl p-1 sm:p-1.5">
               {children}
             </div>
+          ) : requiresPlatformUserManagementAccess ? (
+            <EmptyState
+              title="Esta vista requiere permisos de SuperAdmin"
+              description="La gestión global de usuarios solo está disponible para cuentas con acceso de plataforma elevado en el backend."
+            />
           ) : (
             <EmptyState
               title="Esta vista no está disponible para el rol actual"

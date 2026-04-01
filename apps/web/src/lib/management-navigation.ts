@@ -57,6 +57,14 @@ export const navigationItems: NavigationItem[] = [
         mobilePriority: 3,
     },
     {
+        key: 'platform-users',
+        label: 'Usuarios',
+        href: '/admin/users',
+        icon: Users,
+        description: 'Gestión de roles y acceso para usuarios de la plataforma.',
+        roles: ['SUPERADMIN'],
+    },
+    {
         key: 'categories',
         label: 'Categorías',
         href: '/admin/categories',
@@ -179,6 +187,7 @@ export const routeSearchLabels: Partial<Record<string, string>> = {
     '/settings': 'Buscar ajustes',
     '/admin/approvals': 'Buscar aprobaciones pendientes',
     '/admin/businesses': 'Buscar negocios registrados',
+    '/admin/users': 'Buscar usuarios, roles o estado de acceso',
     '/admin/categories': 'Buscar categorías',
     '/admin/plans': 'Buscar planes',
     '/admin/reports': 'Buscar reportes',
@@ -195,6 +204,7 @@ export const routeEyebrows: Partial<Record<string, string>> = {
     '/settings': 'Configuración',
     '/admin/approvals': 'Operación de plataforma',
     '/admin/businesses': 'Operación de plataforma',
+    '/admin/users': 'Operación de plataforma',
     '/admin/categories': 'Operación de plataforma',
     '/admin/plans': 'Ingresos y planes',
     '/admin/reports': 'Salud de plataforma',
@@ -207,6 +217,6 @@ export const quickLinks = [
     { label: 'Cola de aprobaciones', href: '/admin/approvals' },
 ] as const;
 
-export const adminPrefixes = ['/admin/approvals', '/admin/businesses', '/admin/categories', '/admin/plans', '/admin/reports'];
+export const adminPrefixes = ['/admin/approvals', '/admin/businesses', '/admin/users', '/admin/categories', '/admin/plans', '/admin/reports'];
 
 export const managementPrefixes = ['/dashboard', '/business', '/products', '/promotions', '/leads', '/team', '/analytics', '/settings', ...adminPrefixes];

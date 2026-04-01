@@ -9,6 +9,7 @@ export interface LocalUserRecord {
     email: string;
     role: UserRole;
     avatarUrl: string | null;
+    isActive: boolean;
 }
 
 export interface AuthIdentityRepositoryPort {
@@ -24,6 +25,7 @@ const userSelect = {
     email: true,
     role: true,
     avatarUrl: true,
+    isActive: true,
 } as const;
 
 function toPrismaProvider(provider: AuthProviderName) {
@@ -74,6 +76,7 @@ function mapLocalUserRecord(record: any): LocalUserRecord {
         email: record.email,
         role: record.role,
         avatarUrl: record.avatarUrl,
+        isActive: Boolean(record.isActive),
     };
 }
 
@@ -84,6 +87,7 @@ function mapCurrentUserFromIdentityRecord(record: any): CurrentUser {
         email: record.user.email,
         role: record.user.role,
         avatarUrl: record.user.avatarUrl,
+        isActive: Boolean(record.user.isActive),
         authProvider: fromPrismaProvider(record.provider),
         externalAuthId: record.externalUserId,
         emailVerified: Boolean(record.emailVerified),
@@ -140,6 +144,7 @@ export class PrismaAuthIdentityRepository implements AuthIdentityRepositoryPort 
                         email: identity.email ?? buildFallbackEmail(identity),
                         role: 'USER',
                         avatarUrl: identity.avatarUrl,
+                        isActive: true,
                     },
                 },
             },
