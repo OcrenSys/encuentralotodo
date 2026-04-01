@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
 import { EmptyState, LoadingSkeleton } from 'ui';
 
 import {
@@ -10,6 +13,7 @@ import {
   isPathAllowedForRole,
   routeEyebrows,
 } from '../../lib/management-navigation';
+import { useCurrentAuthUser } from '../../lib/auth-context';
 import { useRoleView } from '../../lib/role-view';
 import { ActiveSimulationFloating } from './active-simulation-floating';
 import { BottomNav } from './bottom-nav';
@@ -23,14 +27,29 @@ export function AppShell({
   activePath: string;
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const { roleView, isReady } = useRoleView();
+  const {
+    isAuthenticated,
+    isLoading: isAuthLoading,
+    provider,
+  } = useCurrentAuthUser();
   const route = getNavigationItemByPath(activePath);
   const sidebarItems = getNavigationForRole(roleView);
   const mobileItems = getMobileNavigationForRole(roleView);
   const isAllowed = isPathAllowedForRole(activePath, roleView);
   const fallbackPath = getDefaultPathForRole(roleView);
+  const requiresAuth = provider !== 'mock';
 
-  if (!isReady) {
+  useEffect(() => {
+    if (!requiresAuth || isAuthLoading || isAuthenticated) {
+      return;
+    }
+
+    router.replace(`/login?next=${encodeURIComponent(activePath)}`);
+  }, [activePath, isAuthenticated, isAuthLoading, requiresAuth, router]);
+
+  if (!isReady || (requiresAuth && (isAuthLoading || !isAuthenticated))) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
         <LoadingSkeleton className="h-32" />

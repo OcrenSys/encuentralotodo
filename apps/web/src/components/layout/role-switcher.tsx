@@ -10,7 +10,7 @@ export function RoleSwitcher() {
   return (
     <label className="flex min-w-[180px] flex-col gap-2">
       <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
-        Ver como
+        Simulación de vista
       </span>
       <Select
         className="min-w-[180px]"

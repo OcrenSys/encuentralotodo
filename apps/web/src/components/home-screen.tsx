@@ -135,7 +135,7 @@ export function MarketplaceHomeScreen() {
                   value: promotionsQuery.data?.length ?? 0,
                 },
                 {
-                  label: 'Rol demo',
+                  label: 'Rol backend',
                   value: sessionQuery.data?.user?.role ?? 'USER',
                 },
               ].map((metric) => (

@@ -29,7 +29,7 @@ export function ActiveSimulationFloating() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
-                Simulación activa
+                Vista demo activa
               </p>
               <p className="mt-2 font-display text-2xl font-semibold text-text-secondary">
                 {currentProfile.fullName}
@@ -64,7 +64,8 @@ export function ActiveSimulationFloating() {
 
           <p className="mt-4 text-sm leading-6 text-text-muted">
             Estado visible de la simulación actual para validar UX, navegación y
-            permisos visuales sin perder contexto mientras operas la consola.
+            permisos visuales sin mezclar esta capa con la identidad autenticada
+            real.
           </p>
         </div>
 
@@ -79,7 +80,7 @@ export function ActiveSimulationFloating() {
           ) : (
             <PanelLeftOpen className="size-4" />
           )}
-          Simulación activa
+          Vista demo
         </button>
       </div>
     </div>

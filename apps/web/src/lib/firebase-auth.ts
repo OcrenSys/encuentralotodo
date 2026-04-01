@@ -21,12 +21,39 @@ const publicEnv = parsePublicEnv(process.env);
 
 let persistencePromise: Promise<void> | null = null;
 
+export type AuthMethodProvider = 'firebase' | 'password' | 'google.com' | 'github.com' | 'unknown';
+
+export type FrontendAuthUser = {
+    uid: string;
+    email: string | null;
+    displayName: string | null;
+    photoURL: string | null;
+    provider: AuthMethodProvider;
+};
+
 export function getPublicAuthProvider() {
     return publicEnv.NEXT_PUBLIC_AUTH_PROVIDER;
 }
 
 export function isFirebaseAuthEnabled() {
     return publicEnv.NEXT_PUBLIC_AUTH_PROVIDER === 'firebase';
+}
+
+export function normalizeFirebaseUser(user: User): FrontendAuthUser {
+    const primaryProvider = user.providerData[0]?.providerId;
+
+    return {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        provider:
+            primaryProvider === 'password' ||
+                primaryProvider === 'google.com' ||
+                primaryProvider === 'github.com'
+                ? primaryProvider
+                : 'unknown',
+    };
 }
 
 function getFirebaseConfig() {
@@ -73,13 +100,26 @@ export async function getCurrentAuthorizationHeader(forceRefresh = false) {
     return token ? `Bearer ${token}` : null;
 }
 
-export function subscribeToAuthTokenChanges(listener: (user: User | null) => void) {
+export async function getCurrentFirebaseIdToken(forceRefresh = false) {
     if (!isFirebaseAuthEnabled()) {
+        return null;
+    }
+
+    await ensurePersistence();
+    const auth = getAuth(getFirebaseApp());
+    return auth.currentUser ? auth.currentUser.getIdToken(forceRefresh) : null;
+}
+
+export function subscribeToAuthTokenChanges(listener: (user: FrontendAuthUser | null) => void) {
+    if (!isFirebaseAuthEnabled()) {
+        listener(null);
         return () => undefined;
     }
 
     void ensurePersistence();
-    return onIdTokenChanged(getAuth(getFirebaseApp()), listener);
+    return onIdTokenChanged(getAuth(getFirebaseApp()), (user) => {
+        listener(user ? normalizeFirebaseUser(user) : null);
+    });
 }
 
 export async function signInWithFirebaseEmail(input: { email: string; password: string }) {

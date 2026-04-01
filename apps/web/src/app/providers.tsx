@@ -7,28 +7,23 @@ import { Toaster } from 'sonner';
 
 import { getApiBaseUrl } from 'config';
 
+import { AuthProvider, useCurrentAuthUser } from '../lib/auth-context';
 import { RoleViewProvider, useRoleView } from '../lib/role-view';
 import {
   getCurrentAuthorizationHeader,
   getPublicAuthProvider,
-  subscribeToAuthTokenChanges,
 } from '../lib/firebase-auth';
 import { trpc } from '../lib/trpc';
 
 function TrpcProviders({ children }: { children: React.ReactNode }) {
   const { roleProfile } = useRoleView();
+  const { isAuthenticated, user } = useCurrentAuthUser();
   const [queryClient] = useState(() => new QueryClient());
   const authProvider = getPublicAuthProvider();
 
   useEffect(() => {
-    if (authProvider !== 'firebase') {
-      return;
-    }
-
-    return subscribeToAuthTokenChanges(() => {
-      void queryClient.invalidateQueries();
-    });
-  }, [authProvider, queryClient]);
+    void queryClient.invalidateQueries();
+  }, [isAuthenticated, queryClient, user?.uid]);
 
   const trpcClient = useMemo(
     () =>
@@ -66,8 +61,10 @@ function TrpcProviders({ children }: { children: React.ReactNode }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <RoleViewProvider>
-      <TrpcProviders>{children}</TrpcProviders>
-    </RoleViewProvider>
+    <AuthProvider>
+      <RoleViewProvider>
+        <TrpcProviders>{children}</TrpcProviders>
+      </RoleViewProvider>
+    </AuthProvider>
   );
 }

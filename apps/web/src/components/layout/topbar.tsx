@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import { ChevronDown, Layers3, ShieldCheck } from 'lucide-react';
 
-import { formatRoleLabel } from '../../lib/display-labels';
 import { routeSearchLabels } from '../../lib/management-navigation';
 import { useRoleView } from '../../lib/role-view';
+import { AuthUserPanel } from '../auth/auth-user-panel';
 import { RoleSwitcher } from './role-switcher';
 
 export function Topbar({
@@ -20,7 +20,6 @@ export function Topbar({
   title: string;
   description: string;
 }) {
-  const { roleProfile } = useRoleView();
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
   const lastScrollYRef = useRef(0);
   const panelOpenedAtScrollYRef = useRef(0);
@@ -116,17 +115,7 @@ export function Topbar({
 
           <div className="hidden flex-col gap-3 sm:flex-row sm:items-end lg:flex">
             <RoleSwitcher />
-            <div className="surface-soft rounded-lg px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-muted">
-                Usuario simulado
-              </p>
-              <p className="mt-2 text-sm font-semibold text-text-secondary">
-                {roleProfile.fullName}
-              </p>
-              <p className="text-xs text-text-muted">
-                {formatRoleLabel(roleProfile.role)} · {roleProfile.email}
-              </p>
-            </div>
+            <AuthUserPanel />
           </div>
         </div>
 
@@ -148,17 +137,7 @@ export function Topbar({
               <div className="surface-soft rounded-lg px-4 py-4">
                 <RoleSwitcher />
               </div>
-              <div className="surface-soft rounded-lg px-4 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-muted">
-                  Usuario simulado
-                </p>
-                <p className="mt-2 text-sm font-semibold text-text-secondary">
-                  {roleProfile.fullName}
-                </p>
-                <p className="text-xs text-text-muted">
-                  {formatRoleLabel(roleProfile.role)} · {roleProfile.email}
-                </p>
-              </div>
+              <AuthUserPanel />
               <div className="shell-chrome flex flex-col gap-3 rounded-lg px-4 py-3">
                 <div className="space-y-1">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
