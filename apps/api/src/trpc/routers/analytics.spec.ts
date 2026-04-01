@@ -1,4 +1,4 @@
-import { createAuthProvider } from 'auth';
+import { createAuthProvider, createCurrentUser } from 'auth';
 
 import { createEmailService } from '../../lib/email';
 import { marketplaceStore } from '../../lib/store';
@@ -16,7 +16,8 @@ const baseEnv = {
 function createBaseContext() {
     return {
         env: baseEnv,
-        authProvider: createAuthProvider('mock', null),
+        authProvider: createAuthProvider('mock'),
+        verifiedIdentity: null,
         store: marketplaceStore,
         emailService: createEmailService(),
         businessService: {
@@ -75,12 +76,15 @@ describe('analytics router', () => {
     it('rejects non-admin platform analytics callers', async () => {
         const caller = appRouter.createCaller({
             ...createBaseContext(),
-            currentUser: {
+            currentUser: createCurrentUser({
                 id: 'owner-sofia',
                 fullName: 'Sofia Rivas',
                 email: 'sofia@encuentralotodo.app',
                 role: 'USER',
-            },
+                authProvider: 'mock',
+                externalAuthId: 'owner-sofia',
+                emailVerified: true,
+            }),
         });
 
         await expect(caller.analytics.platformOverview({ period: '30D' })).rejects.toMatchObject({

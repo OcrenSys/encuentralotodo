@@ -1,4 +1,4 @@
-import { createAuthProvider } from 'auth';
+import { createAuthProvider, createCurrentUser } from 'auth';
 
 import { createEmailService } from '../../lib/email';
 import { marketplaceStore } from '../../lib/store';
@@ -17,13 +17,17 @@ describe('admin router', () => {
     it('rejects unauthorized approval callers', async () => {
         const caller = appRouter.createCaller({
             env: baseEnv,
-            currentUser: {
+            currentUser: createCurrentUser({
                 id: 'user-ana',
                 fullName: 'Ana Mercado',
                 email: 'ana@encuentralotodo.app',
                 role: 'USER',
-            },
-            authProvider: createAuthProvider('mock', null),
+                authProvider: 'mock',
+                externalAuthId: 'user-ana',
+                emailVerified: true,
+            }),
+            verifiedIdentity: null,
+            authProvider: createAuthProvider('mock'),
             store: marketplaceStore,
             emailService: createEmailService(),
             businessService: {

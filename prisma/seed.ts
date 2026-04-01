@@ -7,6 +7,7 @@ import { marketplaceSeed } from '../packages/types/src/lib/mocks';
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.userIdentity.deleteMany();
   await prisma.lead.deleteMany();
   await prisma.review.deleteMany();
   await prisma.promotion.deleteMany();
@@ -23,6 +24,16 @@ async function main() {
         email: user.email,
         role: user.role,
         avatarUrl: user.avatarUrl,
+        identities: {
+          create: {
+            provider: 'MOCK',
+            externalUserId: user.id,
+            email: user.email,
+            emailVerified: true,
+            displayName: user.fullName,
+            avatarUrl: user.avatarUrl,
+          },
+        },
       },
     });
   }

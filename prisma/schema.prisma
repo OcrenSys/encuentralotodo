@@ -13,6 +13,12 @@ enum UserRole {
     GLOBALADMIN
 }
 
+enum AuthProviderType {
+    MOCK
+    FIREBASE
+    COGNITO
+}
+
 enum SubscriptionType {
     FREE_TRIAL
     PREMIUM
@@ -50,11 +56,30 @@ model User {
     email           String            @unique
     role            UserRole          @default(USER)
     avatarUrl       String?
+    identities      UserIdentity[]
     ownedBusinesses Business[]        @relation("OwnedBusinesses")
     managedLinks    BusinessManager[]
     reviews         Review[]
     createdAt       DateTime          @default(now())
     updatedAt       DateTime          @updatedAt
+}
+
+model UserIdentity {
+    id             String           @id @default(cuid())
+    provider       AuthProviderType
+    externalUserId String
+    email          String?
+    emailVerified  Boolean          @default(false)
+    displayName    String?
+    avatarUrl      String?
+    userId         String
+    user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+    createdAt      DateTime         @default(now())
+    updatedAt      DateTime         @updatedAt
+
+    @@unique([provider, externalUserId])
+    @@index([userId])
+    @@index([email])
 }
 
 model Business {
@@ -119,15 +144,15 @@ model Promotion {
 }
 
 model Lead {
-    id          String     @id @default(cuid())
-    name        String
-    source      LeadSource
-    status      LeadStatus @default(NEW)
-    summary     String
-    businessId  String
-    business    Business   @relation(fields: [businessId], references: [id])
-    updatedAt   DateTime   @updatedAt
-    createdAt   DateTime   @default(now())
+    id         String     @id @default(cuid())
+    name       String
+    source     LeadSource
+    status     LeadStatus @default(NEW)
+    summary    String
+    businessId String
+    business   Business   @relation(fields: [businessId], references: [id])
+    updatedAt  DateTime   @updatedAt
+    createdAt  DateTime   @default(now())
 }
 
 model Review {

@@ -1,68 +1,173 @@
-import type { AuthProvider, AuthProviderName } from './auth';
-import type { UserProfile } from 'types';
+import { applicationDefault, cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
-const defaultUsers: Record<string, UserProfile> = {
+import type {
+    AuthProvider,
+    AuthProviderName,
+    CreateAuthProviderOptions,
+    FirebaseAuthProviderConfig,
+    MockAuthUser,
+    VerifiedIdentity,
+} from './auth';
+import { AuthTokenVerificationError, UnsupportedAuthProviderError } from './auth';
+
+const defaultMockUsers: Record<string, MockAuthUser> = {
     'ana@encuentralotodo.app': {
         id: 'user-ana',
         fullName: 'Ana Mercado',
         email: 'ana@encuentralotodo.app',
         role: 'USER',
+        authProvider: 'mock',
     },
     'luis@encuentralotodo.app': {
         id: 'admin-luis',
         fullName: 'Luis Admin',
         email: 'luis@encuentralotodo.app',
         role: 'ADMIN',
+        authProvider: 'mock',
     },
 };
 
-class BaseConfiguredAuthProvider implements AuthProvider {
-    protected currentUser: UserProfile | null;
+function normalizePrivateKey(privateKey?: string) {
+    return privateKey?.replace(/\\n/g, '\n');
+}
 
-    constructor(seedUser: UserProfile | null = null) {
-        this.currentUser = seedUser;
+function resolveFirebaseTokenVerifier(config: FirebaseAuthProviderConfig = {}) {
+    if (config.tokenVerifier) {
+        return config.tokenVerifier;
     }
 
-    async signIn(input?: { email: string; fullName?: string }) {
-        if (!input) {
-            return this.currentUser;
+    const projectId = config.projectId;
+    const appName = config.appName ?? `encuentralotodo-auth-${projectId ?? 'default'}`;
+    const existingApp = getApps().find((app) => app.name === appName);
+
+    if (existingApp) {
+        return getAuth(existingApp).verifyIdToken.bind(getAuth(existingApp));
+    }
+
+    let firebaseApp;
+    if (config.serviceAccountJson) {
+        const serviceAccount = JSON.parse(config.serviceAccountJson) as {
+            projectId?: string;
+            clientEmail?: string;
+            privateKey?: string;
+        };
+        firebaseApp = initializeApp(
+            {
+                credential: cert({
+                    projectId: serviceAccount.projectId ?? projectId,
+                    clientEmail: serviceAccount.clientEmail,
+                    privateKey: normalizePrivateKey(serviceAccount.privateKey),
+                }),
+                projectId: serviceAccount.projectId ?? projectId,
+            },
+            appName,
+        );
+    } else if (config.clientEmail && config.privateKey) {
+        firebaseApp = initializeApp(
+            {
+                credential: cert({
+                    projectId,
+                    clientEmail: config.clientEmail,
+                    privateKey: normalizePrivateKey(config.privateKey),
+                }),
+                projectId,
+            },
+            appName,
+        );
+    } else {
+        firebaseApp = initializeApp(
+            {
+                credential: applicationDefault(),
+                projectId,
+            },
+            appName,
+        );
+    }
+
+    return getAuth(firebaseApp).verifyIdToken.bind(getAuth(firebaseApp));
+}
+
+function mapMockUserToIdentity(user: MockAuthUser): VerifiedIdentity {
+    return {
+        provider: 'mock',
+        externalUserId: user.id,
+        email: user.email,
+        emailVerified: true,
+        displayName: user.fullName,
+        avatarUrl: user.avatarUrl ?? null,
+    };
+}
+
+export class MockAuthProvider implements AuthProvider {
+    readonly name = 'mock' as const;
+
+    constructor(private readonly users: Record<string, MockAuthUser> = defaultMockUsers) { }
+
+    async verifyIdToken(idToken: string) {
+        const normalizedToken = idToken.trim().toLowerCase();
+        const user =
+            this.users[normalizedToken] ??
+            Object.values(this.users).find(
+                (candidate) => candidate.id.toLowerCase() === normalizedToken || candidate.email.toLowerCase() === normalizedToken,
+            );
+
+        if (!user) {
+            throw new AuthTokenVerificationError('Mock auth token was not recognized.');
         }
 
-        const existing = defaultUsers[input.email.toLowerCase()];
-        this.currentUser =
-            existing ?? {
-                id: `user-${input.email.split('@')[0]}`,
-                fullName: input.fullName ?? input.email.split('@')[0],
-                email: input.email,
-                role: 'USER',
-            };
-
-        return this.currentUser;
-    }
-
-    async signOut() {
-        this.currentUser = null;
-    }
-
-    async getUser() {
-        return this.currentUser;
+        return mapMockUserToIdentity(user);
     }
 }
 
-export class MockAuthProvider extends BaseConfiguredAuthProvider { }
+export class FirebaseAuthProvider implements AuthProvider {
+    readonly name = 'firebase' as const;
 
-export class FirebaseAuthProvider extends BaseConfiguredAuthProvider { }
+    private readonly tokenVerifier: ReturnType<typeof resolveFirebaseTokenVerifier>;
 
-export class CognitoAuthProvider extends BaseConfiguredAuthProvider { }
+    constructor(config: FirebaseAuthProviderConfig = {}) {
+        this.tokenVerifier = resolveFirebaseTokenVerifier(config);
+    }
 
-export function createAuthProvider(provider: AuthProviderName, seedUser: UserProfile | null = defaultUsers['ana@encuentralotodo.app']) {
+    async verifyIdToken(idToken: string) {
+        try {
+            const decodedToken = await this.tokenVerifier(idToken);
+
+            return {
+                provider: 'firebase',
+                externalUserId: decodedToken.uid ?? decodedToken.sub ?? '',
+                email: decodedToken.email ?? null,
+                emailVerified: Boolean(decodedToken.email_verified),
+                displayName: decodedToken.name ?? null,
+                avatarUrl: decodedToken.picture ?? null,
+            } satisfies VerifiedIdentity;
+        } catch (error) {
+            throw new AuthTokenVerificationError('Firebase token verification failed.', { cause: error });
+        }
+    }
+}
+
+export class CognitoAuthProvider implements AuthProvider {
+    readonly name = 'cognito' as const;
+
+    async verifyIdToken(_idToken: string): Promise<VerifiedIdentity> {
+        throw new UnsupportedAuthProviderError('cognito');
+    }
+}
+
+export function createAuthProvider(
+    provider: AuthProviderName,
+    options: CreateAuthProviderOptions = {},
+): AuthProvider {
     switch (provider) {
         case 'firebase':
-            return new FirebaseAuthProvider(seedUser);
+            return new FirebaseAuthProvider(options.firebase);
         case 'cognito':
-            return new CognitoAuthProvider(seedUser);
+            return new CognitoAuthProvider();
         case 'mock':
         default:
-            return new MockAuthProvider(seedUser);
+            return new MockAuthProvider(options.mockUsers);
     }
 }
+
+export { defaultMockUsers };
