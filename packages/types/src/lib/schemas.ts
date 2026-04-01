@@ -89,6 +89,24 @@ export const createPromotionInputSchema = z.object({
     image: z.string().url(),
 });
 
+export const getPromotionByIdInputSchema = z.object({
+    promotionId: z.string().min(2),
+});
+
+export const updatePromotionInputSchema = z.object({
+    promotionId: z.string().min(2),
+    title: z.string().min(2).max(80).optional(),
+    description: z.string().min(10).max(240).optional(),
+    promoPrice: z.number().positive().optional(),
+    originalPrice: z.number().positive().optional(),
+    validUntil: z.string().datetime().optional(),
+    image: z.string().url().optional(),
+});
+
+export const deletePromotionInputSchema = z.object({
+    promotionId: z.string().min(2),
+});
+
 export const createReviewInputSchema = z.object({
     businessId: z.string().min(2),
     userId: z.string().min(2),
@@ -123,5 +141,8 @@ export type GetProductByIdInput = z.infer<typeof getProductByIdInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;
 export type DeleteProductInput = z.infer<typeof deleteProductInputSchema>;
 export type CreatePromotionInput = z.infer<typeof createPromotionInputSchema>;
+export type GetPromotionByIdInput = z.infer<typeof getPromotionByIdInputSchema>;
+export type UpdatePromotionInput = z.infer<typeof updatePromotionInputSchema>;
+export type DeletePromotionInput = z.infer<typeof deletePromotionInputSchema>;
 export type CreateReviewInput = z.infer<typeof createReviewInputSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;
