@@ -32,6 +32,23 @@ function normalizePrivateKey(privateKey?: string) {
     return privateKey?.replace(/\\n/g, '\n');
 }
 
+function normalizeServiceAccount(serviceAccountJson: string, fallbackProjectId?: string) {
+    const serviceAccount = JSON.parse(serviceAccountJson) as {
+        projectId?: string;
+        project_id?: string;
+        clientEmail?: string;
+        client_email?: string;
+        privateKey?: string;
+        private_key?: string;
+    };
+
+    return {
+        projectId: serviceAccount.projectId ?? serviceAccount.project_id ?? fallbackProjectId,
+        clientEmail: serviceAccount.clientEmail ?? serviceAccount.client_email,
+        privateKey: normalizePrivateKey(serviceAccount.privateKey ?? serviceAccount.private_key),
+    };
+}
+
 function resolveFirebaseTokenVerifier(config: FirebaseAuthProviderConfig = {}) {
     if (config.tokenVerifier) {
         return config.tokenVerifier;
@@ -47,19 +64,15 @@ function resolveFirebaseTokenVerifier(config: FirebaseAuthProviderConfig = {}) {
 
     let firebaseApp;
     if (config.serviceAccountJson) {
-        const serviceAccount = JSON.parse(config.serviceAccountJson) as {
-            projectId?: string;
-            clientEmail?: string;
-            privateKey?: string;
-        };
+        const serviceAccount = normalizeServiceAccount(config.serviceAccountJson, projectId);
         firebaseApp = initializeApp(
             {
                 credential: cert({
-                    projectId: serviceAccount.projectId ?? projectId,
+                    projectId: serviceAccount.projectId,
                     clientEmail: serviceAccount.clientEmail,
-                    privateKey: normalizePrivateKey(serviceAccount.privateKey),
+                    privateKey: serviceAccount.privateKey,
                 }),
-                projectId: serviceAccount.projectId ?? projectId,
+                projectId: serviceAccount.projectId,
             },
             appName,
         );

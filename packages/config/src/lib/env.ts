@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 const serverEnvSchema = z.object({
     NODE_ENV: z.enum(['development', 'staging', 'production']).default('development'),
-    PORT: z.coerce.number().default(4000),
+    PORT: z.coerce.number().default(3000),
+    API_PORT: z.coerce.number().default(4000),
     HOST: z.string().default('0.0.0.0'),
     DATABASE_URL: z.string().optional(),
     DATA_MODE: z.enum(['memory', 'prisma']).default('memory'),
@@ -31,6 +32,38 @@ const serverEnvSchema = z.object({
             message: 'Real auth providers require DATA_MODE=prisma so local users can be resolved in the database.',
             path: ['DATA_MODE'],
         });
+    }
+
+    if (env.AUTH_PROVIDER !== 'firebase') {
+        return;
+    }
+
+    if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+        const hasAnyExplicitCredential = Boolean(env.FIREBASE_CLIENT_EMAIL || env.FIREBASE_PRIVATE_KEY || env.FIREBASE_PROJECT_ID);
+
+        if (hasAnyExplicitCredential && !env.FIREBASE_PROJECT_ID) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'FIREBASE_PROJECT_ID is required when using explicit Firebase Admin credentials.',
+                path: ['FIREBASE_PROJECT_ID'],
+            });
+        }
+
+        if (hasAnyExplicitCredential && !env.FIREBASE_CLIENT_EMAIL) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'FIREBASE_CLIENT_EMAIL is required when using explicit Firebase Admin credentials.',
+                path: ['FIREBASE_CLIENT_EMAIL'],
+            });
+        }
+
+        if (hasAnyExplicitCredential && !env.FIREBASE_PRIVATE_KEY) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'FIREBASE_PRIVATE_KEY is required when using explicit Firebase Admin credentials.',
+                path: ['FIREBASE_PRIVATE_KEY'],
+            });
+        }
     }
 });
 

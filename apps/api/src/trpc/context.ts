@@ -27,6 +27,7 @@ export interface TrpcContext {
   env: {
     NODE_ENV: 'development' | 'staging' | 'production';
     PORT: number;
+    API_PORT: number;
     HOST: string;
     DATABASE_URL?: string;
     DATA_MODE: 'memory' | 'prisma';

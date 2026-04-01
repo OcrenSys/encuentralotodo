@@ -7,6 +7,7 @@ import { appRouter } from '../router';
 const baseEnv = {
     NODE_ENV: 'development' as const,
     PORT: 4000,
+    API_PORT: 4000,
     HOST: '0.0.0.0',
     DATABASE_URL: 'postgresql://example',
     DATA_MODE: 'prisma' as const,
