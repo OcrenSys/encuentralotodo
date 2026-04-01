@@ -92,7 +92,7 @@ export function KpiCards() {
         helper="Rol operativo devuelto por la sesión actual del backend para contrastar permisos reales."
         icon="role"
         label="Rol de la cuenta"
-        value={sessionQuery.data?.user?.role ?? 'USER'}
+        value={sessionQuery.data?.user?.role ?? 'UNASSIGNED'}
       />
     </section>
   );

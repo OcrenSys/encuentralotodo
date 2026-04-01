@@ -1,4 +1,4 @@
-import type { BusinessListFilters, BusinessStatus, CreateBusinessInput } from 'types';
+import type { BusinessListFilters, BusinessStatus, CreateBusinessInput, UserRole } from 'types';
 
 import type { getPrismaClient } from '../prisma';
 
@@ -6,7 +6,7 @@ export interface RepositoryUserRecord {
     id: string;
     fullName: string;
     email: string;
-    role: 'USER' | 'ADMIN' | 'SUPERADMIN' | 'GLOBALADMIN';
+    role: UserRole;
     avatarUrl: string | null;
 }
 

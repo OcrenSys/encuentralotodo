@@ -25,6 +25,10 @@ function hasPlatformUserManagementAccess(role: string | undefined) {
   return role === 'SUPERADMIN' || role === 'GLOBALADMIN';
 }
 
+function isRoleAssignmentPending(role: string | undefined) {
+  return role === 'UNASSIGNED';
+}
+
 export function AppShell({
   activePath,
   children,
@@ -50,10 +54,14 @@ export function AppShell({
     retry: false,
   });
   const backendUser = sessionQuery.data?.user;
-  const isBackendSessionLoading = requiresAuth && isAuthenticated && sessionQuery.isLoading;
+  const isBackendSessionLoading =
+    requiresAuth && isAuthenticated && sessionQuery.isLoading;
   const isAccountDisabled = backendUser?.isActive === false;
+  const isPendingRoleAssignment = isRoleAssignmentPending(backendUser?.role);
   const requiresPlatformUserManagementAccess = activePath === '/admin/users';
-  const hasPlatformUserAccess = hasPlatformUserManagementAccess(backendUser?.role);
+  const hasPlatformUserAccess = hasPlatformUserManagementAccess(
+    backendUser?.role,
+  );
 
   useEffect(() => {
     if (!requiresAuth || isAuthLoading || isAuthenticated) {
@@ -63,7 +71,11 @@ export function AppShell({
     router.replace(`/login?next=${encodeURIComponent(activePath)}`);
   }, [activePath, isAuthenticated, isAuthLoading, requiresAuth, router]);
 
-  if (!isReady || (requiresAuth && (isAuthLoading || !isAuthenticated || isBackendSessionLoading))) {
+  if (
+    !isReady ||
+    (requiresAuth &&
+      (isAuthLoading || !isAuthenticated || isBackendSessionLoading))
+  ) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
         <LoadingSkeleton className="h-32" />
@@ -92,7 +104,13 @@ export function AppShell({
               title="Tu cuenta está deshabilitada"
               description="Un SuperAdmin debe reactivar tu acceso antes de que puedas continuar usando la consola."
             />
-          ) : isAllowed && (!requiresPlatformUserManagementAccess || hasPlatformUserAccess) ? (
+          ) : isPendingRoleAssignment ? (
+            <EmptyState
+              title="Tu cuenta aún no tiene permisos asignados"
+              description="Tu acceso ya fue autenticado, pero un administrador todavía debe asignarte un rol desde la gestión global de usuarios antes de usar la consola."
+            />
+          ) : isAllowed &&
+            (!requiresPlatformUserManagementAccess || hasPlatformUserAccess) ? (
             <div className="surface-soft space-y-6 rounded-xl p-1 sm:p-1.5">
               {children}
             </div>

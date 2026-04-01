@@ -10,13 +10,24 @@ import { SurfaceTable } from '../../components/management/surface-table';
 import { trpc } from '../../lib/trpc';
 
 const roleLabels: Record<UserRole, string> = {
+  UNASSIGNED: 'Sin permisos',
   USER: 'Usuario',
   ADMIN: 'Admin',
   SUPERADMIN: 'SuperAdmin',
   GLOBALADMIN: 'GlobalAdmin',
 };
 
-function getProviderLabel(provider: PlatformUser['identities'][number]['provider']) {
+const roleOptions: UserRole[] = [
+  'UNASSIGNED',
+  'USER',
+  'ADMIN',
+  'SUPERADMIN',
+  'GLOBALADMIN',
+];
+
+function getProviderLabel(
+  provider: PlatformUser['identities'][number]['provider'],
+) {
   switch (provider) {
     case 'firebase':
       return 'Firebase';
@@ -43,7 +54,11 @@ function UserAccessSummary({ user }: { user: PlatformUser }) {
       <div className="flex flex-wrap gap-2">
         {user.identities.length ? (
           user.identities.map((identity) => (
-            <Badge className="capitalize" key={`${user.id}-${identity.provider}`} variant="info">
+            <Badge
+              className="capitalize"
+              key={`${user.id}-${identity.provider}`}
+              variant="info"
+            >
               {getProviderLabel(identity.provider)}
             </Badge>
           ))
@@ -100,9 +115,13 @@ export function UsersScreen() {
     onSuccess: async (user) => {
       await Promise.all([
         utils.admin.listUsers.invalidate(),
-        user.id === sessionQuery.data?.user?.id ? utils.auth.me.invalidate() : Promise.resolve(),
+        user.id === sessionQuery.data?.user?.id
+          ? utils.auth.me.invalidate()
+          : Promise.resolve(),
       ]);
-      toast.success(user.isActive ? 'Usuario reactivado.' : 'Usuario deshabilitado.');
+      toast.success(
+        user.isActive ? 'Usuario reactivado.' : 'Usuario deshabilitado.',
+      );
     },
     onError: (error) => {
       toast.error(error.message);
@@ -141,12 +160,17 @@ export function UsersScreen() {
       />
 
       <div className="hidden lg:block">
-        <SurfaceTable columns={['Usuario', 'Acceso', 'Rol', 'Estado', 'Acciones']}>
+        <SurfaceTable
+          columns={['Usuario', 'Acceso', 'Rol', 'Estado', 'Acciones']}
+        >
           {usersQuery.data.map((user) => {
             const selectedRole = draftRoles[user.id] ?? user.role;
             const isSelf = currentUserId === user.id;
-            const isRolePending = updateRole.isPending && updateRole.variables?.userId === user.id;
-            const isStatusPending = setUserActive.isPending && setUserActive.variables?.userId === user.id;
+            const isRolePending =
+              updateRole.isPending && updateRole.variables?.userId === user.id;
+            const isStatusPending =
+              setUserActive.isPending &&
+              setUserActive.variables?.userId === user.id;
 
             return (
               <div
@@ -170,9 +194,12 @@ export function UsersScreen() {
                       <p className="truncate font-semibold text-text-secondary">
                         {user.fullName}
                       </p>
-                      <p className="truncate text-sm text-text-muted">{user.email}</p>
+                      <p className="truncate text-sm text-text-muted">
+                        {user.email}
+                      </p>
                       <p className="text-xs text-text-muted">
-                        Creado {new Date(user.createdAt).toLocaleDateString('es-DO')}
+                        Creado{' '}
+                        {new Date(user.createdAt).toLocaleDateString('es-DO')}
                       </p>
                     </div>
                   </div>
@@ -195,16 +222,18 @@ export function UsersScreen() {
                     }}
                     value={selectedRole}
                   >
-                    {Object.entries(roleLabels).map(([role, label]) => (
+                    {roleOptions.map((role) => (
                       <option key={role} value={role}>
-                        {label}
+                        {roleLabels[role]}
                       </option>
                     ))}
                   </Select>
                   <p className="text-xs text-text-muted">
                     {isSelf
                       ? 'Tu propio rol se protege para evitar perder acceso.'
-                      : 'Actualiza el rol cuando necesites elevar o reducir permisos.'}
+                      : selectedRole === 'UNASSIGNED'
+                        ? 'Sin permisos deja la cuenta autenticada pero sin acceso operativo hasta nueva asignacion.'
+                        : 'Actualiza el rol cuando necesites elevar o reducir permisos.'}
                   </p>
                 </div>
 
@@ -217,8 +246,12 @@ export function UsersScreen() {
                 <div className="self-center space-y-2">
                   <Button
                     className="w-full"
-                    disabled={isSelf || selectedRole === user.role || isRolePending}
-                    onClick={() => updateRole.mutate({ role: selectedRole, userId: user.id })}
+                    disabled={
+                      isSelf || selectedRole === user.role || isRolePending
+                    }
+                    onClick={() =>
+                      updateRole.mutate({ role: selectedRole, userId: user.id })
+                    }
                     type="button"
                     variant="secondary"
                   >
@@ -228,7 +261,10 @@ export function UsersScreen() {
                     className="w-full"
                     disabled={isSelf || isStatusPending}
                     onClick={() =>
-                      setUserActive.mutate({ isActive: !user.isActive, userId: user.id })
+                      setUserActive.mutate({
+                        isActive: !user.isActive,
+                        userId: user.id,
+                      })
                     }
                     type="button"
                     variant={user.isActive ? 'ghost' : 'primary'}
@@ -250,11 +286,19 @@ export function UsersScreen() {
         {usersQuery.data.map((user) => {
           const selectedRole = draftRoles[user.id] ?? user.role;
           const isSelf = currentUserId === user.id;
-          const isRolePending = updateRole.isPending && updateRole.variables?.userId === user.id;
-          const isStatusPending = setUserActive.isPending && setUserActive.variables?.userId === user.id;
+          const isRolePending =
+            updateRole.isPending && updateRole.variables?.userId === user.id;
+          const isStatusPending =
+            setUserActive.isPending &&
+            setUserActive.variables?.userId === user.id;
 
           return (
-            <Card className="space-y-4" interactive={false} key={user.id} variant="soft">
+            <Card
+              className="space-y-4"
+              interactive={false}
+              key={user.id}
+              variant="soft"
+            >
               <div className="flex items-start gap-3">
                 {user.avatarUrl ? (
                   <img
@@ -271,7 +315,9 @@ export function UsersScreen() {
                   <h3 className="truncate font-display text-xl font-semibold text-text-secondary">
                     {user.fullName}
                   </h3>
-                  <p className="truncate text-sm text-text-muted">{user.email}</p>
+                  <p className="truncate text-sm text-text-muted">
+                    {user.email}
+                  </p>
                 </div>
                 <Badge variant={user.isActive ? 'success' : 'error'}>
                   {user.isActive ? 'Activo' : 'Deshabilitado'}
@@ -296,9 +342,9 @@ export function UsersScreen() {
                   }}
                   value={selectedRole}
                 >
-                  {Object.entries(roleLabels).map(([role, label]) => (
+                  {roleOptions.map((role) => (
                     <option key={role} value={role}>
-                      {label}
+                      {roleLabels[role]}
                     </option>
                   ))}
                 </Select>
@@ -306,8 +352,12 @@ export function UsersScreen() {
 
               <div className="grid gap-2 sm:grid-cols-2">
                 <Button
-                  disabled={isSelf || selectedRole === user.role || isRolePending}
-                  onClick={() => updateRole.mutate({ role: selectedRole, userId: user.id })}
+                  disabled={
+                    isSelf || selectedRole === user.role || isRolePending
+                  }
+                  onClick={() =>
+                    updateRole.mutate({ role: selectedRole, userId: user.id })
+                  }
                   type="button"
                   variant="secondary"
                 >
@@ -316,7 +366,10 @@ export function UsersScreen() {
                 <Button
                   disabled={isSelf || isStatusPending}
                   onClick={() =>
-                    setUserActive.mutate({ isActive: !user.isActive, userId: user.id })
+                    setUserActive.mutate({
+                      isActive: !user.isActive,
+                      userId: user.id,
+                    })
                   }
                   type="button"
                   variant={user.isActive ? 'ghost' : 'primary'}

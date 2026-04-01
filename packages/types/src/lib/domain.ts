@@ -1,4 +1,4 @@
-export const userRoles = ['USER', 'ADMIN', 'SUPERADMIN', 'GLOBALADMIN'] as const;
+export const userRoles = ['UNASSIGNED', 'USER', 'ADMIN', 'SUPERADMIN', 'GLOBALADMIN'] as const;
 export type UserRole = (typeof userRoles)[number];
 
 export const subscriptionTypes = ['FREE_TRIAL', 'PREMIUM', 'PREMIUM_PLUS'] as const;

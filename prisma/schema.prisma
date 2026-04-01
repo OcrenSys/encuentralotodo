@@ -7,6 +7,7 @@ datasource db {
 }
 
 enum UserRole {
+    UNASSIGNED
     USER
     ADMIN
     SUPERADMIN
@@ -54,7 +55,7 @@ model User {
     id              String            @id @default(cuid())
     fullName        String
     email           String            @unique
-    role            UserRole          @default(USER)
+    role            UserRole          @default(UNASSIGNED)
     avatarUrl       String?
     isActive        Boolean           @default(true)
     identities      UserIdentity[]

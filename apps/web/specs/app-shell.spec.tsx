@@ -144,6 +144,34 @@ describe('AppShell', () => {
     expect(view.getByText('Tu cuenta está deshabilitada')).toBeTruthy();
   });
 
+  it('blocks authenticated users whose role is still unassigned', () => {
+    useCurrentAuthUser.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      provider: 'firebase',
+    });
+    trpc.auth.me.useQuery.mockReturnValue({
+      data: {
+        user: {
+          id: 'user-ana',
+          role: 'UNASSIGNED',
+          isActive: true,
+        },
+      },
+      isLoading: false,
+    });
+
+    const view = render(
+      <AppShell activePath="/dashboard">
+        <div>Private content</div>
+      </AppShell>,
+    );
+
+    expect(
+      view.getByText('Tu cuenta aún no tiene permisos asignados'),
+    ).toBeTruthy();
+  });
+
   it('blocks the platform users screen for non-superadmin backend roles', () => {
     useCurrentAuthUser.mockReturnValue({
       isAuthenticated: true,
@@ -167,6 +195,8 @@ describe('AppShell', () => {
       </AppShell>,
     );
 
-    expect(view.getByText('Esta vista requiere permisos de SuperAdmin')).toBeTruthy();
+    expect(
+      view.getByText('Esta vista requiere permisos de SuperAdmin'),
+    ).toBeTruthy();
   });
 });

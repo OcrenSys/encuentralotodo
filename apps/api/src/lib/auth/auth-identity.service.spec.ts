@@ -8,6 +8,10 @@ class InMemoryAuthIdentityRepository implements AuthIdentityRepositoryPort {
     private readonly identities = new Map<string, CurrentUser>();
     private sequence = 1;
 
+    seedUser(user: LocalUserRecord) {
+        this.users.set(user.id, user);
+    }
+
     async findCurrentUserByIdentity(provider: VerifiedIdentity['provider'], externalUserId: string) {
         return this.identities.get(`${provider}:${externalUserId}`) ?? null;
     }
@@ -22,8 +26,9 @@ class InMemoryAuthIdentityRepository implements AuthIdentityRepositoryPort {
             id: `user-${this.sequence++}`,
             fullName: identity.displayName ?? identity.email ?? identity.externalUserId,
             email: identity.email ?? `${identity.externalUserId}@auth.encuentralotodo.local`,
-            role: 'USER',
+            role: 'UNASSIGNED',
             avatarUrl: identity.avatarUrl,
+            isActive: true,
         };
 
         this.users.set(user.id, user);
@@ -82,7 +87,7 @@ describe('AuthIdentityService', () => {
             id: 'user-1',
             fullName: 'Ana Mercado',
             email: 'ana@encuentralotodo.app',
-            role: 'USER',
+            role: 'UNASSIGNED',
             authProvider: 'firebase',
             externalAuthId: 'firebase-user-1',
             emailVerified: true,
@@ -105,5 +110,27 @@ describe('AuthIdentityService', () => {
         expect(secondUser.avatarUrl).toBe('https://cdn.encuentralotodo.app/avatars/ana-v2.png');
         expect(secondUser.authProvider).toBe('firebase');
         expect(secondUser.externalAuthId).toBe('firebase-user-1');
+    });
+
+    it('reuses an existing local user by email without overwriting the assigned role', async () => {
+        const repository = new InMemoryAuthIdentityRepository();
+        repository.seedUser({
+            id: 'user-existing-admin',
+            fullName: 'Ana Mercado',
+            email: 'ana@encuentralotodo.app',
+            role: 'ADMIN',
+            avatarUrl: null,
+            isActive: true,
+        });
+        const service = new AuthIdentityService({ repository });
+
+        const currentUser = await service.resolveCurrentUser(firebaseIdentity);
+
+        expect(currentUser).toMatchObject({
+            id: 'user-existing-admin',
+            role: 'ADMIN',
+            authProvider: 'firebase',
+            externalAuthId: 'firebase-user-1',
+        });
     });
 });

@@ -136,7 +136,7 @@ export function MarketplaceHomeScreen() {
                 },
                 {
                   label: 'Rol backend',
-                  value: sessionQuery.data?.user?.role ?? 'USER',
+                  value: sessionQuery.data?.user?.role ?? 'UNASSIGNED',
                 },
               ].map((metric) => (
                 <div

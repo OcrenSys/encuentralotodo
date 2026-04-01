@@ -1,4 +1,4 @@
-import type { CreateReviewInput } from 'types';
+import type { CreateReviewInput, UserRole } from 'types';
 
 import type { getPrismaClient } from '../prisma';
 
@@ -15,7 +15,7 @@ export interface RepositoryReviewUserRecord {
     id: string;
     fullName: string;
     email: string;
-    role: 'USER' | 'ADMIN' | 'SUPERADMIN' | 'GLOBALADMIN';
+    role: UserRole;
     avatarUrl: string | null;
 }
 

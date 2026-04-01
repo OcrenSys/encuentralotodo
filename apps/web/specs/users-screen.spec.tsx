@@ -86,7 +86,7 @@ describe('UsersScreen', () => {
           id: 'user-ana',
           fullName: 'Ana Mercado',
           email: 'ana@encuentralotodo.app',
-          role: 'USER',
+          role: 'UNASSIGNED',
           isActive: true,
           createdAt: '2026-04-01T10:00:00.000Z',
           updatedAt: '2026-04-01T10:00:00.000Z',
@@ -117,6 +117,8 @@ describe('UsersScreen', () => {
 
   it('submits a role change for another user', async () => {
     const view = render(<UsersScreen />);
+
+    expect(view.getAllByDisplayValue('Sin permisos')).toHaveLength(2);
 
     fireEvent.change(view.getByLabelText('Rol para Ana Mercado'), {
       target: { value: 'ADMIN' },

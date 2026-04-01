@@ -142,7 +142,7 @@ export class PrismaAuthIdentityRepository implements AuthIdentityRepositoryPort 
                     create: {
                         fullName: buildDisplayName(identity),
                         email: identity.email ?? buildFallbackEmail(identity),
-                        role: 'USER',
+                        role: 'UNASSIGNED',
                         avatarUrl: identity.avatarUrl,
                         isActive: true,
                     },
