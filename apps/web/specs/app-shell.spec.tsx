@@ -199,4 +199,34 @@ describe('AppShell', () => {
       view.getByText('Esta vista requiere permisos de SuperAdmin'),
     ).toBeTruthy();
   });
+
+  it('uses the backend superadmin role for platform user management even if the saved role view differs', () => {
+    useRoleView.mockReturnValue({
+      roleView: 'OWNER',
+      isReady: true,
+    });
+    useCurrentAuthUser.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      provider: 'firebase',
+    });
+    trpc.auth.me.useQuery.mockReturnValue({
+      data: {
+        user: {
+          id: 'superadmin-1',
+          role: 'SUPERADMIN',
+          isActive: true,
+        },
+      },
+      isLoading: false,
+    });
+
+    const view = render(
+      <AppShell activePath="/admin/users">
+        <div>Private content</div>
+      </AppShell>,
+    );
+
+    expect(view.getByText('Private content')).toBeTruthy();
+  });
 });

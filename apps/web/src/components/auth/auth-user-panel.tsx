@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { Button } from 'ui';
 
 import { useCurrentAuthUser } from '../../lib/auth-context';
+import { formatRoleLabel } from '../../lib/display-labels';
+import { trpc } from '../../lib/trpc';
 
 function getUserInitials(displayName: string | null, email: string | null) {
   const source = displayName?.trim() || email?.trim() || 'ET';
@@ -33,6 +35,10 @@ function formatProviderLabel(provider: string) {
 export function AuthUserPanel() {
   const router = useRouter();
   const { isAuthenticated, provider, signOut, user } = useCurrentAuthUser();
+  const sessionQuery = trpc.auth.me.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   if (!isAuthenticated || !user) {
@@ -68,11 +74,26 @@ export function AuthUserPanel() {
     }
   };
 
+  const sessionUser = sessionQuery.data?.user;
+  const displayName =
+    sessionUser?.fullName ??
+    user.displayName ??
+    user.email ??
+    'Usuario autenticado';
+  const displayEmail = sessionUser?.email ?? user.email ?? 'Sin email';
+  const displayMeta = sessionUser
+    ? `${displayEmail} · ${formatRoleLabel(sessionUser.role)}`
+    : `${displayEmail} · ${
+        provider === 'firebase'
+          ? formatProviderLabel(user.provider)
+          : 'Modo demo'
+      }`;
+
   return (
     <div className="surface-soft flex items-center gap-3 rounded-lg px-4 py-3">
       {user.photoURL ? (
         <img
-          alt={user.displayName ?? user.email ?? 'Usuario autenticado'}
+          alt={displayName}
           className="size-11 rounded-full border border-border-subtle object-cover"
           src={user.photoURL}
         />
@@ -87,14 +108,9 @@ export function AuthUserPanel() {
           Cuenta autenticada
         </p>
         <p className="truncate text-sm font-semibold text-text-secondary">
-          {user.displayName ?? user.email ?? 'Usuario autenticado'}
+          {displayName}
         </p>
-        <p className="truncate text-xs text-text-muted">
-          {user.email ?? 'Sin email'} ·{' '}
-          {provider === 'firebase'
-            ? formatProviderLabel(user.provider)
-            : 'Modo demo'}
-        </p>
+        <p className="truncate text-xs text-text-muted">{displayMeta}</p>
       </div>
 
       <Button

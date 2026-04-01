@@ -21,6 +21,17 @@ import { BottomNav } from './bottom-nav';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
 
+function resolveEffectiveRoleView(
+  roleView: ReturnType<typeof useRoleView>['roleView'],
+  backendRole: string | undefined,
+) {
+  if (backendRole === 'SUPERADMIN' || backendRole === 'GLOBALADMIN') {
+    return 'SUPERADMIN';
+  }
+
+  return roleView;
+}
+
 function hasPlatformUserManagementAccess(role: string | undefined) {
   return role === 'SUPERADMIN' || role === 'GLOBALADMIN';
 }
@@ -44,17 +55,21 @@ export function AppShell({
     isLoading: isAuthLoading,
     provider,
   } = useCurrentAuthUser();
-  const route = getNavigationItemByPath(activePath);
-  const sidebarItems = getNavigationForRole(roleView);
-  const mobileItems = getMobileNavigationForRole(roleView);
-  const isAllowed = isPathAllowedForRole(activePath, roleView);
-  const fallbackPath = getDefaultPathForRole(roleView);
   const requiresAuth = provider !== 'mock';
   const sessionQuery = trpc.auth.me.useQuery(undefined, {
     enabled: requiresAuth && isAuthenticated,
     retry: false,
   });
   const backendUser = sessionQuery.data?.user;
+  const effectiveRoleView = resolveEffectiveRoleView(
+    roleView,
+    backendUser?.role,
+  );
+  const route = getNavigationItemByPath(activePath);
+  const sidebarItems = getNavigationForRole(effectiveRoleView);
+  const mobileItems = getMobileNavigationForRole(effectiveRoleView);
+  const isAllowed = isPathAllowedForRole(activePath, effectiveRoleView);
+  const fallbackPath = getDefaultPathForRole(effectiveRoleView);
   const isBackendSessionLoading =
     requiresAuth && isAuthenticated && sessionQuery.isLoading;
   const isAccountDisabled = backendUser?.isActive === false;

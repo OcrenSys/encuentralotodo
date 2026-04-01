@@ -4,13 +4,32 @@ import { PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
 import { formatRoleLabel } from '../../lib/display-labels';
+import { useCurrentAuthUser } from '../../lib/auth-context';
 import { roleProfiles, useRoleView } from '../../lib/role-view';
+import { trpc } from '../../lib/trpc';
 import { cn } from 'utils';
 
 export function ActiveSimulationFloating() {
   const { roleView } = useRoleView();
+  const { provider } = useCurrentAuthUser();
+  const sessionQuery = trpc.auth.me.useQuery(undefined, {
+    enabled: provider !== 'mock',
+    retry: false,
+  });
   const currentProfile = roleProfiles[roleView];
   const [isOpen, setIsOpen] = useState(false);
+  const sessionUser = sessionQuery.data?.user;
+  const isRealSession = provider !== 'mock' && Boolean(sessionUser);
+  const title = sessionUser?.fullName ?? currentProfile.fullName;
+  const roleLabel = formatRoleLabel(sessionUser?.role ?? currentProfile.role);
+  const email = sessionUser?.email ?? currentProfile.email;
+  const eyebrow = isRealSession ? 'Sesión actual' : 'Vista demo activa';
+  const roleCaption = isRealSession ? 'Rol real' : 'Rol visible';
+  const contactCaption = isRealSession ? 'Email' : 'Contacto';
+  const helperText = isRealSession
+    ? 'Resumen del usuario autenticado y del rol efectivo recibido desde el backend.'
+    : 'Estado visible de la simulación actual para validar UX, navegación y permisos visuales sin mezclar esta capa con la identidad autenticada real.';
+  const buttonLabel = isRealSession ? 'Usuario actual' : 'Vista demo';
 
   return (
     <div className="pointer-events-none fixed bottom-6 right-6 z-40 hidden w-[300px] xl:w-[320px] lg:block">
@@ -29,13 +48,13 @@ export function ActiveSimulationFloating() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
-                Vista demo activa
+                {eyebrow}
               </p>
               <p className="mt-2 font-display text-2xl font-semibold text-text-secondary">
-                {currentProfile.fullName}
+                {title}
               </p>
               <p className="mt-1 text-sm font-medium text-text-muted">
-                {formatRoleLabel(currentProfile.role)}
+                {roleLabel}
               </p>
             </div>
             <div className="icon-tile size-12">
@@ -46,27 +65,21 @@ export function ActiveSimulationFloating() {
           <div className="surface-inset mt-5 space-y-3 p-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                Rol visible
+                {roleCaption}
               </p>
               <p className="mt-1 text-sm font-semibold text-text-secondary">
-                {formatRoleLabel(currentProfile.role)}
+                {roleLabel}
               </p>
             </div>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                Contacto
+                {contactCaption}
               </p>
-              <p className="mt-1 break-all text-sm text-text-muted">
-                {currentProfile.email}
-              </p>
+              <p className="mt-1 break-all text-sm text-text-muted">{email}</p>
             </div>
           </div>
 
-          <p className="mt-4 text-sm leading-6 text-text-muted">
-            Estado visible de la simulación actual para validar UX, navegación y
-            permisos visuales sin mezclar esta capa con la identidad autenticada
-            real.
-          </p>
+          <p className="mt-4 text-sm leading-6 text-text-muted">{helperText}</p>
         </div>
 
         <button
@@ -80,7 +93,7 @@ export function ActiveSimulationFloating() {
           ) : (
             <PanelLeftOpen className="size-4" />
           )}
-          Vista demo
+          {buttonLabel}
         </button>
       </div>
     </div>
