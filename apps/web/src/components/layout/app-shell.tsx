@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { EmptyState, LoadingSkeleton } from 'ui';
@@ -37,6 +37,7 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const contentScrollRef = useRef<HTMLDivElement>(null);
   const { roleView, isReady } = useRoleView();
   const {
     isAuthenticated,
@@ -86,47 +87,53 @@ export function AppShell({
   }
 
   return (
-    <div className="management-shell min-h-screen lg:grid lg:grid-cols-[300px_minmax(0,1fr)]">
+    <div className="management-shell min-h-[100dvh] lg:grid lg:h-[100dvh] lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden">
       <Sidebar activePath={activePath} items={sidebarItems} />
       <ActiveSimulationFloating />
 
-      <div className="min-w-0 pb-24 lg:pb-0">
-        <Topbar
-          activePath={activePath}
-          description={route?.description ?? 'Ruta de gestión.'}
-          eyebrow={routeEyebrows[activePath] ?? 'Gestión'}
-          title={route?.label ?? 'Gestión'}
-        />
+      <div className="min-w-0 lg:min-h-0">
+        <div
+          className="flex min-h-[100dvh] flex-col overflow-y-auto overscroll-y-contain pb-24 lg:h-[100dvh] lg:min-h-0 lg:pb-0"
+          ref={contentScrollRef}
+        >
+          <Topbar
+            activePath={activePath}
+            description={route?.description ?? 'Ruta de gestión.'}
+            eyebrow={routeEyebrows[activePath] ?? 'Gestión'}
+            scrollContainerRef={contentScrollRef}
+            title={route?.label ?? 'Gestión'}
+          />
 
-        <main className="px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
-          {isAccountDisabled ? (
-            <EmptyState
-              title="Tu cuenta está deshabilitada"
-              description="Un SuperAdmin debe reactivar tu acceso antes de que puedas continuar usando la consola."
-            />
-          ) : isPendingRoleAssignment ? (
-            <EmptyState
-              title="Tu cuenta aún no tiene permisos asignados"
-              description="Tu acceso ya fue autenticado, pero un administrador todavía debe asignarte un rol desde la gestión global de usuarios antes de usar la consola."
-            />
-          ) : isAllowed &&
-            (!requiresPlatformUserManagementAccess || hasPlatformUserAccess) ? (
-            <div className="surface-soft space-y-6 rounded-xl p-1 sm:p-1.5">
-              {children}
-            </div>
-          ) : requiresPlatformUserManagementAccess ? (
-            <EmptyState
-              title="Esta vista requiere permisos de SuperAdmin"
-              description="La gestión global de usuarios solo está disponible para cuentas con acceso de plataforma elevado en el backend."
-            />
-          ) : (
-            <EmptyState
-              title="Esta vista no está disponible para el rol actual"
-              description={`Cambia la vista de rol o vuelve a ${fallbackPath} para continuar en una ruta válida.`}
-            />
-          )}
-        </main>
-
+          <main className="flex-1 px-4 py-4 sm:px-6 lg:min-h-0 lg:px-8 lg:py-5 xl:px-10">
+            {isAccountDisabled ? (
+              <EmptyState
+                title="Tu cuenta está deshabilitada"
+                description="Un SuperAdmin debe reactivar tu acceso antes de que puedas continuar usando la consola."
+              />
+            ) : isPendingRoleAssignment ? (
+              <EmptyState
+                title="Tu cuenta aún no tiene permisos asignados"
+                description="Tu acceso ya fue autenticado, pero un administrador todavía debe asignarte un rol desde la gestión global de usuarios antes de usar la consola."
+              />
+            ) : isAllowed &&
+              (!requiresPlatformUserManagementAccess ||
+                hasPlatformUserAccess) ? (
+              <div className="surface-soft space-y-6 rounded-xl p-1 sm:p-1.5">
+                {children}
+              </div>
+            ) : requiresPlatformUserManagementAccess ? (
+              <EmptyState
+                title="Esta vista requiere permisos de SuperAdmin"
+                description="La gestión global de usuarios solo está disponible para cuentas con acceso de plataforma elevado en el backend."
+              />
+            ) : (
+              <EmptyState
+                title="Esta vista no está disponible para el rol actual"
+                description={`Cambia la vista de rol o vuelve a ${fallbackPath} para continuar en una ruta válida.`}
+              />
+            )}
+          </main>
+        </div>
         <BottomNav activePath={activePath} items={mobileItems} />
       </div>
     </div>

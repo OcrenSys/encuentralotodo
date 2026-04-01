@@ -1,26 +1,32 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 
 import { ChevronDown, Layers3, ShieldCheck } from 'lucide-react';
 
 import { routeSearchLabels } from '../../lib/management-navigation';
-import { useRoleView } from '../../lib/role-view';
 import { AuthUserPanel } from '../auth/auth-user-panel';
 import { RoleSwitcher } from './role-switcher';
+
+function readScrollOffset(scrollContainer: HTMLDivElement | null) {
+  return scrollContainer ? scrollContainer.scrollTop : window.scrollY;
+}
 
 export function Topbar({
   activePath,
   eyebrow,
   title,
   description,
+  scrollContainerRef,
 }: {
   activePath: string;
   eyebrow: string;
   title: string;
   description: string;
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
 }) {
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const lastScrollYRef = useRef(0);
   const panelOpenedAtScrollYRef = useRef(0);
   const ignoreScrollUntilRef = useRef(0);
@@ -31,11 +37,14 @@ export function Topbar({
       const nextOpen = !open;
 
       if (nextOpen) {
-        const currentScrollY = window.scrollY;
+        const currentScrollY = readScrollOffset(
+          scrollContainerRef?.current ?? null,
+        );
 
         lastScrollYRef.current = currentScrollY;
         panelOpenedAtScrollYRef.current = currentScrollY;
         ignoreScrollUntilRef.current = Date.now() + 260;
+        setIsHeaderVisible(true);
       }
 
       return nextOpen;
@@ -43,20 +52,59 @@ export function Topbar({
   };
 
   useEffect(() => {
-    lastScrollYRef.current = window.scrollY;
-  }, []);
+    lastScrollYRef.current = readScrollOffset(
+      scrollContainerRef?.current ?? null,
+    );
+  }, [scrollContainerRef]);
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef?.current ?? null;
+    const scrollTarget: HTMLDivElement | Window = scrollContainer ?? window;
+
+    const handleScroll = () => {
+      const currentScrollY = readScrollOffset(scrollContainer);
+      const delta = currentScrollY - lastScrollYRef.current;
+
+      if (currentScrollY <= 24) {
+        setIsHeaderVisible(true);
+        lastScrollYRef.current = currentScrollY;
+        return;
+      }
+
+      if (isMobilePanelOpen) {
+        setIsHeaderVisible(true);
+        lastScrollYRef.current = currentScrollY;
+        return;
+      }
+
+      if (Math.abs(delta) < 10) {
+        lastScrollYRef.current = currentScrollY;
+        return;
+      }
+
+      setIsHeaderVisible(delta < 0);
+      lastScrollYRef.current = currentScrollY;
+    };
+
+    scrollTarget.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => scrollTarget.removeEventListener('scroll', handleScroll);
+  }, [isMobilePanelOpen, scrollContainerRef]);
 
   useEffect(() => {
     if (!isMobilePanelOpen) {
       return;
     }
 
+    const scrollContainer = scrollContainerRef?.current ?? null;
+    const scrollTarget: HTMLDivElement | Window = scrollContainer ?? window;
+
     const handleScroll = () => {
       if (window.innerWidth >= 1024) {
         return;
       }
 
-      const currentScrollY = window.scrollY;
+      const currentScrollY = readScrollOffset(scrollContainer);
       if (Date.now() < ignoreScrollUntilRef.current) {
         lastScrollYRef.current = currentScrollY;
         return;
@@ -72,15 +120,19 @@ export function Topbar({
       lastScrollYRef.current = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    scrollTarget.addEventListener('scroll', handleScroll, { passive: true });
 
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isMobilePanelOpen]);
+    return () => scrollTarget.removeEventListener('scroll', handleScroll);
+  }, [isMobilePanelOpen, scrollContainerRef]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border-subtle bg-[rgba(244,248,252,0.74)] backdrop-blur-xl">
-      <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <header
+      className={`sticky top-0 z-30 border-b border-border-subtle bg-[rgba(244,248,252,0.74)] backdrop-blur-xl transition-transform duration-normal ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+        isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
+      <div className="flex flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8 xl:px-10">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div className="surface-soft inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-secondary">
@@ -104,10 +156,10 @@ export function Topbar({
               </button>
             </div>
             <div>
-              <h1 className="font-display text-3xl font-semibold tracking-tight text-text-secondary">
+              <h1 className="font-display text-[1.9rem] font-semibold tracking-tight text-text-secondary lg:text-3xl">
                 {title}
               </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-text-muted">
+              <p className="mt-1.5 max-w-3xl text-sm leading-6 text-text-muted">
                 {description}
               </p>
             </div>
@@ -157,7 +209,7 @@ export function Topbar({
           </div>
         </div>
 
-        <div className="hidden shell-chrome flex-col gap-3 rounded-lg px-4 py-3 lg:flex lg:flex-row lg:items-center lg:justify-between">
+        <div className="hidden shell-chrome flex-col gap-3 rounded-lg px-4 py-2.5 lg:flex lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
               Vista actual

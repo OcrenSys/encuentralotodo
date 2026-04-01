@@ -13,8 +13,8 @@ export function Sidebar({
   activePath: string;
 }) {
   return (
-    <aside className="relative hidden border-r border-border-subtle bg-[var(--shell-gradient)] shadow-[inset_-1px_0_0_rgba(255,255,255,0.4)] backdrop-blur lg:block">
-      <div className="sticky top-0 flex h-screen flex-col px-5 py-6">
+    <aside className="relative hidden h-[100dvh] min-h-0 border-r border-border-subtle bg-[var(--shell-gradient)] shadow-[inset_-1px_0_0_rgba(255,255,255,0.4)] backdrop-blur lg:block">
+      <div className="flex h-full min-h-0 flex-col px-5 py-6">
         <div className="mb-8 space-y-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-secondary">
@@ -30,63 +30,65 @@ export function Sidebar({
           </p>
         </div>
 
-        <nav className="space-y-2.5">
-          {items.map((item) => {
-            const Icon = item.icon;
-            const active = activePath === item.href;
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain pr-2">
+          <nav className="space-y-2.5">
+            {items.map((item) => {
+              const Icon = item.icon;
+              const active = activePath === item.href;
 
-            return (
-              <a
-                className={cn(
-                  'group relative flex items-start gap-3 overflow-hidden rounded-lg border px-4 py-3 transition-all duration-normal',
-                  active
-                    ? 'action-primary border-primary/10 text-white shadow-md'
-                    : 'border-transparent bg-white/40 text-text-muted hover:border-border-default hover:bg-white/72 hover:text-text-secondary hover:shadow-sm',
-                )}
-                href={item.href}
-                key={item.key}
-              >
-                <span
+              return (
+                <a
                   className={cn(
-                    'absolute inset-y-2 left-2 w-1 rounded-full transition-opacity duration-200',
+                    'group relative flex items-start gap-3 overflow-hidden rounded-lg border px-4 py-3 transition-all duration-normal',
                     active
-                      ? 'bg-[rgba(255,255,255,0.72)] opacity-100'
-                      : 'bg-secondary opacity-0 group-hover:opacity-60',
+                      ? 'action-primary border-primary/10 text-white shadow-md'
+                      : 'border-transparent bg-white/40 text-text-muted hover:border-border-default hover:bg-white/72 hover:text-text-secondary hover:shadow-sm',
                   )}
-                />
-                <Icon className="mt-0.5 size-4 shrink-0" />
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold">
-                    {item.label}
-                  </span>
+                  href={item.href}
+                  key={item.key}
+                >
                   <span
                     className={cn(
-                      'mt-1 block text-xs leading-5',
-                      active ? 'text-white/70' : 'text-text-muted',
+                      'absolute inset-y-2 left-2 w-1 rounded-full transition-opacity duration-200',
+                      active
+                        ? 'bg-[rgba(255,255,255,0.72)] opacity-100'
+                        : 'bg-secondary opacity-0 group-hover:opacity-60',
                     )}
-                  >
-                    {item.description}
+                  />
+                  <Icon className="mt-0.5 size-4 shrink-0" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">
+                      {item.label}
+                    </span>
+                    <span
+                      className={cn(
+                        'mt-1 block text-xs leading-5',
+                        active ? 'text-white/70' : 'text-text-muted',
+                      )}
+                    >
+                      {item.description}
+                    </span>
                   </span>
-                </span>
-              </a>
-            );
-          })}
-        </nav>
+                </a>
+              );
+            })}
+          </nav>
 
-        <div className="surface-soft mt-auto space-y-3 rounded-lg p-4">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
-              Accesos rápidos
-            </p>
-            {quickLinks.map((item) => (
-              <a
-                className="block rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-white/90 hover:shadow-sm"
-                href={item.href}
-                key={item.href}
-              >
-                {item.label}
-              </a>
-            ))}
+          <div className="surface-soft space-y-3 rounded-lg p-4">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
+                Accesos rápidos
+              </p>
+              {quickLinks.map((item) => (
+                <a
+                  className="block rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-white/90 hover:shadow-sm"
+                  href={item.href}
+                  key={item.href}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </div>

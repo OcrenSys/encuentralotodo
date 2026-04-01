@@ -182,12 +182,14 @@ export class PrismaAuthIdentityRepository implements AuthIdentityRepositoryPort 
                 },
             },
             update: {
-                userId,
                 email: identity.email,
                 emailVerified: identity.emailVerified,
                 displayName: identity.displayName ?? nextFullName,
                 avatarUrl: identity.avatarUrl ?? nextAvatarUrl,
                 user: {
+                    connect: {
+                        id: userId,
+                    },
                     update: {
                         fullName: nextFullName,
                         email: nextEmail,
