@@ -72,9 +72,18 @@ export interface RepositoryBusinessRecord {
     reviews: RepositoryReviewRecord[];
 }
 
+export interface RepositoryBusinessAccessRecord {
+    id: string;
+    ownerId: string;
+    managers: string[];
+    subscriptionType: 'FREE_TRIAL' | 'PREMIUM' | 'PREMIUM_PLUS';
+    status: 'PENDING' | 'APPROVED';
+}
+
 export interface BusinessRepositoryPort {
     listBusinesses(filters?: BusinessListFilters): Promise<RepositoryBusinessRecord[]>;
     findBusinessById(businessId: string): Promise<RepositoryBusinessRecord | null>;
+    findBusinessAccessById(businessId: string): Promise<RepositoryBusinessAccessRecord | null>;
     listPendingBusinesses(): Promise<RepositoryBusinessRecord[]>;
     createBusiness(input: CreateBusinessInput & { ownerId: string; managers: string[]; status: BusinessStatus }): Promise<RepositoryBusinessRecord>;
     approveBusiness(businessId: string): Promise<RepositoryBusinessRecord | null>;
@@ -242,6 +251,16 @@ function mapUserRecord(record: any): RepositoryUserRecord {
     };
 }
 
+function mapBusinessAccessRecord(record: any): RepositoryBusinessAccessRecord {
+    return {
+        id: record.id,
+        ownerId: record.ownerId,
+        subscriptionType: record.subscriptionType,
+        status: record.status,
+        managers: (record.managers ?? []).map((manager: { userId: string }) => manager.userId),
+    };
+}
+
 export class BusinessRepository implements BusinessRepositoryPort {
     private readonly prisma: ReturnType<typeof getPrismaClient>;
 
@@ -275,6 +294,25 @@ export class BusinessRepository implements BusinessRepositoryPort {
         });
 
         return record ? mapBusinessRecord(record) : null;
+    }
+
+    async findBusinessAccessById(businessId: string) {
+        const record = await this.prisma.business.findUnique({
+            where: { id: businessId },
+            select: {
+                id: true,
+                ownerId: true,
+                subscriptionType: true,
+                status: true,
+                managers: {
+                    select: {
+                        userId: true,
+                    },
+                },
+            },
+        });
+
+        return record ? mapBusinessAccessRecord(record) : null;
     }
 
     async listPendingBusinesses() {

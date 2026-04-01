@@ -62,6 +62,23 @@ export const createProductInputSchema = z.object({
     isFeatured: z.boolean().default(false),
 });
 
+export const getProductByIdInputSchema = z.object({
+    productId: z.string().min(2),
+});
+
+export const updateProductInputSchema = z.object({
+    productId: z.string().min(2),
+    name: z.string().min(2).max(80).optional(),
+    description: z.string().min(10).max(300).optional(),
+    images: z.array(z.string().url()).min(1).max(3).optional(),
+    price: z.number().positive().nullable().optional(),
+    isFeatured: z.boolean().optional(),
+});
+
+export const deleteProductInputSchema = z.object({
+    productId: z.string().min(2),
+});
+
 export const createPromotionInputSchema = z.object({
     businessId: z.string().min(2),
     title: z.string().min(2).max(80),
@@ -102,6 +119,9 @@ export type ListBusinessesInput = z.infer<typeof listBusinessesInputSchema>;
 export type GetBusinessByIdInput = z.infer<typeof getBusinessByIdInputSchema>;
 export type ApproveBusinessInput = z.infer<typeof approveBusinessInputSchema>;
 export type CreateProductInput = z.infer<typeof createProductInputSchema>;
+export type GetProductByIdInput = z.infer<typeof getProductByIdInputSchema>;
+export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;
+export type DeleteProductInput = z.infer<typeof deleteProductInputSchema>;
 export type CreatePromotionInput = z.infer<typeof createPromotionInputSchema>;
 export type CreateReviewInput = z.infer<typeof createReviewInputSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;

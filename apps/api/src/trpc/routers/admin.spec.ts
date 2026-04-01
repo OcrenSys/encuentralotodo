@@ -33,6 +33,13 @@ describe('admin router', () => {
                 listPendingBusinesses: jest.fn(async () => []),
                 approveBusiness: jest.fn(),
             } as any,
+            productService: {
+                listByBusiness: jest.fn(),
+                getById: jest.fn(),
+                create: jest.fn(),
+                update: jest.fn(),
+                delete: jest.fn(),
+            } as any,
         });
 
         await expect(caller.admin.approveBusiness({ businessId: 'biz-casa-norte', approvedBy: 'user-ana' })).rejects.toMatchObject({

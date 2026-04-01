@@ -1,0 +1,161 @@
+import { TRPCError } from '@trpc/server';
+import type {
+    CreateProductInput,
+    DeleteProductInput,
+    GetProductByIdInput,
+    UpdateProductInput,
+    UserProfile,
+} from 'types';
+
+import { canManageBusiness } from '../business/business-access';
+import type {
+    BusinessRepositoryPort,
+    RepositoryBusinessAccessRecord,
+} from '../business/business.repository';
+import { mapProduct } from './product.mappers';
+import type {
+    ProductRepositoryPort,
+    RepositoryProductWithBusinessRecord,
+} from './product.repository';
+
+interface ProductServiceDependencies {
+    repository: ProductRepositoryPort;
+    businessRepository: BusinessRepositoryPort;
+    currentUser: UserProfile | null;
+}
+
+export class ProductService {
+    private readonly repository: ProductRepositoryPort;
+    private readonly businessRepository: BusinessRepositoryPort;
+    private readonly currentUser: UserProfile | null;
+
+    constructor({ repository, businessRepository, currentUser }: ProductServiceDependencies) {
+        this.repository = repository;
+        this.businessRepository = businessRepository;
+        this.currentUser = currentUser;
+    }
+
+    async listByBusiness(businessId: string) {
+        const business = await this.businessRepository.findBusinessAccessById(businessId);
+        if (!business) {
+            return [];
+        }
+
+        const products = await this.repository.listByBusiness(businessId);
+        return this.applyVisibility(products.map(mapProduct), business.subscriptionType);
+    }
+
+    async getById(input: GetProductByIdInput) {
+        const product = await this.repository.findById(input.productId);
+        return product ? mapProduct(product) : null;
+    }
+
+    async create(input: CreateProductInput) {
+        const business = await this.requireBusinessAccess(input.businessId);
+        this.ensureBusinessCanBeManaged(business);
+        await this.ensureFeaturedRulesForCreate(business, input.isFeatured);
+
+        const product = await this.repository.create(input);
+        return mapProduct(product);
+    }
+
+    async update(input: UpdateProductInput) {
+        const product = await this.requireProductWithAccess(input.productId);
+        this.ensureBusinessCanBeManaged(product.business);
+
+        const nextIsFeatured = input.isFeatured ?? product.isFeatured;
+        await this.ensureFeaturedRulesForUpdate(product, nextIsFeatured);
+
+        const updatedProduct = await this.repository.update(input.productId, {
+            name: input.name,
+            description: input.description,
+            images: input.images,
+            price: input.price,
+            isFeatured: input.isFeatured,
+        });
+
+        if (!updatedProduct) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Product not found.' });
+        }
+
+        return mapProduct(updatedProduct);
+    }
+
+    async delete(input: DeleteProductInput) {
+        const product = await this.requireProductWithAccess(input.productId);
+        this.ensureBusinessCanBeManaged(product.business);
+
+        const deletedProduct = await this.repository.delete(input.productId);
+        if (!deletedProduct) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Product not found.' });
+        }
+
+        return mapProduct(deletedProduct);
+    }
+
+    private async requireBusinessAccess(businessId: string) {
+        const business = await this.businessRepository.findBusinessAccessById(businessId);
+        if (!business) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
+        }
+
+        return business;
+    }
+
+    private async requireProductWithAccess(productId: string) {
+        const product = await this.repository.findByIdWithBusiness(productId);
+        if (!product) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Product not found.' });
+        }
+
+        return product;
+    }
+
+    private ensureBusinessCanBeManaged(business: Pick<RepositoryBusinessAccessRecord, 'ownerId' | 'managers'> | RepositoryProductWithBusinessRecord['business']) {
+        if (!this.currentUser) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
+        }
+
+        if (!canManageBusiness(this.currentUser, { ownerId: business.ownerId, managers: business.managers.map((manager) => typeof manager === 'string' ? manager : manager.userId) })) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Business access required.' });
+        }
+    }
+
+    private async ensureFeaturedRulesForCreate(business: RepositoryBusinessAccessRecord, isFeatured: boolean) {
+        if (business.subscriptionType === 'FREE_TRIAL' && !isFeatured) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'FREE_TRIAL solo permite productos destacados.' });
+        }
+
+        if (business.subscriptionType === 'FREE_TRIAL' && isFeatured) {
+            const featuredCount = await this.repository.countFeaturedByBusiness(business.id);
+            if (featuredCount >= 5) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'FREE_TRIAL permite un máximo de 5 productos destacados.' });
+            }
+        }
+    }
+
+    private async ensureFeaturedRulesForUpdate(product: RepositoryProductWithBusinessRecord, nextIsFeatured: boolean) {
+        if (product.business.subscriptionType === 'FREE_TRIAL' && !nextIsFeatured) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'FREE_TRIAL solo permite productos destacados.' });
+        }
+
+        if (product.business.subscriptionType === 'FREE_TRIAL' && nextIsFeatured && !product.isFeatured) {
+            const featuredCount = await this.repository.countFeaturedByBusiness(product.businessId);
+            if (featuredCount >= 5) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'FREE_TRIAL permite un máximo de 5 productos destacados.' });
+            }
+        }
+    }
+
+    private applyVisibility<T extends { isFeatured: boolean }>(products: T[], subscriptionType: RepositoryBusinessAccessRecord['subscriptionType']) {
+        if (subscriptionType === 'FREE_TRIAL') {
+            return products.filter((product) => product.isFeatured).slice(0, 5);
+        }
+
+        if (subscriptionType === 'PREMIUM') {
+            return products.slice(0, 12);
+        }
+
+        return products;
+    }
+}

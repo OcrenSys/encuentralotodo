@@ -6,6 +6,8 @@ import type { UserProfile } from 'types';
 import { BusinessRepository } from '../lib/business/business.repository';
 import { BusinessService } from '../lib/business/business.service';
 import { createEmailService } from '../lib/email';
+import { ProductRepository } from '../lib/product/product.repository';
+import { ProductService } from '../lib/product/product.service';
 import { getPrismaClient } from '../lib/prisma';
 import { marketplaceStore } from '../lib/store';
 
@@ -29,6 +31,7 @@ export interface TrpcContext {
   store: typeof marketplaceStore;
   emailService: ReturnType<typeof createEmailService>;
   businessService: BusinessService;
+  productService: ProductService;
 }
 
 export function createTrpcContext({ req, env }: { req: Request; res: Response; env: TrpcContext['env'] }): TrpcContext {
@@ -37,6 +40,7 @@ export function createTrpcContext({ req, env }: { req: Request; res: Response; e
   const emailService = createEmailService(env.RESEND_API_KEY);
   const prisma = getPrismaClient();
   const businessRepository = new BusinessRepository(prisma);
+  const productRepository = new ProductRepository(prisma);
 
   return {
     env,
@@ -47,6 +51,11 @@ export function createTrpcContext({ req, env }: { req: Request; res: Response; e
     businessService: new BusinessService({
       repository: businessRepository,
       emailService,
+      currentUser,
+    }),
+    productService: new ProductService({
+      repository: productRepository,
+      businessRepository,
       currentUser,
     }),
   };
