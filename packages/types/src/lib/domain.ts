@@ -7,6 +7,12 @@ export type SubscriptionType = (typeof subscriptionTypes)[number];
 export const businessStatuses = ['PENDING', 'APPROVED'] as const;
 export type BusinessStatus = (typeof businessStatuses)[number];
 
+export const leadSources = ['WhatsApp', 'Promo', 'Perfil', 'Formulario'] as const;
+export type LeadSource = (typeof leadSources)[number];
+
+export const leadStatuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'CLOSED'] as const;
+export type LeadStatus = (typeof leadStatuses)[number];
+
 export const businessCategories = [
     'GENERAL_STORE',
     'RESTAURANT',
@@ -73,6 +79,17 @@ export interface Promotion {
     lastUpdated: string;
 }
 
+export interface Lead {
+    id: string;
+    name: string;
+    businessId: string;
+    businessName: string;
+    source: LeadSource;
+    status: LeadStatus;
+    updatedAt: string;
+    summary: string;
+}
+
 export interface Review {
     id: string;
     rating: number;
@@ -103,6 +120,7 @@ export interface MarketplaceSeedData {
     businesses: Business[];
     products: Product[];
     promotions: Promotion[];
+    leads: Lead[];
     reviews: Review[];
 }
 

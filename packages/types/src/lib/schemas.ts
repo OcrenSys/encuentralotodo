@@ -3,6 +3,8 @@ import { z } from 'zod';
 import {
     businessCategories,
     businessStatuses,
+    leadSources,
+    leadStatuses,
     subscriptionTypes,
     userRoles,
 } from './domain';
@@ -11,6 +13,8 @@ export const userRoleSchema = z.enum(userRoles);
 export const subscriptionTypeSchema = z.enum(subscriptionTypes);
 export const businessStatusSchema = z.enum(businessStatuses);
 export const businessCategorySchema = z.enum(businessCategories);
+export const leadSourceSchema = z.enum(leadSources);
+export const leadStatusSchema = z.enum(leadStatuses);
 
 export const businessLocationSchema = z.object({
     lat: z.number(),
@@ -107,6 +111,17 @@ export const deletePromotionInputSchema = z.object({
     promotionId: z.string().min(2),
 });
 
+export const createLeadInputSchema = z.object({
+    businessId: z.string().min(2),
+    name: z.string().min(2).max(120),
+    source: leadSourceSchema,
+    summary: z.string().min(8).max(300),
+});
+
+export const getLeadByIdInputSchema = z.object({
+    leadId: z.string().min(2),
+});
+
 export const createReviewInputSchema = z.object({
     businessId: z.string().min(2),
     userId: z.string().min(2),
@@ -144,5 +159,7 @@ export type CreatePromotionInput = z.infer<typeof createPromotionInputSchema>;
 export type GetPromotionByIdInput = z.infer<typeof getPromotionByIdInputSchema>;
 export type UpdatePromotionInput = z.infer<typeof updatePromotionInputSchema>;
 export type DeletePromotionInput = z.infer<typeof deletePromotionInputSchema>;
+export type CreateLeadInput = z.infer<typeof createLeadInputSchema>;
+export type GetLeadByIdInput = z.infer<typeof getLeadByIdInputSchema>;
 export type CreateReviewInput = z.infer<typeof createReviewInputSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;

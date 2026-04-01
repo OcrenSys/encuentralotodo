@@ -6,6 +6,8 @@ import type { UserProfile } from 'types';
 import { BusinessRepository } from '../lib/business/business.repository';
 import { BusinessService } from '../lib/business/business.service';
 import { createEmailService } from '../lib/email';
+import { LeadRepository } from '../lib/lead/lead.repository';
+import { LeadService } from '../lib/lead/lead.service';
 import { ProductRepository } from '../lib/product/product.repository';
 import { ProductService } from '../lib/product/product.service';
 import { PromotionRepository } from '../lib/promotion/promotion.repository';
@@ -35,6 +37,7 @@ export interface TrpcContext {
   businessService: BusinessService;
   productService: ProductService;
   promotionService: PromotionService;
+  leadService: LeadService;
 }
 
 export function createTrpcContext({ req, env }: { req: Request; res: Response; env: TrpcContext['env'] }): TrpcContext {
@@ -43,6 +46,7 @@ export function createTrpcContext({ req, env }: { req: Request; res: Response; e
   const emailService = createEmailService(env.RESEND_API_KEY);
   const prisma = getPrismaClient();
   const businessRepository = new BusinessRepository(prisma);
+  const leadRepository = new LeadRepository(prisma);
   const productRepository = new ProductRepository(prisma);
   const promotionRepository = new PromotionRepository(prisma);
 
@@ -64,6 +68,11 @@ export function createTrpcContext({ req, env }: { req: Request; res: Response; e
     }),
     promotionService: new PromotionService({
       repository: promotionRepository,
+      businessRepository,
+      currentUser,
+    }),
+    leadService: new LeadService({
+      repository: leadRepository,
       businessRepository,
       currentUser,
     }),

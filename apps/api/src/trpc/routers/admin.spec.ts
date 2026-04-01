@@ -48,6 +48,11 @@ describe('admin router', () => {
                 update: jest.fn(),
                 delete: jest.fn(),
             } as any,
+            leadService: {
+                create: jest.fn(),
+                listByBusiness: jest.fn(),
+                getById: jest.fn(),
+            } as any,
         });
 
         await expect(caller.admin.approveBusiness({ businessId: 'biz-casa-norte', approvedBy: 'user-ana' })).rejects.toMatchObject({
