@@ -22,4 +22,6 @@ npm-debug.*
 web-build/
 cache/
 tmp/
+.env*
+google-services.json
 
