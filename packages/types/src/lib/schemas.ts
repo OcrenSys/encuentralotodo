@@ -1,8 +1,14 @@
 import { z } from 'zod';
 
 import {
+    analyticsPeriods,
     businessCategories,
     businessStatuses,
+    leadSources,
+    leadStatuses,
+    leadVolumeBuckets,
+    promotionUsageLevels,
+    reviewStrengthLevels,
     subscriptionTypes,
     userRoles,
 } from './domain';
@@ -11,6 +17,12 @@ export const userRoleSchema = z.enum(userRoles);
 export const subscriptionTypeSchema = z.enum(subscriptionTypes);
 export const businessStatusSchema = z.enum(businessStatuses);
 export const businessCategorySchema = z.enum(businessCategories);
+export const leadSourceSchema = z.enum(leadSources);
+export const leadStatusSchema = z.enum(leadStatuses);
+export const analyticsPeriodSchema = z.enum(analyticsPeriods);
+export const leadVolumeBucketSchema = z.enum(leadVolumeBuckets);
+export const promotionUsageLevelSchema = z.enum(promotionUsageLevels);
+export const reviewStrengthLevelSchema = z.enum(reviewStrengthLevels);
 
 export const businessLocationSchema = z.object({
     lat: z.number(),
@@ -53,6 +65,15 @@ export const approveBusinessInputSchema = z.object({
     approvedBy: z.string().min(2),
 });
 
+export const getBusinessAnalyticsInputSchema = z.object({
+    businessId: z.string().min(2),
+    period: analyticsPeriodSchema.optional(),
+});
+
+export const getPlatformAnalyticsInputSchema = z.object({
+    period: analyticsPeriodSchema.optional(),
+});
+
 export const createProductInputSchema = z.object({
     businessId: z.string().min(2),
     name: z.string().min(2).max(80),
@@ -60,6 +81,23 @@ export const createProductInputSchema = z.object({
     images: z.array(z.string().url()).min(1).max(3),
     price: z.number().positive().optional(),
     isFeatured: z.boolean().default(false),
+});
+
+export const getProductByIdInputSchema = z.object({
+    productId: z.string().min(2),
+});
+
+export const updateProductInputSchema = z.object({
+    productId: z.string().min(2),
+    name: z.string().min(2).max(80).optional(),
+    description: z.string().min(10).max(300).optional(),
+    images: z.array(z.string().url()).min(1).max(3).optional(),
+    price: z.number().positive().nullable().optional(),
+    isFeatured: z.boolean().optional(),
+});
+
+export const deleteProductInputSchema = z.object({
+    productId: z.string().min(2),
 });
 
 export const createPromotionInputSchema = z.object({
@@ -70,6 +108,35 @@ export const createPromotionInputSchema = z.object({
     originalPrice: z.number().positive(),
     validUntil: z.string().datetime(),
     image: z.string().url(),
+});
+
+export const getPromotionByIdInputSchema = z.object({
+    promotionId: z.string().min(2),
+});
+
+export const updatePromotionInputSchema = z.object({
+    promotionId: z.string().min(2),
+    title: z.string().min(2).max(80).optional(),
+    description: z.string().min(10).max(240).optional(),
+    promoPrice: z.number().positive().optional(),
+    originalPrice: z.number().positive().optional(),
+    validUntil: z.string().datetime().optional(),
+    image: z.string().url().optional(),
+});
+
+export const deletePromotionInputSchema = z.object({
+    promotionId: z.string().min(2),
+});
+
+export const createLeadInputSchema = z.object({
+    businessId: z.string().min(2),
+    name: z.string().min(2).max(120),
+    source: leadSourceSchema,
+    summary: z.string().min(8).max(300),
+});
+
+export const getLeadByIdInputSchema = z.object({
+    leadId: z.string().min(2),
 });
 
 export const createReviewInputSchema = z.object({
@@ -101,7 +168,17 @@ export type CreateBusinessInput = z.infer<typeof createBusinessInputSchema>;
 export type ListBusinessesInput = z.infer<typeof listBusinessesInputSchema>;
 export type GetBusinessByIdInput = z.infer<typeof getBusinessByIdInputSchema>;
 export type ApproveBusinessInput = z.infer<typeof approveBusinessInputSchema>;
+export type GetBusinessAnalyticsInput = z.infer<typeof getBusinessAnalyticsInputSchema>;
+export type GetPlatformAnalyticsInput = z.infer<typeof getPlatformAnalyticsInputSchema>;
 export type CreateProductInput = z.infer<typeof createProductInputSchema>;
+export type GetProductByIdInput = z.infer<typeof getProductByIdInputSchema>;
+export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;
+export type DeleteProductInput = z.infer<typeof deleteProductInputSchema>;
 export type CreatePromotionInput = z.infer<typeof createPromotionInputSchema>;
+export type GetPromotionByIdInput = z.infer<typeof getPromotionByIdInputSchema>;
+export type UpdatePromotionInput = z.infer<typeof updatePromotionInputSchema>;
+export type DeletePromotionInput = z.infer<typeof deletePromotionInputSchema>;
+export type CreateLeadInput = z.infer<typeof createLeadInputSchema>;
+export type GetLeadByIdInput = z.infer<typeof getLeadByIdInputSchema>;
 export type CreateReviewInput = z.infer<typeof createReviewInputSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;

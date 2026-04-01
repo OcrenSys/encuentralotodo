@@ -31,6 +31,13 @@ type ActivityRecord = {
     time: string;
 };
 
+function formatActivityDate(value: string) {
+    return new Date(value).toLocaleDateString('es-DO', {
+        month: 'short',
+        day: 'numeric',
+    });
+}
+
 const leadFixtures = {
     SUPERADMIN: [
         {
@@ -136,6 +143,13 @@ function uniqueBusinessesById(businesses: BusinessSummary[]) {
 export function useManagementData() {
     const { roleView, roleProfile } = useRoleView();
     const sessionQuery = trpc.auth.me.useQuery();
+    const platformAnalyticsQuery = trpc.analytics.platformOverview.useQuery(
+        { period: '30D' },
+        {
+            enabled: roleView === 'SUPERADMIN',
+            retry: false,
+        },
+    );
     const businessQuery = trpc.business.list.useQuery({ includePending: true });
     const promotionsQuery = trpc.promotion.listActive.useQuery();
     const pendingBusinessesQuery = trpc.admin.pendingBusinesses.useQuery(undefined, {
@@ -160,6 +174,17 @@ export function useManagementData() {
     }, [allBusinesses, roleProfile.userId, roleView]);
 
     const primaryBusiness = accessibleBusinesses[0] ?? null;
+
+    const businessAnalyticsQuery = trpc.analytics.businessOverview.useQuery(
+        {
+            businessId: primaryBusiness?.id ?? '',
+            period: '30D',
+        },
+        {
+            enabled: roleView !== 'SUPERADMIN' && Boolean(primaryBusiness),
+            retry: false,
+        },
+    );
 
     const managedProducts = useMemo(
         () =>
@@ -204,6 +229,47 @@ export function useManagementData() {
     }, [accessibleBusinesses]);
 
     const recentActivity = useMemo<ActivityRecord[]>(() => {
+        if (roleView === 'SUPERADMIN' && platformAnalyticsQuery.data) {
+            const leaderboardActivity = platformAnalyticsQuery.data.businessActivityLeaderboard.map((business) => ({
+                id: `leader-${business.businessId}`,
+                title: business.businessName,
+                detail: `${business.leadCount} leads, ${business.activePromotionCount} promos activas y score ${business.engagementScore}.`,
+                time: '30d',
+            }));
+
+            const candidateActivity = platformAnalyticsQuery.data.monetizationCandidates.map((business) => ({
+                id: `candidate-${business.businessId}`,
+                title: `${business.businessName} listo para upsell`,
+                detail: business.reasons[0] ?? 'Actividad suficiente para evaluación comercial.',
+                time: business.leadVolumeBucket,
+            }));
+
+            return [...leaderboardActivity, ...candidateActivity].slice(0, 6);
+        }
+
+        if (businessAnalyticsQuery.data) {
+            const leadActivity = businessAnalyticsQuery.data.recentLeads.map((lead) => ({
+                id: `lead-${lead.id}`,
+                title: lead.name,
+                detail: `${lead.businessName} · ${lead.source} · ${lead.summary}`,
+                time: formatActivityDate(lead.createdAt),
+                sortKey: lead.createdAt,
+            }));
+
+            const promotionActivity = businessAnalyticsQuery.data.recentPromotions.map((promotion) => ({
+                id: `promotion-${promotion.id}`,
+                title: promotion.title,
+                detail: `${promotion.businessName} · vence ${formatActivityDate(promotion.validUntil)}`,
+                time: formatActivityDate(promotion.createdAt),
+                sortKey: promotion.createdAt,
+            }));
+
+            return [...leadActivity, ...promotionActivity]
+                .sort((left, right) => new Date(right.sortKey).getTime() - new Date(left.sortKey).getTime())
+                .slice(0, 6)
+                .map(({ sortKey: _sortKey, ...item }) => item);
+        }
+
         const businessActivity = accessibleBusinesses.map((business) => ({
             id: `business-${business.id}`,
             title: business.name,
@@ -232,9 +298,27 @@ export function useManagementData() {
         }));
 
         return [...businessActivity, ...promotionActivity, ...(roleView === 'SUPERADMIN' ? adminActivity : [])].slice(0, 6);
-    }, [accessibleBusinesses, managedPromotions, pendingBusinessesQuery.data, roleView]);
+    }, [
+        accessibleBusinesses,
+        businessAnalyticsQuery.data,
+        managedPromotions,
+        pendingBusinessesQuery.data,
+        platformAnalyticsQuery.data,
+        roleView,
+    ]);
 
     const platformHealth = useMemo(() => {
+        if (platformAnalyticsQuery.data) {
+            const pendingCount = platformAnalyticsQuery.data.summary.pendingBusinesses;
+            if (pendingCount === 0) {
+                return 'Stable';
+            }
+            if (pendingCount < 3) {
+                return 'Needs review';
+            }
+            return 'Busy queue';
+        }
+
         const pendingCount = pendingBusinessesQuery.data?.length ?? 0;
         if (pendingCount === 0) {
             return 'Stable';
@@ -243,20 +327,29 @@ export function useManagementData() {
             return 'Needs review';
         }
         return 'Busy queue';
-    }, [pendingBusinessesQuery.data]);
+    }, [pendingBusinessesQuery.data, platformAnalyticsQuery.data]);
+
+    const analyticsLoading =
+        (roleView === 'SUPERADMIN' && platformAnalyticsQuery.isLoading) ||
+        (roleView !== 'SUPERADMIN' && Boolean(primaryBusiness) && businessAnalyticsQuery.isLoading);
 
     const loading =
         businessQuery.isLoading ||
         promotionsQuery.isLoading ||
         sessionQuery.isLoading ||
+        analyticsLoading ||
         (roleView === 'SUPERADMIN' && pendingBusinessesQuery.isLoading);
 
     return {
         roleView,
         roleProfile,
         sessionQuery,
+        businessAnalytics: businessAnalyticsQuery.data,
+        businessAnalyticsQuery,
         businessQuery,
         promotionsQuery,
+        platformAnalytics: platformAnalyticsQuery.data,
+        platformAnalyticsQuery,
         pendingBusinessesQuery,
         loading,
         allBusinesses,

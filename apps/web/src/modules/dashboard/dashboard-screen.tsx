@@ -22,11 +22,10 @@ export function DashboardScreen() {
   const {
     accessibleBusinesses,
     allBusinesses,
-    leads,
+    businessAnalytics,
     loading,
-    managedProducts,
-    managedPromotions,
     pendingBusinessesQuery,
+    platformAnalytics,
     platformHealth,
     recentActivity,
     roleView,
@@ -37,26 +36,31 @@ export function DashboardScreen() {
     roleView === 'SUPERADMIN'
       ? [
           {
-            label: 'Negocios totales',
-            value: allBusinesses.length,
+            label: 'Negocios aprobados',
+            value:
+              platformAnalytics?.summary.totalApprovedBusinesses ??
+              allBusinesses.length,
             helper:
-              'Negocios visibles y pendientes bajo monitoreo de plataforma.',
+              'Negocios con aprobación completa y visibles en plataforma.',
             icon: Building2,
             variant: 'blue' as const,
           },
           {
             label: 'Aprobaciones pendientes',
-            value: pendingBusinessesQuery.data?.length ?? 0,
+            value:
+              platformAnalytics?.summary.pendingBusinesses ??
+              pendingBusinessesQuery.data?.length ??
+              0,
             helper:
               'Perfiles que todavía necesitan revisión antes de salir en móvil.',
             icon: CheckCheck,
             variant: 'amber' as const,
           },
           {
-            label: 'Promociones activas',
-            value: managedPromotions.length,
-            helper: 'Promociones activas a nivel de plataforma.',
-            icon: Megaphone,
+            label: 'Leads totales',
+            value: platformAnalytics?.summary.totalLeads ?? 0,
+            helper: 'Volumen acumulado de leads persistidos en plataforma.',
+            icon: Inbox,
             variant: 'green' as const,
           },
           {
@@ -77,23 +81,25 @@ export function DashboardScreen() {
               variant: 'blue' as const,
             },
             {
-              label: 'Productos destacados',
-              value: managedProducts.length,
-              helper: 'Productos visibles y listos para mantenimiento.',
+              label: 'Productos del negocio',
+              value: businessAnalytics?.overview.totalProducts ?? 0,
+              helper:
+                'Productos persistidos para el negocio principal visible.',
               icon: Package,
               variant: 'neutral' as const,
             },
             {
-              label: 'Promociones activas',
-              value: managedPromotions.length,
-              helper: 'Campañas vigentes bajo control comercial.',
+              label: 'Promociones cargadas',
+              value: businessAnalytics?.overview.totalPromotions ?? 0,
+              helper:
+                'Promociones registradas para el negocio principal visible.',
               icon: Megaphone,
               variant: 'green' as const,
             },
             {
-              label: 'Contactos abiertos',
-              value: leads.filter((lead) => lead.status !== 'CLOSED').length,
-              helper: 'Conversaciones y oportunidades por responder.',
+              label: 'Leads últimos 30d',
+              value: businessAnalytics?.overview.leadsLast30Days ?? 0,
+              helper: 'Actividad reciente basada en leads persistidos.',
               icon: Inbox,
               variant: 'amber' as const,
             },
@@ -107,23 +113,23 @@ export function DashboardScreen() {
               variant: 'amber' as const,
             },
             {
-              label: 'Productos por revisar',
-              value: managedProducts.length,
-              helper: 'Catálogo que requiere revisión operativa.',
+              label: 'Productos del negocio',
+              value: businessAnalytics?.overview.totalProducts ?? 0,
+              helper: 'Catálogo persistido del negocio principal visible.',
               icon: Package,
               variant: 'neutral' as const,
             },
             {
-              label: 'Promociones activas',
-              value: managedPromotions.length,
-              helper: 'Promos que necesitan seguimiento diario.',
+              label: 'Promociones cargadas',
+              value: businessAnalytics?.overview.totalPromotions ?? 0,
+              helper: 'Promos registradas que requieren seguimiento diario.',
               icon: Megaphone,
               variant: 'green' as const,
             },
             {
-              label: 'Contactos nuevos',
-              value: leads.filter((lead) => lead.status === 'NEW').length,
-              helper: 'Mensajes nuevos esperando primera respuesta.',
+              label: 'Leads últimos 7d',
+              value: businessAnalytics?.overview.leadsLast7Days ?? 0,
+              helper: 'Mensajes recientes esperando seguimiento operativo.',
               icon: Inbox,
               variant: 'blue' as const,
             },
