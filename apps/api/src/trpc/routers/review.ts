@@ -4,9 +4,9 @@ import { publicProcedure, router } from '../trpc';
 
 export const reviewRouter = router({
   listByBusiness: publicProcedure.input(getBusinessByIdInputSchema).query(({ ctx, input }) => {
-    return ctx.store.getBusinessById(input.businessId)?.reviews ?? [];
+    return ctx.reviewService.listByBusiness(input.businessId);
   }),
   create: publicProcedure.input(createReviewInputSchema).mutation(({ ctx, input }) => {
-    return ctx.store.createReview(input);
+    return ctx.reviewService.create(input);
   }),
 });

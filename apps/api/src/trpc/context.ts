@@ -12,6 +12,8 @@ import { ProductRepository } from '../lib/product/product.repository';
 import { ProductService } from '../lib/product/product.service';
 import { PromotionRepository } from '../lib/promotion/promotion.repository';
 import { PromotionService } from '../lib/promotion/promotion.service';
+import { ReviewRepository } from '../lib/review/review.repository';
+import { ReviewService } from '../lib/review/review.service';
 import { getPrismaClient } from '../lib/prisma';
 import { marketplaceStore } from '../lib/store';
 
@@ -38,6 +40,7 @@ export interface TrpcContext {
   productService: ProductService;
   promotionService: PromotionService;
   leadService: LeadService;
+  reviewService: ReviewService;
 }
 
 export function createTrpcContext({ req, env }: { req: Request; res: Response; env: TrpcContext['env'] }): TrpcContext {
@@ -49,6 +52,7 @@ export function createTrpcContext({ req, env }: { req: Request; res: Response; e
   const leadRepository = new LeadRepository(prisma);
   const productRepository = new ProductRepository(prisma);
   const promotionRepository = new PromotionRepository(prisma);
+  const reviewRepository = new ReviewRepository(prisma);
 
   return {
     env,
@@ -73,6 +77,11 @@ export function createTrpcContext({ req, env }: { req: Request; res: Response; e
     }),
     leadService: new LeadService({
       repository: leadRepository,
+      businessRepository,
+      currentUser,
+    }),
+    reviewService: new ReviewService({
+      repository: reviewRepository,
       businessRepository,
       currentUser,
     }),
