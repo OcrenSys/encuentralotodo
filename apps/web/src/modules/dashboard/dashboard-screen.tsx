@@ -218,32 +218,29 @@ export function DashboardScreen() {
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <QuickActionsPanel items={quickActions} title="Siguientes pasos" />
 
-        <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
+        <Card className="space-y-4" interactive={false} variant="soft">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">
                 Resumen de tareas
               </p>
-              <h3 className="mt-2 font-display text-xl font-semibold text-[var(--color-primary)]">
+              <h3 className="mt-2 font-display text-xl font-semibold text-text-secondary">
                 Prioridades operativas
               </h3>
             </div>
-            <BarChart3 className="size-5 text-[var(--color-primary)]" />
+            <BarChart3 className="size-5 text-text-secondary" />
           </div>
 
           <div className="space-y-3">
             {tasks.map((task) => (
-              <div
-                className="interactive-row rounded-[20px] border border-[rgba(140,156,177,0.12)] p-4"
-                key={task.id}
-              >
+              <div className="interactive-row p-4" key={task.id}>
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-[var(--color-primary)]">
+                  <p className="text-sm font-semibold text-text-secondary">
                     {task.title}
                   </p>
                   <StatusBadge status={task.state} />
                 </div>
-                <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+                <p className="mt-2 text-sm text-text-muted">
                   Responsable: {task.owner}
                 </p>
               </div>
@@ -253,32 +250,29 @@ export function DashboardScreen() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
+        <Card className="space-y-4" interactive={false} variant="soft">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">
               Actividad reciente
             </p>
-            <h3 className="mt-2 font-display text-xl font-semibold text-[var(--color-primary)]">
+            <h3 className="mt-2 font-display text-xl font-semibold text-text-secondary">
               Línea de tiempo operativa
             </h3>
           </div>
 
           <div className="space-y-3">
             {recentActivity.map((item) => (
-              <div
-                className="interactive-row rounded-[20px] border border-[rgba(140,156,177,0.12)] p-4"
-                key={item.id}
-              >
+              <div className="interactive-row p-4" key={item.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-[var(--color-primary)]">
+                    <p className="text-sm font-semibold text-text-secondary">
                       {item.title}
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-[var(--color-text-muted)]">
+                    <p className="mt-1 text-sm leading-6 text-text-muted">
                       {item.detail}
                     </p>
                   </div>
-                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
                     {item.time}
                   </span>
                 </div>
@@ -287,18 +281,18 @@ export function DashboardScreen() {
           </div>
         </Card>
 
-        <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
+        <Card className="space-y-4" interactive={false} variant="soft">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">
               Resumen en vivo
             </p>
-            <h3 className="mt-2 font-display text-xl font-semibold text-[var(--color-primary)]">
+            <h3 className="mt-2 font-display text-xl font-semibold text-text-secondary">
               Qué cambia según el rol visible
             </h3>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <div className="rounded-[22px] bg-[linear-gradient(180deg,#234565_0%,#1c3957_100%)] p-4 text-white shadow-[0_14px_30px_rgba(17,39,60,0.16)]">
+            <div className="rounded-md bg-primary p-4 text-white shadow-md">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
                 Navegación
               </p>
@@ -307,11 +301,11 @@ export function DashboardScreen() {
                 mezclar flujos de consumidor.
               </p>
             </div>
-            <div className="surface-inset rounded-[22px] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+            <div className="surface-inset p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
                 Contenido del panel
               </p>
-              <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">
+              <p className="mt-2 text-sm leading-6 text-text-muted">
                 Cada rol recibe KPIs, quick actions y módulos orientados a su
                 operación principal.
               </p>

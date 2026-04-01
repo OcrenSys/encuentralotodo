@@ -15,12 +15,12 @@ export function QuickActionsPanel({
   items: ActionItem[];
 }) {
   return (
-    <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.96),rgba(243,247,252,0.92))] hover:translate-y-0">
+    <Card className="space-y-4" interactive={false} variant="soft">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">
           Acciones rápidas
         </p>
-        <h3 className="mt-2 font-display text-xl font-semibold text-[var(--color-primary)]">
+        <h3 className="mt-2 font-display text-xl font-semibold text-text-secondary">
           {title}
         </h3>
       </div>
@@ -28,14 +28,14 @@ export function QuickActionsPanel({
       <div className="space-y-3">
         {items.map((item) => (
           <div
-            className="interactive-row flex flex-col gap-3 rounded-[22px] border border-[rgba(140,156,177,0.12)] p-4 sm:flex-row sm:items-center sm:justify-between"
+            className="interactive-row flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
             key={item.label}
           >
             <div>
-              <p className="text-sm font-semibold text-[var(--color-primary)]">
+              <p className="text-sm font-semibold text-text-secondary">
                 {item.label}
               </p>
-              <p className="mt-1 text-sm leading-6 text-[var(--color-text-muted)]">
+              <p className="mt-1 text-sm leading-6 text-text-muted">
                 {item.helper}
               </p>
             </div>

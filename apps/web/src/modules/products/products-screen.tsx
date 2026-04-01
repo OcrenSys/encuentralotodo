@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from 'react';
 import { Plus, Search } from 'lucide-react';
-import { Button, Card, EmptyState, GhostButton, LoadingSkeleton } from 'ui';
+import {
+  Button,
+  Card,
+  EmptyState,
+  GhostButton,
+  Input,
+  LoadingSkeleton,
+  Select,
+} from 'ui';
 
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
@@ -56,18 +64,17 @@ export function ProductsScreen() {
         }
       />
 
-      <section className="grid gap-3 rounded-[28px] border border-white/80 bg-white/88 p-4 shadow-[0_12px_32px_rgba(17,39,60,0.08)] md:grid-cols-[minmax(0,1fr)_220px]">
-        <label className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4">
-          <Search className="size-4 text-[var(--color-text-muted)]" />
-          <input
-            className="h-11 w-full bg-transparent text-sm text-[var(--color-primary)] outline-none"
+      <section className="field-panel grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_220px]">
+        <label className="flex items-center gap-3 rounded-md bg-base px-4">
+          <Search className="size-4 text-text-muted" />
+          <Input
+            className="border-0 bg-transparent px-0 shadow-none"
             placeholder="Buscar productos por nombre, negocio o descripción"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
-        <select
-          className="h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 text-sm font-medium text-[var(--color-primary)] outline-none"
+        <Select
           value={statusFilter}
           onChange={(event) =>
             setStatusFilter(event.target.value as typeof statusFilter)
@@ -76,14 +83,19 @@ export function ProductsScreen() {
           <option value="ALL">Todos</option>
           <option value="FEATURED">Destacados</option>
           <option value="CATALOG">Catálogo</option>
-        </select>
+        </Select>
       </section>
 
       {filteredProducts.length ? (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredProducts.map((product) => (
-            <Card className="space-y-4 hover:translate-y-0" key={product.id}>
-              <div className="grid h-40 grid-cols-3 gap-2 overflow-hidden rounded-[20px] bg-[var(--color-background)]">
+            <Card
+              className="space-y-4"
+              interactive={false}
+              key={product.id}
+              variant="soft"
+            >
+              <div className="grid h-40 grid-cols-3 gap-2 overflow-hidden rounded-md bg-base">
                 {product.images.slice(0, 3).map((image, index) => (
                   <img
                     alt={`${product.name} ${index + 1}`}
@@ -96,10 +108,10 @@ export function ProductsScreen() {
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
+                    <h3 className="font-display text-xl font-semibold text-text-secondary">
                       {product.name}
                     </h3>
-                    <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                    <p className="mt-1 text-sm text-text-muted">
                       {product.businessName}
                     </p>
                   </div>
@@ -107,12 +119,12 @@ export function ProductsScreen() {
                     status={product.isFeatured ? 'FEATURED' : 'CATALOG'}
                   />
                 </div>
-                <p className="text-sm leading-6 text-[var(--color-text-muted)]">
+                <p className="text-sm leading-6 text-text-muted">
                   {product.description}
                 </p>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-[var(--color-text-muted)]">
+                <span className="text-text-muted">
                   Estado del negocio:{' '}
                   {formatStatusLabel(product.businessStatus)}
                 </span>

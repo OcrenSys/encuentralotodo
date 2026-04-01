@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { Panel } from 'ui';
+
 export function ModuleHeader({
   title,
   description,
@@ -10,16 +12,20 @@ export function ModuleHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="surface-panel-soft flex flex-col gap-4 rounded-[30px] px-5 py-5 lg:flex-row lg:items-end lg:justify-between lg:px-6">
+    <Panel
+      className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:px-6"
+      interactive={false}
+      variant="soft"
+    >
       <div className="space-y-2">
-        <h2 className="font-display text-2xl font-semibold text-[var(--color-primary)] sm:text-3xl">
+        <h2 className="font-display text-2xl font-semibold text-text-secondary sm:text-3xl">
           {title}
         </h2>
-        <p className="max-w-3xl text-sm leading-6 text-[var(--color-text-muted)]">
+        <p className="max-w-3xl text-sm leading-6 text-text-muted">
           {description}
         </p>
       </div>
       {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
-    </div>
+    </Panel>
   );
 }

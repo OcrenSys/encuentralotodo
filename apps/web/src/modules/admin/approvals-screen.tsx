@@ -56,34 +56,34 @@ export function ApprovalsScreen() {
             >
               {pendingQuery.data.map((business) => (
                 <div
-                  className="grid grid-cols-5 gap-4 border-b border-[var(--color-border)] px-5 py-4 last:border-b-0 hover:bg-white/70"
+                  className="grid grid-cols-5 gap-4 border-b border-border-default px-5 py-4 last:border-b-0 hover:bg-white/70"
                   key={business.id}
                 >
                   <div className="min-w-0">
                     <div className="flex items-start gap-3">
                       <img
                         alt={business.name}
-                        className="size-14 rounded-[18px] object-cover"
+                        className="size-14 rounded-md object-cover"
                         src={business.images.profile}
                       />
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-[var(--color-primary)]">
+                        <p className="truncate font-semibold text-text-secondary">
                           {business.name}
                         </p>
-                        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                        <p className="mt-1 text-sm text-text-muted">
                           {formatBusinessCategoryLabel(business.category)} ·{' '}
                           {business.location.zone}
                         </p>
-                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--color-text-muted)]">
+                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-text-muted">
                           {business.description}
                         </p>
                       </div>
                     </div>
                   </div>
-                  <div className="self-center text-sm text-[var(--color-text-muted)]">
+                  <div className="self-center text-sm text-text-muted">
                     {formatOwnerLabel(business.ownerId)}
                   </div>
-                  <div className="self-center text-sm text-[var(--color-text-muted)]">
+                  <div className="self-center text-sm text-text-muted">
                     {formatSubscriptionLabel(business.subscriptionType)}
                   </div>
                   <div className="self-center">
@@ -110,27 +110,32 @@ export function ApprovalsScreen() {
 
           <div className="grid gap-4 lg:hidden">
             {pendingQuery.data.map((business) => (
-              <Card className="space-y-4 p-4" key={business.id}>
+              <Card
+                className="space-y-4 p-4"
+                interactive={false}
+                key={business.id}
+                variant="soft"
+              >
                 <img
                   alt={business.name}
-                  className="h-40 w-full rounded-[18px] object-cover"
+                  className="h-40 w-full rounded-md object-cover"
                   src={business.images.banner}
                 />
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
+                    <h3 className="font-display text-xl font-semibold text-text-secondary">
                       {business.name}
                     </h3>
                     <StatusBadge status={business.status} />
                   </div>
-                  <p className="text-sm text-[var(--color-text-muted)]">
+                  <p className="text-sm text-text-muted">
                     {formatBusinessCategoryLabel(business.category)} ·{' '}
                     {business.location.zone}
                   </p>
-                  <p className="text-sm text-[var(--color-text-muted)]">
+                  <p className="text-sm text-text-muted">
                     Responsable: {formatOwnerLabel(business.ownerId)}
                   </p>
-                  <p className="text-sm leading-6 text-[var(--color-text-muted)]">
+                  <p className="text-sm leading-6 text-text-muted">
                     {business.description}
                   </p>
                 </div>

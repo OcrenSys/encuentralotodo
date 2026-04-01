@@ -66,27 +66,27 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <div className="surface-panel-soft rounded-[22px] p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
+              <div className="surface-panel-soft rounded-[22px] p-4 text-text-secondary">
+                <p className="text-xs uppercase tracking-[0.24em] text-text-muted">
                   Categoría
                 </p>
-                <p className="mt-2 text-base font-semibold text-[var(--color-primary)]">
+                <p className="mt-2 text-base font-semibold text-text-secondary">
                   {formatBusinessCategoryLabel(business.category)}
                 </p>
               </div>
-              <div className="surface-panel-soft rounded-[22px] p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
+              <div className="surface-panel-soft rounded-[22px] p-4 text-text-secondary">
+                <p className="text-xs uppercase tracking-[0.24em] text-text-muted">
                   Zona
                 </p>
-                <p className="mt-2 text-base font-semibold text-[var(--color-primary)]">
+                <p className="mt-2 text-base font-semibold text-text-secondary">
                   {business.location.zone}
                 </p>
               </div>
-              <div className="surface-panel-soft rounded-[22px] p-4 sm:col-span-2 xl:col-span-1">
-                <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
+              <div className="surface-panel-soft rounded-[22px] p-4 text-text-secondary sm:col-span-2 xl:col-span-1">
+                <p className="text-xs uppercase tracking-[0.24em] text-text-muted">
                   Plan
                 </p>
-                <p className="mt-2 text-base font-semibold text-[var(--color-primary)]">
+                <p className="mt-2 text-base font-semibold text-text-secondary">
                   {formatSubscriptionLabel(business.subscriptionType)}
                 </p>
               </div>

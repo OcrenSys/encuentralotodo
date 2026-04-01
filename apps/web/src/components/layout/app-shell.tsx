@@ -55,7 +55,7 @@ export function AppShell({
 
         <main className="px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
           {isAllowed ? (
-            <div className="space-y-6 rounded-[32px] border border-[rgba(140,156,177,0.14)] bg-[linear-gradient(180deg,rgba(255,255,255,0.36),rgba(248,251,255,0.18))] p-1 sm:p-1.5">
+            <div className="surface-soft space-y-6 rounded-xl p-1 sm:p-1.5">
               {children}
             </div>
           ) : (

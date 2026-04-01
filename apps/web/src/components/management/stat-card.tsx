@@ -26,27 +26,23 @@ export function StatCard({
 }) {
   return (
     <Card
-      className={cn(
-        'space-y-4 border p-4 hover:-translate-y-0.5 lg:p-5',
-        statVariants[variant],
-      )}
+      className={cn('space-y-4 border p-4 lg:p-5', statVariants[variant])}
+      interactive={false}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">
             {label}
           </p>
-          <p className="mt-3 font-display text-3xl font-semibold text-[var(--color-primary)]">
+          <p className="mt-3 font-display text-3xl font-semibold text-text-secondary">
             {value}
           </p>
         </div>
-        <div className="inline-flex size-11 items-center justify-center rounded-2xl border border-[rgba(255,255,255,0.55)] bg-[rgba(255,255,255,0.48)] text-[var(--color-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+        <div className="icon-tile border border-white/60 bg-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
           <Icon className="size-5" />
         </div>
       </div>
-      <p className="text-sm leading-6 text-[var(--color-text-muted)]">
-        {helper}
-      </p>
+      <p className="text-sm leading-6 text-text-muted">{helper}</p>
     </Card>
   );
 }

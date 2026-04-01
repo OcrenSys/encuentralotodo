@@ -7,7 +7,17 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { createBusinessInputSchema, type CreateBusinessInput } from 'types';
-import { BottomNavigation, Button, Card, SectionHeading } from 'ui';
+import {
+  BottomNavigation,
+  Button,
+  Card,
+  FormField,
+  FormSection,
+  Input,
+  SectionHeading,
+  Select,
+  Textarea,
+} from 'ui';
 
 import { trpc } from '../lib/trpc';
 
@@ -73,142 +83,99 @@ export function SubmitBusinessForm() {
         description="El dueño crea el perfil, un admin lo aprueba y luego el negocio queda visible para discovery y WhatsApp."
       />
 
-      <Card>
+      <Card interactive={false} variant="soft">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-          <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Nombre del negocio
-            </span>
-            <input
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              {...form.register('name')}
-            />
-          </label>
-          <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Descripción
-            </span>
-            <textarea
-              className="min-h-32 w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              {...form.register('description')}
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Categoría
-            </span>
-            <select
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              {...form.register('category')}
-            >
-              <option value="GENERAL_STORE">Tiendas físicas generales</option>
-              <option value="RESTAURANT">Restaurantes / comida</option>
-              <option value="SERVICE">Servicios</option>
-            </select>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Suscripción
-            </span>
-            <select
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              {...form.register('subscriptionType')}
-            >
-              <option value="FREE_TRIAL">FREE_TRIAL</option>
-              <option value="PREMIUM">PREMIUM</option>
-              <option value="PREMIUM_PLUS">PREMIUM_PLUS</option>
-            </select>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Zona
-            </span>
-            <input
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              {...form.register('location.zone')}
-            />
-          </label>
-          <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Dirección
-            </span>
-            <input
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              {...form.register('location.address')}
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Latitud
-            </span>
-            <input
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              step="0.0001"
-              type="number"
-              {...form.register('location.lat', { valueAsNumber: true })}
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Longitud
-            </span>
-            <input
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              step="0.0001"
-              type="number"
-              {...form.register('location.lng', { valueAsNumber: true })}
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Imagen perfil
-            </span>
-            <input
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              {...form.register('images.profile')}
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Imagen banner
-            </span>
-            <input
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              {...form.register('images.banner')}
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Responsable principal
-            </span>
-            <select
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              {...form.register('ownerId')}
-            >
-              <option value="user-ana">Ana Mercado</option>
-              <option value="owner-sofia">Sofia Rivas</option>
-            </select>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              WhatsApp
-            </span>
-            <input
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              {...form.register('whatsappNumber')}
-            />
-          </label>
-          <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-semibold text-[var(--color-primary)]">
-              Encargados
-            </span>
-            <input
-              className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-3"
-              onChange={(event) => setManagers(event.target.value)}
-              placeholder="carlos, ana"
-              value={managers}
-            />
-          </label>
+          <FormSection
+            className="md:col-span-2"
+            description="Base operativa del perfil antes de pasar a aprobación."
+            title="Información principal"
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField className="md:col-span-2" label="Nombre del negocio">
+                <Input {...form.register('name')} />
+              </FormField>
+              <FormField className="md:col-span-2" label="Descripción">
+                <Textarea {...form.register('description')} />
+              </FormField>
+              <FormField label="Categoría">
+                <Select {...form.register('category')}>
+                  <option value="GENERAL_STORE">
+                    Tiendas físicas generales
+                  </option>
+                  <option value="RESTAURANT">Restaurantes / comida</option>
+                  <option value="SERVICE">Servicios</option>
+                </Select>
+              </FormField>
+              <FormField label="Suscripción">
+                <Select {...form.register('subscriptionType')}>
+                  <option value="FREE_TRIAL">FREE_TRIAL</option>
+                  <option value="PREMIUM">PREMIUM</option>
+                  <option value="PREMIUM_PLUS">PREMIUM_PLUS</option>
+                </Select>
+              </FormField>
+            </div>
+          </FormSection>
+
+          <FormSection
+            className="md:col-span-2"
+            description="Datos visibles en discovery y en la ficha del negocio."
+            title="Ubicación y contacto"
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField label="Zona">
+                <Input {...form.register('location.zone')} />
+              </FormField>
+              <FormField className="md:col-span-2" label="Dirección">
+                <Input {...form.register('location.address')} />
+              </FormField>
+              <FormField label="Latitud">
+                <Input
+                  step="0.0001"
+                  type="number"
+                  {...form.register('location.lat', { valueAsNumber: true })}
+                />
+              </FormField>
+              <FormField label="Longitud">
+                <Input
+                  step="0.0001"
+                  type="number"
+                  {...form.register('location.lng', { valueAsNumber: true })}
+                />
+              </FormField>
+              <FormField label="WhatsApp">
+                <Input {...form.register('whatsappNumber')} />
+              </FormField>
+              <FormField label="Responsable principal">
+                <Select {...form.register('ownerId')}>
+                  <option value="user-ana">Ana Mercado</option>
+                  <option value="owner-sofia">Sofia Rivas</option>
+                </Select>
+              </FormField>
+            </div>
+          </FormSection>
+
+          <FormSection
+            className="md:col-span-2"
+            description="Assets actuales para la vitrina y el perfil público."
+            title="Media y encargados"
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField label="Imagen perfil">
+                <Input {...form.register('images.profile')} />
+              </FormField>
+              <FormField label="Imagen banner">
+                <Input {...form.register('images.banner')} />
+              </FormField>
+              <FormField className="md:col-span-2" label="Encargados">
+                <Input
+                  onChange={(event) => setManagers(event.target.value)}
+                  placeholder="carlos, ana"
+                  value={managers}
+                />
+              </FormField>
+            </div>
+          </FormSection>
+
           <div className="md:col-span-2 flex justify-end">
             <Button disabled={createBusiness.isPending} type="submit">
               {createBusiness.isPending

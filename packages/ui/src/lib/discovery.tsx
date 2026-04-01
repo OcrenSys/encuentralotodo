@@ -169,7 +169,10 @@ export function PromotionCard({
   promotion: Promotion;
 }) {
   return (
-    <Card className="flex h-full flex-col gap-4 bg-[var(--color-primary)] text-white lg:gap-3">
+    <Card
+      className="flex h-full flex-col gap-4 text-white lg:gap-3"
+      variant="brand"
+    >
       <div className="relative h-40 overflow-hidden rounded-[20px] xl:h-36">
         <img
           alt={promotion.title}

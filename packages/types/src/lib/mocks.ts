@@ -281,6 +281,7 @@ export const marketplaceSeed: MarketplaceSeedData = {
             name: 'Caja despensa oficina',
             description: 'Selección mensual de snacks, café instantáneo y bebidas para equipos pequeños.',
             images: [
+                'https://images.unsplash.com/photo-1516594798947-e65505dbb29d?auto=format&fit=crop&w=800&q=80',
                 'https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?auto=format&fit=crop&w=800&q=80',
                 'https://images.unsplash.com/photo-1516594798947-e65505dbb29d?auto=format&fit=crop&w=800&q=80',
             ],

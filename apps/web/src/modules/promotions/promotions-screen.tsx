@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from 'react';
 import { CalendarClock, Plus, Search } from 'lucide-react';
-import { Button, Card, EmptyState, GhostButton, LoadingSkeleton } from 'ui';
+import {
+  Button,
+  Card,
+  EmptyState,
+  GhostButton,
+  Input,
+  LoadingSkeleton,
+} from 'ui';
 
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
@@ -44,10 +51,10 @@ export function PromotionsScreen() {
         }
       />
 
-      <label className="flex items-center gap-3 rounded-[24px] border border-white/80 bg-white/88 px-4 py-3 shadow-[0_12px_32px_rgba(17,39,60,0.08)]">
-        <Search className="size-4 text-[var(--color-text-muted)]" />
-        <input
-          className="w-full bg-transparent text-sm text-[var(--color-primary)] outline-none"
+      <label className="field-panel flex items-center gap-3 px-4 py-3">
+        <Search className="size-4 text-text-muted" />
+        <Input
+          className="border-0 bg-transparent px-0 shadow-none"
           placeholder="Buscar promociones por negocio o copy comercial"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
@@ -57,8 +64,13 @@ export function PromotionsScreen() {
       {filteredPromotions.length ? (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredPromotions.map((promotion) => (
-            <Card className="space-y-4 hover:translate-y-0" key={promotion.id}>
-              <div className="relative h-44 overflow-hidden rounded-[20px] bg-[var(--color-primary)]">
+            <Card
+              className="space-y-4"
+              interactive={false}
+              key={promotion.id}
+              variant="soft"
+            >
+              <div className="relative h-44 overflow-hidden rounded-md bg-primary">
                 <img
                   alt={promotion.title}
                   className="h-full w-full object-cover opacity-85"
@@ -68,29 +80,29 @@ export function PromotionsScreen() {
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
+                    <h3 className="font-display text-xl font-semibold text-text-secondary">
                       {promotion.title}
                     </h3>
-                    <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                    <p className="mt-1 text-sm text-text-muted">
                       {promotion.businessName}
                     </p>
                   </div>
                   <StatusBadge status="ACTIVE" />
                 </div>
-                <p className="text-sm leading-6 text-[var(--color-text-muted)]">
+                <p className="text-sm leading-6 text-text-muted">
                   {promotion.description}
                 </p>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
                 <div>
-                  <p className="font-semibold text-[var(--color-primary)]">
+                  <p className="font-semibold text-text-secondary">
                     {formatCurrency(promotion.promoPrice)}
                   </p>
-                  <p className="text-[var(--color-text-muted)] line-through">
+                  <p className="text-text-muted line-through">
                     {formatCurrency(promotion.originalPrice)}
                   </p>
                 </div>
-                <div className="inline-flex items-center gap-2 text-[var(--color-text-muted)]">
+                <div className="inline-flex items-center gap-2 text-text-muted">
                   <CalendarClock className="size-4" />
                   {formatDateLabel(promotion.validUntil)}
                 </div>
