@@ -1,10 +1,14 @@
 import { z } from 'zod';
 
 import {
+    analyticsPeriods,
     businessCategories,
     businessStatuses,
     leadSources,
     leadStatuses,
+    leadVolumeBuckets,
+    promotionUsageLevels,
+    reviewStrengthLevels,
     subscriptionTypes,
     userRoles,
 } from './domain';
@@ -15,6 +19,10 @@ export const businessStatusSchema = z.enum(businessStatuses);
 export const businessCategorySchema = z.enum(businessCategories);
 export const leadSourceSchema = z.enum(leadSources);
 export const leadStatusSchema = z.enum(leadStatuses);
+export const analyticsPeriodSchema = z.enum(analyticsPeriods);
+export const leadVolumeBucketSchema = z.enum(leadVolumeBuckets);
+export const promotionUsageLevelSchema = z.enum(promotionUsageLevels);
+export const reviewStrengthLevelSchema = z.enum(reviewStrengthLevels);
 
 export const businessLocationSchema = z.object({
     lat: z.number(),
@@ -55,6 +63,15 @@ export const getBusinessByIdInputSchema = z.object({
 export const approveBusinessInputSchema = z.object({
     businessId: z.string().min(2),
     approvedBy: z.string().min(2),
+});
+
+export const getBusinessAnalyticsInputSchema = z.object({
+    businessId: z.string().min(2),
+    period: analyticsPeriodSchema.optional(),
+});
+
+export const getPlatformAnalyticsInputSchema = z.object({
+    period: analyticsPeriodSchema.optional(),
 });
 
 export const createProductInputSchema = z.object({
@@ -151,6 +168,8 @@ export type CreateBusinessInput = z.infer<typeof createBusinessInputSchema>;
 export type ListBusinessesInput = z.infer<typeof listBusinessesInputSchema>;
 export type GetBusinessByIdInput = z.infer<typeof getBusinessByIdInputSchema>;
 export type ApproveBusinessInput = z.infer<typeof approveBusinessInputSchema>;
+export type GetBusinessAnalyticsInput = z.infer<typeof getBusinessAnalyticsInputSchema>;
+export type GetPlatformAnalyticsInput = z.infer<typeof getPlatformAnalyticsInputSchema>;
 export type CreateProductInput = z.infer<typeof createProductInputSchema>;
 export type GetProductByIdInput = z.infer<typeof getProductByIdInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;

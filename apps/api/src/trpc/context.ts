@@ -3,6 +3,10 @@ import type { Request, Response } from 'express';
 import { createAuthProvider } from 'auth';
 import type { UserProfile } from 'types';
 
+import { BusinessAnalyticsRepository } from '../lib/analytics/business-analytics.repository';
+import { BusinessAnalyticsService } from '../lib/analytics/business-analytics.service';
+import { PlatformAnalyticsRepository } from '../lib/analytics/platform-analytics.repository';
+import { PlatformAnalyticsService } from '../lib/analytics/platform-analytics.service';
 import { BusinessRepository } from '../lib/business/business.repository';
 import { BusinessService } from '../lib/business/business.service';
 import { createEmailService } from '../lib/email';
@@ -37,7 +41,9 @@ export interface TrpcContext {
   store: typeof marketplaceStore;
   emailService: ReturnType<typeof createEmailService>;
   businessService: BusinessService;
+  businessAnalyticsService: BusinessAnalyticsService;
   productService: ProductService;
+  platformAnalyticsService: PlatformAnalyticsService;
   promotionService: PromotionService;
   leadService: LeadService;
   reviewService: ReviewService;
@@ -49,7 +55,9 @@ export function createTrpcContext({ req, env }: { req: Request; res: Response; e
   const emailService = createEmailService(env.RESEND_API_KEY);
   const prisma = getPrismaClient();
   const businessRepository = new BusinessRepository(prisma);
+  const businessAnalyticsRepository = new BusinessAnalyticsRepository(prisma);
   const leadRepository = new LeadRepository(prisma);
+  const platformAnalyticsRepository = new PlatformAnalyticsRepository(prisma);
   const productRepository = new ProductRepository(prisma);
   const promotionRepository = new PromotionRepository(prisma);
   const reviewRepository = new ReviewRepository(prisma);
@@ -65,9 +73,18 @@ export function createTrpcContext({ req, env }: { req: Request; res: Response; e
       emailService,
       currentUser,
     }),
+    businessAnalyticsService: new BusinessAnalyticsService({
+      repository: businessAnalyticsRepository,
+      businessRepository,
+      currentUser,
+    }),
     productService: new ProductService({
       repository: productRepository,
       businessRepository,
+      currentUser,
+    }),
+    platformAnalyticsService: new PlatformAnalyticsService({
+      repository: platformAnalyticsRepository,
       currentUser,
     }),
     promotionService: new PromotionService({

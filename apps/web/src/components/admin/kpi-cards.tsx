@@ -51,16 +51,12 @@ function KpiCard({
 }
 
 export function KpiCards() {
-  const pendingQuery = trpc.admin.pendingBusinesses.useQuery();
-  const businessQuery = trpc.business.list.useQuery();
-  const promotionsQuery = trpc.promotion.listActive.useQuery();
+  const analyticsQuery = trpc.analytics.platformOverview.useQuery({
+    period: '30D',
+  });
   const sessionQuery = trpc.auth.me.useQuery();
 
-  const isLoading =
-    pendingQuery.isLoading ||
-    businessQuery.isLoading ||
-    promotionsQuery.isLoading ||
-    sessionQuery.isLoading;
+  const isLoading = analyticsQuery.isLoading || sessionQuery.isLoading;
 
   if (isLoading) {
     return (
@@ -78,19 +74,19 @@ export function KpiCards() {
         helper="Negocios esperando aprobación antes de aparecer en discovery."
         icon="pending"
         label="Aprobaciones pendientes"
-        value={pendingQuery.data?.length ?? 0}
+        value={analyticsQuery.data?.summary.pendingBusinesses ?? 0}
       />
       <KpiCard
         helper="Negocios aprobados y visibles para usuarios finales."
         icon="businesses"
-        label="Negocios totales"
-        value={businessQuery.data?.length ?? 0}
+        label="Negocios aprobados"
+        value={analyticsQuery.data?.summary.totalApprovedBusinesses ?? 0}
       />
       <KpiCard
         helper="Promociones activas listas para mostrarse en la vitrina actual."
         icon="promotions"
         label="Promociones activas"
-        value={promotionsQuery.data?.length ?? 0}
+        value={analyticsQuery.data?.summary.totalActivePromotions ?? 0}
       />
       <KpiCard
         helper="Sesión demo actual usada para validar permisos y experiencia."

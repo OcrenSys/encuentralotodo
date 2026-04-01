@@ -1,5 +1,6 @@
 import { router } from './trpc';
 import { adminRouter } from './routers/admin';
+import { analyticsRouter } from './routers/analytics';
 import { authRouter } from './routers/auth';
 import { businessRouter } from './routers/business';
 import { leadRouter } from './routers/lead';
@@ -9,6 +10,7 @@ import { reviewRouter } from './routers/review';
 
 export const appRouter = router({
   auth: authRouter,
+  analytics: analyticsRouter,
   business: businessRouter,
   lead: leadRouter,
   product: productRouter,
