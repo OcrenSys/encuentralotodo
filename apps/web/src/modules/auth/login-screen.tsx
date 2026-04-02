@@ -17,6 +17,7 @@ import { z } from 'zod';
 import { Button, Card, FormField, Input, LoadingSkeleton } from 'ui';
 
 import { useCurrentAuthUser } from '../../lib/auth-context';
+import { hasFirebasePublicConfig } from '../../lib/firebase-auth';
 
 const authModeSchema = z.enum(['login', 'register']);
 type AuthMode = z.infer<typeof authModeSchema>;
@@ -67,6 +68,8 @@ export function LoginScreen() {
     registerWithPassword,
     user,
   } = useCurrentAuthUser();
+  const hasFirebaseConfig = hasFirebasePublicConfig();
+  const isFirebaseRuntime = provider === 'firebase' && hasFirebaseConfig;
   const [mode, setMode] = useState<AuthMode>('login');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isGooglePending, setIsGooglePending] = useState(false);
@@ -211,6 +214,14 @@ export function LoginScreen() {
             </p>
           </div>
 
+          {!isFirebaseRuntime ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {provider === 'firebase'
+                ? 'Firebase está seleccionado como proveedor público, pero faltan variables NEXT_PUBLIC_FIREBASE_* en el runtime del navegador. Reinicia la web después de cargar el .env correcto.'
+                : 'Esta build no tiene Firebase Authentication habilitado. El login y el registro reales quedan bloqueados hasta que el runtime público use `NEXT_PUBLIC_AUTH_PROVIDER=firebase`.'}
+            </div>
+          ) : null}
+
           <div className="inline-flex rounded-full border border-border-subtle bg-white/60 p-1">
             {authModeSchema.options.map((candidateMode) => {
               const active = mode === candidateMode;
@@ -299,7 +310,7 @@ export function LoginScreen() {
 
             <Button
               className="w-full justify-center gap-2"
-              disabled={form.formState.isSubmitting}
+              disabled={form.formState.isSubmitting || !isFirebaseRuntime}
               type="submit"
             >
               {form.formState.isSubmitting ? (
@@ -319,7 +330,7 @@ export function LoginScreen() {
 
           <Button
             className="w-full justify-center gap-2"
-            disabled={isGooglePending}
+            disabled={isGooglePending || !isFirebaseRuntime}
             onClick={() => void handleGoogleSignIn()}
             type="button"
             variant="secondary"

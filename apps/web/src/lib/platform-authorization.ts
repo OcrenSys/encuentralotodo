@@ -9,7 +9,7 @@ import { trpc } from './trpc';
 export function useCurrentPlatformUser() {
   const { provider, isAuthenticated } = useCurrentAuthUser();
   const sessionQuery = trpc.auth.me.useQuery(undefined, {
-    enabled: provider === 'mock' || isAuthenticated,
+    enabled: isAuthenticated,
     retry: false,
   });
 

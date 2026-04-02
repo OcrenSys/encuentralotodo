@@ -20,6 +20,10 @@ jest.mock('../src/lib/auth-context', () => ({
   useCurrentAuthUser: jest.fn(),
 }));
 
+jest.mock('../src/lib/firebase-auth', () => ({
+  hasFirebasePublicConfig: jest.fn(() => true),
+}));
+
 const { useCurrentAuthUser } = jest.requireMock('../src/lib/auth-context') as {
   useCurrentAuthUser: jest.Mock;
 };
@@ -87,5 +91,29 @@ describe('LoginScreen', () => {
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith('/analytics');
     });
+  });
+
+  it('blocks auth actions when the runtime is not configured for Firebase', () => {
+    useCurrentAuthUser.mockReturnValue({
+      isAuthenticated: false,
+      isLoading: false,
+      provider: 'mock',
+      user: null,
+      signInWithPassword: signInWithPasswordMock,
+      registerWithPassword: registerWithPasswordMock,
+      signInWithGoogle: signInWithGoogleMock,
+    });
+
+    const view = render(<LoginScreen />);
+
+    expect(
+      view.getByText(/esta build no tiene firebase authentication habilitado/i),
+    ).toBeTruthy();
+    expect(
+      view.getByRole('button', { name: 'Entrar con email' }),
+    ).toHaveProperty('disabled', true);
+    expect(
+      view.getByRole('button', { name: 'Continuar con Google' }),
+    ).toHaveProperty('disabled', true);
   });
 });

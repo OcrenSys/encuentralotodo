@@ -13,6 +13,7 @@ import {
   type FrontendAuthUser,
   getCurrentFirebaseIdToken,
   getPublicAuthProvider,
+  hasFirebasePublicConfig,
   isFirebaseAuthEnabled,
   registerWithFirebaseEmail,
   signInWithFirebaseEmail,
@@ -44,14 +45,16 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function createMockUser(): CurrentAuthUser {
-  return {
-    uid: 'mock-user',
-    email: 'demo@encuentralotodo.app',
-    displayName: 'Operador Demo',
-    photoURL: null,
-    provider: 'unknown',
-  };
+function createAuthProviderError(provider: AuthContextValue['provider']) {
+  if (provider === 'firebase' && !hasFirebasePublicConfig()) {
+    return new Error(
+      'Firebase is selected as the public auth provider, but the web runtime is missing one or more NEXT_PUBLIC_FIREBASE_* variables.',
+    );
+  }
+
+  return new Error(
+    `Real authentication is not enabled for provider \"${provider}\" in this web runtime.`,
+  );
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -61,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isFirebaseAuthEnabled()) {
-      setUser(provider === 'mock' ? createMockUser() : null);
+      setUser(null);
       setIsLoading(false);
       return;
     }
@@ -82,24 +85,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       async signInWithPassword(input) {
         if (!isFirebaseAuthEnabled()) {
-          setUser(createMockUser());
-          return;
+          throw createAuthProviderError(provider);
         }
 
         await signInWithFirebaseEmail(input);
       },
       async registerWithPassword(input) {
         if (!isFirebaseAuthEnabled()) {
-          setUser(createMockUser());
-          return;
+          throw createAuthProviderError(provider);
         }
 
         await registerWithFirebaseEmail(input);
       },
       async signInWithGoogle() {
         if (!isFirebaseAuthEnabled()) {
-          setUser(createMockUser());
-          return;
+          throw createAuthProviderError(provider);
         }
 
         await signInWithFirebaseGoogle();

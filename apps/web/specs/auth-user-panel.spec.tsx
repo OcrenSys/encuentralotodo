@@ -76,4 +76,16 @@ describe('AuthUserPanel', () => {
       view.getByText('ocrensys@gmail.com · Administrador general'),
     ).toBeTruthy();
   });
+
+  it('falls back to the real Firebase provider label when backend profile data is still loading', () => {
+    trpc.auth.me.useQuery.mockReturnValue({
+      data: undefined,
+    });
+
+    const view = render(<AuthUserPanel />);
+
+    expect(
+      view.getByText('ocrensys@gmail.com · Email y contraseña'),
+    ).toBeTruthy();
+  });
 });

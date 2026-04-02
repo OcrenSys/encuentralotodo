@@ -5,10 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
 import { Toaster } from 'sonner';
 
-import { getApiBaseUrl } from 'config';
-
 import { AuthProvider, useCurrentAuthUser } from '../lib/auth-context';
-import { RoleViewProvider, useRoleView } from '../lib/role-view';
+import { getPublicApiBaseUrl } from '../lib/public-runtime-env';
+import { RoleViewProvider } from '../lib/role-view';
 import {
   getCurrentAuthorizationHeader,
   getPublicAuthProvider,
@@ -16,7 +15,6 @@ import {
 import { trpc } from '../lib/trpc';
 
 function TrpcProviders({ children }: { children: React.ReactNode }) {
-  const { roleProfile } = useRoleView();
   const { isAuthenticated, user } = useCurrentAuthUser();
   const [queryClient] = useState(() => new QueryClient());
   const authProvider = getPublicAuthProvider();
@@ -30,23 +28,19 @@ function TrpcProviders({ children }: { children: React.ReactNode }) {
       trpc.createClient({
         links: [
           httpBatchLink({
-            url: `${getApiBaseUrl(process.env)}/trpc`,
+            url: `${getPublicApiBaseUrl()}/trpc`,
             async headers() {
               if (authProvider === 'firebase') {
                 const authorization = await getCurrentAuthorizationHeader();
                 return authorization ? { authorization } : {};
               }
 
-              return roleProfile.email
-                ? {
-                    'x-demo-user': roleProfile.email,
-                  }
-                : {};
+              return {};
             },
           }),
         ],
       }),
-    [authProvider, roleProfile.email],
+    [authProvider],
   );
 
   return (

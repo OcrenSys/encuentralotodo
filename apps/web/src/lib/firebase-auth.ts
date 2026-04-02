@@ -15,13 +15,12 @@ import {
     type User,
 } from 'firebase/auth';
 
-import { parsePublicEnv } from 'config';
-
-const publicEnv = parsePublicEnv(process.env);
+import { getPublicRuntimeEnv } from './public-runtime-env';
 
 let persistencePromise: Promise<void> | null = null;
 
 export type AuthMethodProvider = 'firebase' | 'password' | 'google.com' | 'github.com' | 'unknown';
+export type PublicAuthProvider = 'mock' | 'firebase' | 'cognito';
 
 export type FrontendAuthUser = {
     uid: string;
@@ -31,12 +30,52 @@ export type FrontendAuthUser = {
     provider: AuthMethodProvider;
 };
 
+type PublicRuntimeEnv = {
+    NEXT_PUBLIC_AUTH_PROVIDER?: PublicAuthProvider;
+    NEXT_PUBLIC_FIREBASE_API_KEY?: string;
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?: string;
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID?: string;
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?: string;
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?: string;
+    NEXT_PUBLIC_FIREBASE_APP_ID?: string;
+};
+
+function hasCompleteFirebasePublicConfig(rawEnv: Record<string, string | undefined>) {
+    return Boolean(
+        rawEnv.NEXT_PUBLIC_FIREBASE_API_KEY &&
+            rawEnv.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+            rawEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+            rawEnv.NEXT_PUBLIC_FIREBASE_APP_ID,
+    );
+}
+
+function resolvePublicRuntimeEnv(): PublicRuntimeEnv {
+    const rawEnv = getPublicRuntimeEnv();
+    const explicitAuthProvider = rawEnv.NEXT_PUBLIC_AUTH_PROVIDER;
+
+    return {
+        NEXT_PUBLIC_AUTH_PROVIDER:
+            explicitAuthProvider ??
+            (hasCompleteFirebasePublicConfig(rawEnv) ? 'firebase' : 'mock'),
+        NEXT_PUBLIC_FIREBASE_API_KEY: rawEnv.NEXT_PUBLIC_FIREBASE_API_KEY,
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: rawEnv.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: rawEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: rawEnv.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: rawEnv.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        NEXT_PUBLIC_FIREBASE_APP_ID: rawEnv.NEXT_PUBLIC_FIREBASE_APP_ID,
+    };
+}
+
 export function getPublicAuthProvider() {
-    return publicEnv.NEXT_PUBLIC_AUTH_PROVIDER;
+    return resolvePublicRuntimeEnv().NEXT_PUBLIC_AUTH_PROVIDER as PublicAuthProvider;
+}
+
+export function hasFirebasePublicConfig() {
+    return hasCompleteFirebasePublicConfig(getPublicRuntimeEnv());
 }
 
 export function isFirebaseAuthEnabled() {
-    return publicEnv.NEXT_PUBLIC_AUTH_PROVIDER === 'firebase';
+    return getPublicAuthProvider() === 'firebase' && hasFirebasePublicConfig();
 }
 
 export function normalizeFirebaseUser(user: User): FrontendAuthUser {
@@ -57,6 +96,14 @@ export function normalizeFirebaseUser(user: User): FrontendAuthUser {
 }
 
 function getFirebaseConfig() {
+    const publicEnv = resolvePublicRuntimeEnv();
+
+    if (!hasFirebasePublicConfig()) {
+        throw new Error(
+            'Firebase auth is configured as the public provider, but one or more NEXT_PUBLIC_FIREBASE_* variables are missing in the web runtime.',
+        );
+    }
+
     return {
         apiKey: publicEnv.NEXT_PUBLIC_FIREBASE_API_KEY,
         authDomain: publicEnv.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,

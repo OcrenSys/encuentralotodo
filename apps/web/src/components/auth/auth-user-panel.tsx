@@ -36,7 +36,7 @@ export function AuthUserPanel() {
   const router = useRouter();
   const { isAuthenticated, provider, signOut, user } = useCurrentAuthUser();
   const sessionQuery = trpc.auth.me.useQuery(undefined, {
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && provider === 'firebase',
     retry: false,
   });
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -83,11 +83,7 @@ export function AuthUserPanel() {
   const displayEmail = sessionUser?.email ?? user.email ?? 'Sin email';
   const displayMeta = sessionUser
     ? `${displayEmail} · ${formatRoleLabel(sessionUser.role)}`
-    : `${displayEmail} · ${
-        provider === 'firebase'
-          ? formatProviderLabel(user.provider)
-          : 'Modo demo'
-      }`;
+    : `${displayEmail} · ${formatProviderLabel(user.provider)}`;
 
   return (
     <div className="surface-soft flex items-center gap-3 rounded-lg px-4 py-3">
