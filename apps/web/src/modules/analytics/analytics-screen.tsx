@@ -6,15 +6,26 @@ import {
   Star,
   TrendingUp,
 } from 'lucide-react';
-import { Card, LoadingSkeleton } from 'ui';
+import { Card, EmptyState, LoadingSkeleton } from 'ui';
 
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatCard } from '../../components/management/stat-card';
 import { useManagementData } from '../../lib/management-data';
 
 export function AnalyticsScreen() {
-  const { businessAnalytics, loading, platformAnalytics, roleView } =
-    useManagementData();
+  const {
+    businessAnalytics,
+    loading,
+    platformAnalytics,
+    roleView,
+    canViewPlatformData,
+    hasManagedBusinesses,
+    isMockMode,
+  } = useManagementData();
+
+  const usesPlatformRoleView = isMockMode
+    ? roleView === 'SUPERADMIN'
+    : canViewPlatformData;
 
   if (loading) {
     return (
@@ -33,68 +44,76 @@ export function AnalyticsScreen() {
     );
   }
 
-  const stats =
-    roleView === 'SUPERADMIN'
-      ? [
-          {
-            helper: 'Negocios aprobados y visibles para discovery.',
-            icon: BarChart3,
-            label: 'Negocios aprobados',
-            value: platformAnalytics?.summary.totalApprovedBusinesses ?? 0,
-            variant: 'blue' as const,
-          },
-          {
-            helper: 'Promociones vigentes con ventana activa.',
-            icon: TrendingUp,
-            label: 'Promociones activas',
-            value: platformAnalytics?.summary.totalActivePromotions ?? 0,
-            variant: 'green' as const,
-          },
-          {
-            helper: 'Volumen total de leads persistidos en plataforma.',
-            icon: ChartColumnIncreasing,
-            label: 'Leads acumulados',
-            value: platformAnalytics?.summary.totalLeads ?? 0,
-            variant: 'amber' as const,
-          },
-          {
-            helper: 'Promedio real a partir de reviews persistidas.',
-            icon: Star,
-            label: 'Rating plataforma',
-            value: platformAnalytics?.summary.averagePlatformRating ?? 0,
-            variant: 'neutral' as const,
-          },
-        ]
-      : [
-          {
-            helper: 'Total histórico de leads del negocio principal visible.',
-            icon: BarChart3,
-            label: 'Leads totales',
-            value: businessAnalytics?.overview.totalLeads ?? 0,
-            variant: 'blue' as const,
-          },
-          {
-            helper: 'Volumen reciente útil para seguimiento comercial.',
-            icon: TrendingUp,
-            label: 'Leads últimos 30d',
-            value: businessAnalytics?.overview.leadsLast30Days ?? 0,
-            variant: 'amber' as const,
-          },
-          {
-            helper: 'Reseñas persistidas asociadas al negocio.',
-            icon: ChartColumnIncreasing,
-            label: 'Reviews',
-            value: businessAnalytics?.overview.totalReviews ?? 0,
-            variant: 'neutral' as const,
-          },
-          {
-            helper: 'Señal monetizable derivada de actividad real.',
-            icon: Star,
-            label: 'Engagement score',
-            value: businessAnalytics?.monetization.engagementScore ?? 0,
-            variant: 'green' as const,
-          },
-        ];
+  if (!isMockMode && !canViewPlatformData && !hasManagedBusinesses) {
+    return (
+      <EmptyState
+        title="Sin acceso a analítica de plataforma"
+        description="La analítica real usa el rol resuelto por el backend y la membresía real del negocio. Cuando tengas negocios asignados verás aquí la analítica correspondiente."
+      />
+    );
+  }
+
+  const stats = usesPlatformRoleView
+    ? [
+        {
+          helper: 'Negocios aprobados y visibles para discovery.',
+          icon: BarChart3,
+          label: 'Negocios aprobados',
+          value: platformAnalytics?.summary.totalApprovedBusinesses ?? 0,
+          variant: 'blue' as const,
+        },
+        {
+          helper: 'Promociones vigentes con ventana activa.',
+          icon: TrendingUp,
+          label: 'Promociones activas',
+          value: platformAnalytics?.summary.totalActivePromotions ?? 0,
+          variant: 'green' as const,
+        },
+        {
+          helper: 'Volumen total de leads persistidos en plataforma.',
+          icon: ChartColumnIncreasing,
+          label: 'Leads acumulados',
+          value: platformAnalytics?.summary.totalLeads ?? 0,
+          variant: 'amber' as const,
+        },
+        {
+          helper: 'Promedio real a partir de reviews persistidas.',
+          icon: Star,
+          label: 'Rating plataforma',
+          value: platformAnalytics?.summary.averagePlatformRating ?? 0,
+          variant: 'neutral' as const,
+        },
+      ]
+    : [
+        {
+          helper: 'Total histórico de leads del negocio principal visible.',
+          icon: BarChart3,
+          label: 'Leads totales',
+          value: businessAnalytics?.overview.totalLeads ?? 0,
+          variant: 'blue' as const,
+        },
+        {
+          helper: 'Volumen reciente útil para seguimiento comercial.',
+          icon: TrendingUp,
+          label: 'Leads últimos 30d',
+          value: businessAnalytics?.overview.leadsLast30Days ?? 0,
+          variant: 'amber' as const,
+        },
+        {
+          helper: 'Reseñas persistidas asociadas al negocio.',
+          icon: ChartColumnIncreasing,
+          label: 'Reviews',
+          value: businessAnalytics?.overview.totalReviews ?? 0,
+          variant: 'neutral' as const,
+        },
+        {
+          helper: 'Señal monetizable derivada de actividad real.',
+          icon: Star,
+          label: 'Engagement score',
+          value: businessAnalytics?.monetization.engagementScore ?? 0,
+          variant: 'green' as const,
+        },
+      ];
 
   return (
     <div className="space-y-6">
@@ -110,7 +129,7 @@ export function AnalyticsScreen() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        {roleView === 'SUPERADMIN' ? (
+        {usesPlatformRoleView ? (
           <>
             <Card className="space-y-4 border-[rgba(140,156,177,0.18)] bg-[linear-gradient(180deg,rgba(250,252,255,0.97),rgba(244,248,252,0.92))] hover:translate-y-0">
               <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">

@@ -89,10 +89,10 @@ export function KpiCards() {
         value={analyticsQuery.data?.summary.totalActivePromotions ?? 0}
       />
       <KpiCard
-        helper="Sesión demo actual usada para validar permisos y experiencia."
+        helper="Rol operativo devuelto por la sesión actual del backend para contrastar permisos reales."
         icon="role"
         label="Rol de la cuenta"
-        value={sessionQuery.data?.user?.role ?? 'USER'}
+        value={sessionQuery.data?.user?.role ?? 'UNASSIGNED'}
       />
     </section>
   );

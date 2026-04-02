@@ -5,6 +5,7 @@ import { Button, Card, EmptyState, LoadingSkeleton } from 'ui';
 
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
+import { useCurrentPlatformUser } from '../../lib/platform-authorization';
 import { SurfaceTable } from '../../components/management/surface-table';
 import {
   formatBusinessCategoryLabel,
@@ -21,6 +22,7 @@ function formatOwnerLabel(ownerId: string) {
 
 export function ApprovalsScreen() {
   const utils = trpc.useUtils();
+  const { currentUser } = useCurrentPlatformUser();
   const pendingQuery = trpc.admin.pendingBusinesses.useQuery();
   const approveBusiness = trpc.admin.approveBusiness.useMutation({
     onSuccess: async () => {
@@ -39,7 +41,7 @@ export function ApprovalsScreen() {
     <div className="space-y-6">
       <ModuleHeader
         title="Cola de aprobaciones"
-        description="Revisión centralizada para el administrador general. Aquí se valida la calidad y el estado del negocio antes de publicarlo."
+        description="Revisión centralizada para cuentas con permisos de plataforma. Aquí se valida la calidad y el estado del negocio antes de publicarlo."
       />
 
       {pendingQuery.isLoading ? (
@@ -92,12 +94,9 @@ export function ApprovalsScreen() {
                   <div className="self-center">
                     <Button
                       className="w-full justify-center"
-                      disabled={approveBusiness.isPending}
+                      disabled={approveBusiness.isPending || !currentUser}
                       onClick={() =>
-                        approveBusiness.mutate({
-                          approvedBy: 'admin-luis',
-                          businessId: business.id,
-                        })
+                        approveBusiness.mutate({ businessId: business.id })
                       }
                     >
                       Aprobar
@@ -140,12 +139,9 @@ export function ApprovalsScreen() {
                   </p>
                 </div>
                 <Button
-                  disabled={approveBusiness.isPending}
+                  disabled={approveBusiness.isPending || !currentUser}
                   onClick={() =>
-                    approveBusiness.mutate({
-                      approvedBy: 'admin-luis',
-                      businessId: business.id,
-                    })
+                    approveBusiness.mutate({ businessId: business.id })
                   }
                 >
                   Aprobar negocio

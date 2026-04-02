@@ -15,8 +15,19 @@ import {
     Shapes,
     Users,
 } from 'lucide-react';
+import type { UserRole } from 'types';
 
 import type { ManagementRole } from './role-view';
+import { assignedPlatformRoles, platformAdminRoles, superAdminRoles } from './platform-roles';
+
+export type NavigationAccessContext =
+    | { mode: 'mock'; role: ManagementRole }
+    | {
+          mode: 'real';
+          role: UserRole | null | undefined;
+          hasManagedBusinesses: boolean;
+          ownsManagedBusinesses: boolean;
+      };
 
 export type NavigationItem = {
     key: string;
@@ -24,7 +35,9 @@ export type NavigationItem = {
     href: string;
     icon: LucideIcon;
     description: string;
-    roles: ManagementRole[];
+    demoRoles: ManagementRole[];
+    platformRoles?: readonly UserRole[];
+    realBusinessAccess?: 'managed' | 'owned';
     mobilePriority?: number;
 };
 
@@ -35,7 +48,9 @@ export const navigationItems: NavigationItem[] = [
         href: '/dashboard',
         icon: LayoutDashboard,
         description: 'Resumen operativo, indicadores clave y accesos rápidos según el rol.',
-        roles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        demoRoles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        platformRoles: platformAdminRoles,
+        realBusinessAccess: 'managed',
         mobilePriority: 1,
     },
     {
@@ -44,7 +59,8 @@ export const navigationItems: NavigationItem[] = [
         href: '/admin/approvals',
         icon: CheckCheck,
         description: 'Moderación y aprobaciones antes de publicar negocios.',
-        roles: ['SUPERADMIN'],
+        demoRoles: ['SUPERADMIN'],
+        platformRoles: platformAdminRoles,
         mobilePriority: 2,
     },
     {
@@ -53,8 +69,18 @@ export const navigationItems: NavigationItem[] = [
         href: '/admin/businesses',
         icon: Building2,
         description: 'Vista global de todos los negocios registrados.',
-        roles: ['SUPERADMIN'],
+        demoRoles: ['SUPERADMIN'],
+        platformRoles: platformAdminRoles,
         mobilePriority: 3,
+    },
+    {
+        key: 'platform-users',
+        label: 'Usuarios',
+        href: '/admin/users',
+        icon: Users,
+        description: 'Gestión de roles y acceso para usuarios de la plataforma.',
+        demoRoles: ['SUPERADMIN'],
+        platformRoles: superAdminRoles,
     },
     {
         key: 'categories',
@@ -62,7 +88,8 @@ export const navigationItems: NavigationItem[] = [
         href: '/admin/categories',
         icon: Shapes,
         description: 'Gobierno de categorías y estructura editorial.',
-        roles: ['SUPERADMIN'],
+        demoRoles: ['SUPERADMIN'],
+        platformRoles: superAdminRoles,
     },
     {
         key: 'plans',
@@ -70,7 +97,8 @@ export const navigationItems: NavigationItem[] = [
         href: '/admin/plans',
         icon: CreditCard,
         description: 'Matriz de planes, beneficios y límites comerciales.',
-        roles: ['SUPERADMIN'],
+        demoRoles: ['SUPERADMIN'],
+        platformRoles: platformAdminRoles,
     },
     {
         key: 'reports',
@@ -78,7 +106,8 @@ export const navigationItems: NavigationItem[] = [
         href: '/admin/reports',
         icon: FileBarChart2,
         description: 'Alertas de operación, salud de plataforma y reportes.',
-        roles: ['SUPERADMIN'],
+        demoRoles: ['SUPERADMIN'],
+        platformRoles: platformAdminRoles,
         mobilePriority: 4,
     },
     {
@@ -87,7 +116,8 @@ export const navigationItems: NavigationItem[] = [
         href: '/business',
         icon: BriefcaseBusiness,
         description: 'Marca, ubicación, horarios y estado de publicación.',
-        roles: ['OWNER', 'MANAGER'],
+        demoRoles: ['OWNER', 'MANAGER'],
+        realBusinessAccess: 'managed',
         mobilePriority: 2,
     },
     {
@@ -96,7 +126,8 @@ export const navigationItems: NavigationItem[] = [
         href: '/products',
         icon: Package,
         description: 'Catálogo, filtros y estado comercial del inventario.',
-        roles: ['OWNER', 'MANAGER'],
+        demoRoles: ['OWNER', 'MANAGER'],
+        realBusinessAccess: 'managed',
         mobilePriority: 3,
     },
     {
@@ -105,7 +136,8 @@ export const navigationItems: NavigationItem[] = [
         href: '/promotions',
         icon: Megaphone,
         description: 'Campañas activas, expiradas y puntos de creación.',
-        roles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        demoRoles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        realBusinessAccess: 'managed',
         mobilePriority: 4,
     },
     {
@@ -114,7 +146,8 @@ export const navigationItems: NavigationItem[] = [
         href: '/leads',
         icon: Inbox,
         description: 'Seguimiento comercial, fuente y estado de atención.',
-        roles: ['OWNER', 'MANAGER'],
+        demoRoles: ['OWNER', 'MANAGER'],
+        realBusinessAccess: 'managed',
         mobilePriority: 5,
     },
     {
@@ -123,7 +156,8 @@ export const navigationItems: NavigationItem[] = [
         href: '/team',
         icon: Users,
         description: 'Coordinación entre propietario y encargados por negocio.',
-        roles: ['OWNER'],
+        demoRoles: ['OWNER'],
+        realBusinessAccess: 'owned',
     },
     {
         key: 'analytics',
@@ -131,7 +165,9 @@ export const navigationItems: NavigationItem[] = [
         href: '/analytics',
         icon: BarChart3,
         description: 'Rendimiento comercial, tráfico y conversión.',
-        roles: ['SUPERADMIN', 'OWNER'],
+        demoRoles: ['SUPERADMIN', 'OWNER'],
+        platformRoles: platformAdminRoles,
+        realBusinessAccess: 'managed',
         mobilePriority: 5,
     },
     {
@@ -140,17 +176,38 @@ export const navigationItems: NavigationItem[] = [
         href: '/settings',
         icon: Settings,
         description: 'Preferencias, notificaciones y operación.',
-        roles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        demoRoles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        platformRoles: assignedPlatformRoles,
         mobilePriority: 6,
     },
 ];
 
-export function getNavigationForRole(role: ManagementRole) {
-    return navigationItems.filter((item) => item.roles.includes(role));
+function isItemVisibleForContext(item: NavigationItem, context: NavigationAccessContext) {
+    if (context.mode === 'mock') {
+        return item.demoRoles.includes(context.role);
+    }
+
+    if (context.role && item.platformRoles?.includes(context.role)) {
+        return true;
+    }
+
+    if (item.realBusinessAccess === 'owned') {
+        return context.ownsManagedBusinesses;
+    }
+
+    if (item.realBusinessAccess === 'managed') {
+        return context.hasManagedBusinesses;
+    }
+
+    return false;
 }
 
-export function getMobileNavigationForRole(role: ManagementRole) {
-    return getNavigationForRole(role)
+export function getNavigationForAccess(context: NavigationAccessContext) {
+    return navigationItems.filter((item) => isItemVisibleForContext(item, context));
+}
+
+export function getMobileNavigationForAccess(context: NavigationAccessContext) {
+    return getNavigationForAccess(context)
         .filter((item) => item.mobilePriority !== undefined)
         .sort((left, right) => (left.mobilePriority ?? 99) - (right.mobilePriority ?? 99))
         .slice(0, 5);
@@ -160,12 +217,12 @@ export function getNavigationItemByPath(pathname: string) {
     return navigationItems.find((item) => pathname === item.href);
 }
 
-export function isPathAllowedForRole(pathname: string, role: ManagementRole) {
-    return navigationItems.some((item) => item.href === pathname && item.roles.includes(role));
+export function isPathAllowedForAccess(pathname: string, context: NavigationAccessContext) {
+    return navigationItems.some((item) => item.href === pathname && isItemVisibleForContext(item, context));
 }
 
-export function getDefaultPathForRole(role: ManagementRole) {
-    return getNavigationForRole(role)[0]?.href ?? '/dashboard';
+export function getDefaultPathForAccess(context: NavigationAccessContext) {
+    return getNavigationForAccess(context)[0]?.href ?? '/settings';
 }
 
 export const routeSearchLabels: Partial<Record<string, string>> = {
@@ -179,6 +236,7 @@ export const routeSearchLabels: Partial<Record<string, string>> = {
     '/settings': 'Buscar ajustes',
     '/admin/approvals': 'Buscar aprobaciones pendientes',
     '/admin/businesses': 'Buscar negocios registrados',
+    '/admin/users': 'Buscar usuarios, roles o estado de acceso',
     '/admin/categories': 'Buscar categorías',
     '/admin/plans': 'Buscar planes',
     '/admin/reports': 'Buscar reportes',
@@ -195,6 +253,7 @@ export const routeEyebrows: Partial<Record<string, string>> = {
     '/settings': 'Configuración',
     '/admin/approvals': 'Operación de plataforma',
     '/admin/businesses': 'Operación de plataforma',
+    '/admin/users': 'Operación de plataforma',
     '/admin/categories': 'Operación de plataforma',
     '/admin/plans': 'Ingresos y planes',
     '/admin/reports': 'Salud de plataforma',
@@ -207,6 +266,6 @@ export const quickLinks = [
     { label: 'Cola de aprobaciones', href: '/admin/approvals' },
 ] as const;
 
-export const adminPrefixes = ['/admin/approvals', '/admin/businesses', '/admin/categories', '/admin/plans', '/admin/reports'];
+export const adminPrefixes = ['/admin/approvals', '/admin/businesses', '/admin/users', '/admin/categories', '/admin/plans', '/admin/reports'];
 
 export const managementPrefixes = ['/dashboard', '/business', '/products', '/promotions', '/leads', '/team', '/analytics', '/settings', ...adminPrefixes];

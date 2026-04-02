@@ -62,7 +62,6 @@ export const getBusinessByIdInputSchema = z.object({
 
 export const approveBusinessInputSchema = z.object({
     businessId: z.string().min(2),
-    approvedBy: z.string().min(2),
 });
 
 export const getBusinessAnalyticsInputSchema = z.object({
@@ -160,8 +159,24 @@ export const authSessionSchema = z.object({
             email: z.string().email(),
             role: userRoleSchema,
             avatarUrl: z.string().url().optional(),
+            isActive: z.boolean().default(true),
         })
         .nullable(),
+});
+
+export const updatePlatformUserRoleInputSchema = z.object({
+    userId: z.string().min(2),
+    role: userRoleSchema,
+});
+
+export const setPlatformUserActiveInputSchema = z.object({
+    userId: z.string().min(2),
+    isActive: z.boolean(),
+});
+
+export const searchPlatformUsersInputSchema = z.object({
+    search: z.string().trim().max(80).optional().default(''),
+    limit: z.number().int().min(1).max(10).optional().default(10),
 });
 
 export type CreateBusinessInput = z.infer<typeof createBusinessInputSchema>;
@@ -182,3 +197,6 @@ export type CreateLeadInput = z.infer<typeof createLeadInputSchema>;
 export type GetLeadByIdInput = z.infer<typeof getLeadByIdInputSchema>;
 export type CreateReviewInput = z.infer<typeof createReviewInputSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;
+export type UpdatePlatformUserRoleInput = z.infer<typeof updatePlatformUserRoleInputSchema>;
+export type SetPlatformUserActiveInput = z.infer<typeof setPlatformUserActiveInputSchema>;
+export type SearchPlatformUsersInput = z.infer<typeof searchPlatformUsersInputSchema>;

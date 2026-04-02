@@ -1,4 +1,4 @@
-import type { UserProfile } from 'types';
+import { createCurrentUser } from 'auth';
 
 import type {
     PlatformAnalyticsRepositoryPort,
@@ -51,7 +51,7 @@ function createRepositoryMock(): jest.Mocked<PlatformAnalyticsRepositoryPort> {
     };
 }
 
-function createService(currentUser: UserProfile | null) {
+function createService(currentUser: ReturnType<typeof createCurrentUser> | null) {
     const repository = createRepositoryMock();
 
     return {
@@ -65,12 +65,15 @@ function createService(currentUser: UserProfile | null) {
 
 describe('PlatformAnalyticsService', () => {
     it('builds platform summary, leaderboard and monetization indicators for admins', async () => {
-        const { service, repository } = createService({
+        const { service, repository } = createService(createCurrentUser({
             id: 'admin-luis',
             fullName: 'Luis Admin',
             email: 'luis@encuentralotodo.app',
             role: 'ADMIN',
-        });
+            authProvider: 'mock',
+            externalAuthId: 'admin-luis',
+            emailVerified: true,
+        }));
         repository.getSummary.mockResolvedValue(createSummaryRecord());
         repository.listBusinessActivity.mockResolvedValue([
             createBusinessActivityRecord(),
@@ -138,12 +141,15 @@ describe('PlatformAnalyticsService', () => {
     });
 
     it('rejects non-admin callers', async () => {
-        const { service } = createService({
+        const { service } = createService(createCurrentUser({
             id: 'owner-sofia',
             fullName: 'Sofia Rivas',
             email: 'sofia@encuentralotodo.app',
             role: 'USER',
-        });
+            authProvider: 'mock',
+            externalAuthId: 'owner-sofia',
+            emailVerified: true,
+        }));
 
         await expect(service.getOverview({})).rejects.toMatchObject({
             code: 'FORBIDDEN',

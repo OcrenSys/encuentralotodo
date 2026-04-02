@@ -1,33 +1,46 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
 import { Toaster } from 'sonner';
 
-import { getApiBaseUrl } from 'config';
-
-import { RoleViewProvider, useRoleView } from '../lib/role-view';
+import { AuthProvider, useCurrentAuthUser } from '../lib/auth-context';
+import { getPublicApiBaseUrl } from '../lib/public-runtime-env';
+import { RoleViewProvider } from '../lib/role-view';
+import {
+  getCurrentAuthorizationHeader,
+  getPublicAuthProvider,
+} from '../lib/firebase-auth';
 import { trpc } from '../lib/trpc';
 
 function TrpcProviders({ children }: { children: React.ReactNode }) {
-  const { roleProfile } = useRoleView();
+  const { isAuthenticated, user } = useCurrentAuthUser();
   const [queryClient] = useState(() => new QueryClient());
+  const authProvider = getPublicAuthProvider();
+
+  useEffect(() => {
+    void queryClient.invalidateQueries();
+  }, [isAuthenticated, queryClient, user?.uid]);
+
   const trpcClient = useMemo(
     () =>
       trpc.createClient({
         links: [
           httpBatchLink({
-            url: `${getApiBaseUrl(process.env)}/trpc`,
-            headers() {
-              return {
-                'x-demo-user': roleProfile.email,
-              };
+            url: `${getPublicApiBaseUrl()}/trpc`,
+            async headers() {
+              if (authProvider === 'firebase') {
+                const authorization = await getCurrentAuthorizationHeader();
+                return authorization ? { authorization } : {};
+              }
+
+              return {};
             },
           }),
         ],
       }),
-    [roleProfile.email],
+    [authProvider],
   );
 
   return (
@@ -42,8 +55,10 @@ function TrpcProviders({ children }: { children: React.ReactNode }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <RoleViewProvider>
-      <TrpcProviders>{children}</TrpcProviders>
-    </RoleViewProvider>
+    <AuthProvider>
+      <RoleViewProvider>
+        <TrpcProviders>{children}</TrpcProviders>
+      </RoleViewProvider>
+    </AuthProvider>
   );
 }

@@ -1,11 +1,11 @@
 import { TRPCError } from '@trpc/server';
+import type { CurrentUser } from 'auth';
 import type {
-    ApproveBusinessInput,
     BusinessListFilters,
     CreateBusinessInput,
-    UserProfile,
 } from 'types';
 
+import { platformAdminRoles, requireActiveUser, requirePlatformRole } from '../auth/authorization';
 import type { EmailService } from '../email';
 import { isAdminUser } from './business-access';
 import { mapBusiness, mapBusinessDetails, mapBusinessSummary } from './business.mappers';
@@ -14,17 +14,24 @@ import type { BusinessRepositoryPort } from './business.repository';
 interface BusinessServiceDependencies {
     repository: BusinessRepositoryPort;
     emailService: EmailService;
-    currentUser: UserProfile | null;
+    currentUser: CurrentUser | null;
 }
 
 function sortBusinessSummaries(left: ReturnType<typeof mapBusinessSummary>, right: ReturnType<typeof mapBusinessSummary>) {
     return right.rating - left.rating || left.distanceKm - right.distanceKm;
 }
 
+function sortBusinessLikeSummaries(
+    left: Pick<ReturnType<typeof mapBusinessSummary>, 'rating' | 'distanceKm'>,
+    right: Pick<ReturnType<typeof mapBusinessSummary>, 'rating' | 'distanceKm'>,
+) {
+    return right.rating - left.rating || left.distanceKm - right.distanceKm;
+}
+
 export class BusinessService {
     private readonly repository: BusinessRepositoryPort;
     private readonly emailService: EmailService;
-    private readonly currentUser: UserProfile | null;
+    private readonly currentUser: CurrentUser | null;
 
     constructor({ repository, emailService, currentUser }: BusinessServiceDependencies) {
         this.repository = repository;
@@ -48,6 +55,19 @@ export class BusinessService {
         return business ? mapBusinessDetails(business) : null;
     }
 
+    async listManagedBusinesses(filters: BusinessListFilters = {}) {
+        const currentUser = requireActiveUser(this.currentUser);
+        const managedFilters = {
+            ...filters,
+            includePending: true,
+        };
+        const businesses = isAdminUser(currentUser)
+            ? await this.repository.listBusinessesForManagement(managedFilters)
+            : await this.repository.listBusinessesByUserAccess(currentUser.id, managedFilters);
+
+        return businesses.map(mapBusinessDetails).sort(sortBusinessLikeSummaries);
+    }
+
     async createBusiness(input: CreateBusinessInput) {
         const ownerId = await this.resolveOwnerId(input.ownerId);
         const managers = await this.resolveManagerIds(input.managers, ownerId);
@@ -68,7 +88,7 @@ export class BusinessService {
         return businesses.map(mapBusinessSummary).sort(sortBusinessSummaries);
     }
 
-    async approveBusiness(input: ApproveBusinessInput) {
+    async approveBusiness(input: { businessId: string }) {
         this.ensureAdmin();
 
         const approvedBusiness = await this.repository.approveBusiness(input.businessId);
@@ -93,9 +113,7 @@ export class BusinessService {
     }
 
     private ensureAdmin() {
-        if (!isAdminUser(this.currentUser)) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required.' });
-        }
+        return requirePlatformRole(this.currentUser, platformAdminRoles, 'Admin access required.');
     }
 
     private async resolveOwnerId(requestedOwnerId: string) {

@@ -1,11 +1,11 @@
 import { TRPCError } from '@trpc/server';
+import type { CurrentUser } from 'auth';
 import type {
     GetPlatformAnalyticsInput,
     PlatformAnalyticsOverview,
-    UserProfile,
 } from 'types';
 
-import { isAdminUser } from '../business/business-access';
+import { platformAdminRoles, requirePlatformRole } from '../auth/authorization';
 import {
     buildTrendPoints,
     calculateEngagementScore,
@@ -20,7 +20,7 @@ import type { PlatformAnalyticsRepositoryPort } from './platform-analytics.repos
 
 interface PlatformAnalyticsServiceDependencies {
     repository: PlatformAnalyticsRepositoryPort;
-    currentUser: UserProfile | null;
+    currentUser: CurrentUser | null;
 }
 
 interface EnrichedBusinessActivity {
@@ -46,7 +46,7 @@ interface EnrichedBusinessActivity {
 
 export class PlatformAnalyticsService {
     private readonly repository: PlatformAnalyticsRepositoryPort;
-    private readonly currentUser: UserProfile | null;
+    private readonly currentUser: CurrentUser | null;
 
     constructor({ repository, currentUser }: PlatformAnalyticsServiceDependencies) {
         this.repository = repository;
@@ -187,8 +187,6 @@ export class PlatformAnalyticsService {
     }
 
     private ensureAdmin() {
-        if (!isAdminUser(this.currentUser)) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required.' });
-        }
+        return requirePlatformRole(this.currentUser, platformAdminRoles, 'Admin access required.');
     }
 }

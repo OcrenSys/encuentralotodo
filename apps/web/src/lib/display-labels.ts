@@ -12,6 +12,7 @@ const statusLabels: Record<string, string> = {
   TODAY: 'Hoy',
   OWNER: 'Propietario',
   MANAGER: 'Encargado',
+  UNASSIGNED: 'Sin permisos',
   SUPERADMIN: 'Administrador general',
   USER: 'Usuario',
   FEATURED: 'Destacado',

@@ -2,8 +2,10 @@
 
 import { useMemo } from 'react';
 
-import { marketplaceSeed, type BusinessSummary } from 'types';
+import { marketplaceSeed, type BusinessDetails, type BusinessSummary } from 'types';
 
+import { useCurrentAuthUser } from './auth-context';
+import { hasPlatformRole, platformAdminRoles } from './platform-roles';
 import { trpc } from './trpc';
 import { roleProfiles, useRoleView } from './role-view';
 
@@ -29,6 +31,15 @@ type ActivityRecord = {
     title: string;
     detail: string;
     time: string;
+};
+
+type TeamMemberRecord = {
+    id: string;
+    fullName: string;
+    email: string;
+    avatarUrl?: string;
+    membershipRole: 'OWNER' | 'MANAGER';
+    businessIds: string[];
 };
 
 function formatActivityDate(value: string) {
@@ -141,27 +152,74 @@ function uniqueBusinessesById(businesses: BusinessSummary[]) {
 }
 
 export function useManagementData() {
+    const { provider } = useCurrentAuthUser();
     const { roleView, roleProfile } = useRoleView();
-    const sessionQuery = trpc.auth.me.useQuery();
+    const isMockMode = provider === 'mock';
+    const sessionQuery = trpc.auth.me.useQuery(undefined, {
+        enabled: true,
+        retry: false,
+    });
+    const backendUser = sessionQuery.data?.user ?? null;
+    const platformRole = backendUser?.role;
+    const isPlatformAdmin = hasPlatformRole(platformRole, platformAdminRoles);
+    const canViewPlatformData = isMockMode ? roleView === 'SUPERADMIN' : isPlatformAdmin;
+    const managedBusinessesQuery = trpc.business.managed.useQuery(undefined, {
+        enabled:
+            !isMockMode &&
+            Boolean(backendUser) &&
+            backendUser?.isActive !== false &&
+            backendUser?.role !== 'UNASSIGNED',
+        retry: false,
+    });
     const platformAnalyticsQuery = trpc.analytics.platformOverview.useQuery(
         { period: '30D' },
         {
-            enabled: roleView === 'SUPERADMIN',
+            enabled: canViewPlatformData,
             retry: false,
         },
     );
-    const businessQuery = trpc.business.list.useQuery({ includePending: true });
-    const promotionsQuery = trpc.promotion.listActive.useQuery();
+    const businessQuery = trpc.business.list.useQuery(
+        { includePending: true },
+        {
+            enabled: isMockMode,
+            retry: false,
+        },
+    );
+    const promotionsQuery = trpc.promotion.listActive.useQuery(undefined, {
+        enabled: isMockMode || isPlatformAdmin,
+        retry: false,
+    });
     const pendingBusinessesQuery = trpc.admin.pendingBusinesses.useQuery(undefined, {
+        enabled: canViewPlatformData,
         retry: false,
     });
 
+
+    const managedBusinesses = useMemo(
+        () => ((managedBusinessesQuery.data ?? []) as BusinessDetails[]).sort(sortByRecent),
+        [managedBusinessesQuery.data],
+    );
+
     const allBusinesses = useMemo(
-        () => ((businessQuery.data ?? []) as BusinessSummary[]).sort(sortByRecent),
-        [businessQuery.data],
+        () => {
+            if (isMockMode) {
+                return ((businessQuery.data ?? []) as BusinessSummary[]).sort(sortByRecent);
+            }
+
+            if (isPlatformAdmin) {
+                return managedBusinesses;
+            }
+
+            return [] as BusinessSummary[];
+        },
+        [businessQuery.data, isMockMode, isPlatformAdmin, managedBusinesses],
     );
 
     const accessibleBusinesses = useMemo(() => {
+        if (!isMockMode) {
+            return managedBusinesses;
+        }
+
         if (roleView === 'SUPERADMIN') {
             return allBusinesses;
         }
@@ -171,9 +229,14 @@ export function useManagementData() {
         }
 
         return allBusinesses.filter((business) => business.managers.includes(roleProfile.userId));
-    }, [allBusinesses, roleProfile.userId, roleView]);
+    }, [allBusinesses, isMockMode, managedBusinesses, roleProfile.userId, roleView]);
 
     const primaryBusiness = accessibleBusinesses[0] ?? null;
+    const hasManagedBusinesses = accessibleBusinesses.length > 0;
+    const ownsManagedBusinesses = isMockMode
+        ? roleView === 'OWNER'
+        : managedBusinesses.some((business) => business.owner?.id === backendUser?.id);
+    const shouldQueryBusinessAnalytics = Boolean(primaryBusiness) && !canViewPlatformData;
 
     const businessAnalyticsQuery = trpc.analytics.businessOverview.useQuery(
         {
@@ -181,14 +244,26 @@ export function useManagementData() {
             period: '30D',
         },
         {
-            enabled: roleView !== 'SUPERADMIN' && Boolean(primaryBusiness),
+            enabled: shouldQueryBusinessAnalytics,
             retry: false,
         },
     );
 
     const managedProducts = useMemo(
-        () =>
-            marketplaceSeed.products
+        () => {
+            if (!isMockMode) {
+                return managedBusinesses
+                    .flatMap((business) =>
+                        business.products.map((product) => ({
+                            ...product,
+                            businessName: business.name,
+                            businessStatus: business.status,
+                        })),
+                    )
+                    .sort(sortByRecent);
+            }
+
+            return marketplaceSeed.products
                 .filter((product) => accessibleBusinesses.some((business) => business.id === product.businessId))
                 .map((product) => {
                     const business = allBusinesses.find((item) => item.id === product.businessId);
@@ -199,25 +274,74 @@ export function useManagementData() {
                         businessStatus: business?.status ?? 'PENDING',
                     };
                 })
-                .sort(sortByRecent),
-        [accessibleBusinesses, allBusinesses],
+                .sort(sortByRecent);
+        },
+        [accessibleBusinesses, allBusinesses, isMockMode, managedBusinesses],
     );
 
     const managedPromotions = useMemo(() => {
+        if (!isMockMode && !isPlatformAdmin) {
+            return managedBusinesses
+                .flatMap((business) =>
+                    business.promotions.map((promotion) => ({
+                        ...promotion,
+                        businessName: business.name,
+                    })),
+                )
+                .sort((left, right) => new Date(right.validUntil).getTime() - new Date(left.validUntil).getTime());
+        }
+
         const promotionsSource = promotionsQuery.data ?? [];
         const visibleIds = new Set(accessibleBusinesses.map((business) => business.id));
 
         return promotionsSource
-            .filter((promotion) => roleView === 'SUPERADMIN' || visibleIds.has(promotion.businessId))
+            .filter((promotion) => !isMockMode || roleView === 'SUPERADMIN' || visibleIds.has(promotion.businessId))
             .map((promotion) => ({
                 ...promotion,
                 businessName:
                     allBusinesses.find((business) => business.id === promotion.businessId)?.name ??
                     'Negocio',
             }));
-    }, [accessibleBusinesses, allBusinesses, promotionsQuery.data, roleView]);
+    }, [accessibleBusinesses, allBusinesses, isMockMode, isPlatformAdmin, managedBusinesses, promotionsQuery.data, roleView]);
 
-    const teamMembers = useMemo(() => {
+    const teamMembers = useMemo<TeamMemberRecord[]>(() => {
+        if (!isMockMode) {
+            const teamById = new Map<string, TeamMemberRecord>();
+
+            managedBusinesses.forEach((business) => {
+                if (business.owner) {
+                    const existingOwner = teamById.get(business.owner.id);
+                    teamById.set(business.owner.id, {
+                        id: business.owner.id,
+                        fullName: business.owner.fullName,
+                        email: business.owner.email,
+                        avatarUrl: business.owner.avatarUrl,
+                        membershipRole: 'OWNER',
+                        businessIds: existingOwner
+                            ? Array.from(new Set([...existingOwner.businessIds, business.id]))
+                            : [business.id],
+                    });
+                }
+
+                business.managersDetailed.forEach((manager) => {
+                    const existingManager = teamById.get(manager.id);
+                    teamById.set(manager.id, {
+                        id: manager.id,
+                        fullName: manager.fullName,
+                        email: manager.email,
+                        avatarUrl: manager.avatarUrl,
+                        membershipRole:
+                            existingManager?.membershipRole === 'OWNER' ? 'OWNER' : 'MANAGER',
+                        businessIds: existingManager
+                            ? Array.from(new Set([...existingManager.businessIds, business.id]))
+                            : [business.id],
+                    });
+                });
+            });
+
+            return Array.from(teamById.values());
+        }
+
         const personIds = new Set<string>();
 
         accessibleBusinesses.forEach((business) => {
@@ -225,11 +349,26 @@ export function useManagementData() {
             business.managers.forEach((managerId) => personIds.add(managerId));
         });
 
-        return marketplaceSeed.users.filter((user) => personIds.has(user.id));
-    }, [accessibleBusinesses]);
+        return marketplaceSeed.users
+            .filter((user) => personIds.has(user.id))
+            .map((user) => ({
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email,
+                avatarUrl: user.avatarUrl,
+                membershipRole: accessibleBusinesses.some((business) => business.ownerId === user.id)
+                    ? 'OWNER'
+                    : 'MANAGER',
+                businessIds: accessibleBusinesses
+                    .filter(
+                        (business) => business.ownerId === user.id || business.managers.includes(user.id),
+                    )
+                    .map((business) => business.id),
+            }));
+    }, [accessibleBusinesses, isMockMode, managedBusinesses]);
 
     const recentActivity = useMemo<ActivityRecord[]>(() => {
-        if (roleView === 'SUPERADMIN' && platformAnalyticsQuery.data) {
+        if (canViewPlatformData && platformAnalyticsQuery.data) {
             const leaderboardActivity = platformAnalyticsQuery.data.businessActivityLeaderboard.map((business) => ({
                 id: `leader-${business.businessId}`,
                 title: business.businessName,
@@ -247,7 +386,7 @@ export function useManagementData() {
             return [...leaderboardActivity, ...candidateActivity].slice(0, 6);
         }
 
-        if (businessAnalyticsQuery.data) {
+        if (isMockMode && businessAnalyticsQuery.data) {
             const leadActivity = businessAnalyticsQuery.data.recentLeads.map((lead) => ({
                 id: `lead-${lead.id}`,
                 title: lead.name,
@@ -297,14 +436,15 @@ export function useManagementData() {
             time: 'Pendiente',
         }));
 
-        return [...businessActivity, ...promotionActivity, ...(roleView === 'SUPERADMIN' ? adminActivity : [])].slice(0, 6);
+        return [...businessActivity, ...promotionActivity, ...(canViewPlatformData ? adminActivity : [])].slice(0, 6);
     }, [
         accessibleBusinesses,
         businessAnalyticsQuery.data,
+        canViewPlatformData,
+        isMockMode,
         managedPromotions,
         pendingBusinessesQuery.data,
         platformAnalyticsQuery.data,
-        roleView,
     ]);
 
     const platformHealth = useMemo(() => {
@@ -330,23 +470,32 @@ export function useManagementData() {
     }, [pendingBusinessesQuery.data, platformAnalyticsQuery.data]);
 
     const analyticsLoading =
-        (roleView === 'SUPERADMIN' && platformAnalyticsQuery.isLoading) ||
-        (roleView !== 'SUPERADMIN' && Boolean(primaryBusiness) && businessAnalyticsQuery.isLoading);
+        (canViewPlatformData && platformAnalyticsQuery.isLoading) ||
+        (shouldQueryBusinessAnalytics && businessAnalyticsQuery.isLoading);
 
     const loading =
         businessQuery.isLoading ||
+        managedBusinessesQuery.isLoading ||
         promotionsQuery.isLoading ||
         sessionQuery.isLoading ||
         analyticsLoading ||
-        (roleView === 'SUPERADMIN' && pendingBusinessesQuery.isLoading);
+        (canViewPlatformData && pendingBusinessesQuery.isLoading);
 
     return {
+        isMockMode,
+        backendUser,
+        platformRole,
+        isPlatformAdmin,
+        canViewPlatformData,
+        hasManagedBusinesses,
+        ownsManagedBusinesses,
         roleView,
         roleProfile,
         sessionQuery,
         businessAnalytics: businessAnalyticsQuery.data,
         businessAnalyticsQuery,
         businessQuery,
+        managedBusinessesQuery,
         promotionsQuery,
         platformAnalytics: platformAnalyticsQuery.data,
         platformAnalyticsQuery,
@@ -354,12 +503,13 @@ export function useManagementData() {
         loading,
         allBusinesses,
         accessibleBusinesses: uniqueBusinessesById(accessibleBusinesses),
+        managedBusinesses,
         primaryBusiness,
         managedProducts,
         managedPromotions,
         teamMembers,
-        leads: leadFixtures[roleView],
-        tasks: taskFixtures[roleView],
+        leads: isMockMode ? leadFixtures[roleView] : [],
+        tasks: isMockMode ? taskFixtures[roleView] : [],
         recentActivity,
         platformHealth,
     };

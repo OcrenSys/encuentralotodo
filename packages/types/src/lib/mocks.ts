@@ -13,6 +13,7 @@ export const marketplaceSeed: MarketplaceSeedData = {
             email: 'ana@encuentralotodo.app',
             role: 'USER',
             avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+            isActive: true,
         },
         {
             id: 'admin-luis',
@@ -20,6 +21,7 @@ export const marketplaceSeed: MarketplaceSeedData = {
             email: 'luis@encuentralotodo.app',
             role: 'ADMIN',
             avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+            isActive: true,
         },
         {
             id: 'owner-sofia',
@@ -27,6 +29,7 @@ export const marketplaceSeed: MarketplaceSeedData = {
             email: 'sofia@encuentralotodo.app',
             role: 'USER',
             avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80',
+            isActive: true,
         },
         {
             id: 'manager-carlos',
@@ -34,6 +37,7 @@ export const marketplaceSeed: MarketplaceSeedData = {
             email: 'carlos@encuentralotodo.app',
             role: 'USER',
             avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80',
+            isActive: true,
         },
         {
             id: 'manager-julia',
@@ -41,6 +45,7 @@ export const marketplaceSeed: MarketplaceSeedData = {
             email: 'julia@encuentralotodo.app',
             role: 'USER',
             avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+            isActive: true,
         },
         {
             id: 'manager-elena',
@@ -48,6 +53,7 @@ export const marketplaceSeed: MarketplaceSeedData = {
             email: 'elena@encuentralotodo.app',
             role: 'USER',
             avatarUrl: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=200&q=80',
+            isActive: true,
         },
         {
             id: 'owner-mateo',
@@ -55,6 +61,7 @@ export const marketplaceSeed: MarketplaceSeedData = {
             email: 'mateo@encuentralotodo.app',
             role: 'USER',
             avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+            isActive: true,
         },
         {
             id: 'owner-lucia',
@@ -62,6 +69,7 @@ export const marketplaceSeed: MarketplaceSeedData = {
             email: 'lucia@encuentralotodo.app',
             role: 'USER',
             avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80',
+            isActive: true,
         },
     ],
     businesses: [

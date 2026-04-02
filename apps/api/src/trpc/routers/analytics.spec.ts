@@ -1,4 +1,4 @@
-import { createAuthProvider } from 'auth';
+import { createAuthProvider, createCurrentUser } from 'auth';
 
 import { createEmailService } from '../../lib/email';
 import { marketplaceStore } from '../../lib/store';
@@ -7,6 +7,7 @@ import { appRouter } from '../router';
 const baseEnv = {
     NODE_ENV: 'development' as const,
     PORT: 4000,
+    API_PORT: 4000,
     HOST: '0.0.0.0',
     DATABASE_URL: 'postgresql://example',
     DATA_MODE: 'prisma' as const,
@@ -16,7 +17,8 @@ const baseEnv = {
 function createBaseContext() {
     return {
         env: baseEnv,
-        authProvider: createAuthProvider('mock', null),
+        authProvider: createAuthProvider('mock'),
+        verifiedIdentity: null,
         store: marketplaceStore,
         emailService: createEmailService(),
         businessService: {
@@ -56,6 +58,11 @@ function createBaseContext() {
             listByBusiness: jest.fn(),
             create: jest.fn(),
         } as any,
+        userAdminService: {
+            listUsers: jest.fn(),
+            updateUserRole: jest.fn(),
+            setUserActive: jest.fn(),
+        } as any,
     };
 }
 
@@ -75,12 +82,15 @@ describe('analytics router', () => {
     it('rejects non-admin platform analytics callers', async () => {
         const caller = appRouter.createCaller({
             ...createBaseContext(),
-            currentUser: {
+            currentUser: createCurrentUser({
                 id: 'owner-sofia',
                 fullName: 'Sofia Rivas',
                 email: 'sofia@encuentralotodo.app',
                 role: 'USER',
-            },
+                authProvider: 'mock',
+                externalAuthId: 'owner-sofia',
+                emailVerified: true,
+            }),
         });
 
         await expect(caller.analytics.platformOverview({ period: '30D' })).rejects.toMatchObject({

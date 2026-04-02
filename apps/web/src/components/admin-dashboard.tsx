@@ -108,7 +108,6 @@ export function AdminDashboard() {
                             disabled={approveBusiness.isPending}
                             onClick={() =>
                               approveBusiness.mutate({
-                                approvedBy: 'admin-luis',
                                 businessId: business.id,
                               })
                             }
@@ -160,10 +159,7 @@ export function AdminDashboard() {
                       <Button
                         disabled={approveBusiness.isPending}
                         onClick={() =>
-                          approveBusiness.mutate({
-                            approvedBy: 'admin-luis',
-                            businessId: business.id,
-                          })
+                          approveBusiness.mutate({ businessId: business.id })
                         }
                       >
                         Approve
