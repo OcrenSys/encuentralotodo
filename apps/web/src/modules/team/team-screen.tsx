@@ -1,14 +1,27 @@
 'use client';
 
 import { Mail, ShieldCheck, Users } from 'lucide-react';
-import { Button, Card, GhostButton } from 'ui';
+import { Button, Card, EmptyState, GhostButton, LoadingSkeleton } from 'ui';
 
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
 import { useManagementData } from '../../lib/management-data';
 
 export function TeamScreen() {
-  const { teamMembers } = useManagementData();
+  const { loading, teamMembers, isMockMode } = useManagementData();
+
+  if (loading) {
+    return <LoadingSkeleton className="h-[320px]" />;
+  }
+
+  if (!teamMembers.length) {
+    return (
+      <EmptyState
+        title="No hay miembros de equipo disponibles"
+        description="Esta vista se llenará con el propietario y encargados reales de tus negocios asignados."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -46,12 +59,10 @@ export function TeamScreen() {
               </div>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <StatusBadge
-                status={member.id.startsWith('owner') ? 'OWNER' : 'MANAGER'}
-              />
+              <StatusBadge status={member.membershipRole} />
               <span className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
                 <ShieldCheck className="size-4" />
-                Acceso simulado
+                {isMockMode ? 'Acceso simulado' : 'Acceso real por membresía'}
               </span>
             </div>
             <div className="flex gap-2">

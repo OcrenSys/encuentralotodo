@@ -19,6 +19,7 @@ export function AnalyticsScreen() {
     platformAnalytics,
     roleView,
     canViewPlatformData,
+    hasManagedBusinesses,
     isMockMode,
   } = useManagementData();
 
@@ -43,11 +44,11 @@ export function AnalyticsScreen() {
     );
   }
 
-  if (!isMockMode && !canViewPlatformData) {
+  if (!isMockMode && !canViewPlatformData && !hasManagedBusinesses) {
     return (
       <EmptyState
         title="Sin acceso a analítica de plataforma"
-        description="La analítica real solo usa el rol resuelto por el backend. La analítica por negocio se habilitará cuando exista autorización por membresía de negocio."
+        description="La analítica real usa el rol resuelto por el backend y la membresía real del negocio. Cuando tengas negocios asignados verás aquí la analítica correspondiente."
       />
     );
   }

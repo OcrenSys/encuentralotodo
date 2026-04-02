@@ -75,6 +75,8 @@ function createPromotionRepositoryMock(): jest.Mocked<PromotionRepositoryPort> {
 function createBusinessRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
     return {
         listBusinesses: jest.fn(),
+        listBusinessesForManagement: jest.fn(),
+        listBusinessesByUserAccess: jest.fn(),
         findBusinessById: jest.fn(),
         findBusinessAccessById: jest.fn(),
         listPendingBusinesses: jest.fn(),

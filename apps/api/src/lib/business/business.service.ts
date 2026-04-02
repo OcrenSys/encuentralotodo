@@ -5,7 +5,7 @@ import type {
     CreateBusinessInput,
 } from 'types';
 
-import { requirePlatformRole, platformAdminRoles } from '../auth/authorization';
+import { platformAdminRoles, requireActiveUser, requirePlatformRole } from '../auth/authorization';
 import type { EmailService } from '../email';
 import { isAdminUser } from './business-access';
 import { mapBusiness, mapBusinessDetails, mapBusinessSummary } from './business.mappers';
@@ -18,6 +18,13 @@ interface BusinessServiceDependencies {
 }
 
 function sortBusinessSummaries(left: ReturnType<typeof mapBusinessSummary>, right: ReturnType<typeof mapBusinessSummary>) {
+    return right.rating - left.rating || left.distanceKm - right.distanceKm;
+}
+
+function sortBusinessLikeSummaries(
+    left: Pick<ReturnType<typeof mapBusinessSummary>, 'rating' | 'distanceKm'>,
+    right: Pick<ReturnType<typeof mapBusinessSummary>, 'rating' | 'distanceKm'>,
+) {
     return right.rating - left.rating || left.distanceKm - right.distanceKm;
 }
 
@@ -46,6 +53,19 @@ export class BusinessService {
         const business = await this.repository.findBusinessById(businessId);
 
         return business ? mapBusinessDetails(business) : null;
+    }
+
+    async listManagedBusinesses(filters: BusinessListFilters = {}) {
+        const currentUser = requireActiveUser(this.currentUser);
+        const managedFilters = {
+            ...filters,
+            includePending: true,
+        };
+        const businesses = isAdminUser(currentUser)
+            ? await this.repository.listBusinessesForManagement(managedFilters)
+            : await this.repository.listBusinessesByUserAccess(currentUser.id, managedFilters);
+
+        return businesses.map(mapBusinessDetails).sort(sortBusinessLikeSummaries);
     }
 
     async createBusiness(input: CreateBusinessInput) {

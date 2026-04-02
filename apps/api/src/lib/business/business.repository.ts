@@ -82,6 +82,8 @@ export interface RepositoryBusinessAccessRecord {
 
 export interface BusinessRepositoryPort {
     listBusinesses(filters?: BusinessListFilters): Promise<RepositoryBusinessRecord[]>;
+    listBusinessesForManagement(filters?: BusinessListFilters): Promise<RepositoryBusinessRecord[]>;
+    listBusinessesByUserAccess(userId: string, filters?: BusinessListFilters): Promise<RepositoryBusinessRecord[]>;
     findBusinessById(businessId: string): Promise<RepositoryBusinessRecord | null>;
     findBusinessAccessById(businessId: string): Promise<RepositoryBusinessAccessRecord | null>;
     listPendingBusinesses(): Promise<RepositoryBusinessRecord[]>;
@@ -261,6 +263,38 @@ function mapBusinessAccessRecord(record: any): RepositoryBusinessAccessRecord {
     };
 }
 
+function buildBusinessWhere(filters: BusinessListFilters = {}, accessClause?: Record<string, unknown>) {
+    const clauses: Record<string, unknown>[] = [];
+
+    if (!filters.includePending) {
+        clauses.push({ status: 'APPROVED' });
+    }
+
+    if (filters.category && filters.category !== 'ALL') {
+        clauses.push({ category: filters.category });
+    }
+
+    if (filters.search) {
+        clauses.push({
+            OR: [
+                { name: { contains: filters.search, mode: 'insensitive' } },
+                { description: { contains: filters.search, mode: 'insensitive' } },
+                { zone: { contains: filters.search, mode: 'insensitive' } },
+            ],
+        });
+    }
+
+    if (accessClause) {
+        clauses.push(accessClause);
+    }
+
+    if (clauses.length === 0) {
+        return undefined;
+    }
+
+    return { AND: clauses };
+}
+
 export class BusinessRepository implements BusinessRepositoryPort {
     private readonly prisma: ReturnType<typeof getPrismaClient>;
 
@@ -270,18 +304,37 @@ export class BusinessRepository implements BusinessRepositoryPort {
 
     async listBusinesses(filters: BusinessListFilters = {}) {
         const records = await this.prisma.business.findMany({
-            where: {
-                status: filters.includePending ? undefined : 'APPROVED',
-                category: filters.category && filters.category !== 'ALL' ? filters.category : undefined,
-                OR: filters.search
-                    ? [
-                        { name: { contains: filters.search, mode: 'insensitive' } },
-                        { description: { contains: filters.search, mode: 'insensitive' } },
-                        { zone: { contains: filters.search, mode: 'insensitive' } },
-                    ]
-                    : undefined,
-            },
+            where: buildBusinessWhere(filters),
             select: businessSummarySelect,
+        });
+
+        return records.map(mapBusinessRecord);
+    }
+
+    async listBusinessesForManagement(filters: BusinessListFilters = {}) {
+        const records = await this.prisma.business.findMany({
+            where: buildBusinessWhere(filters),
+            select: businessDetailSelect,
+        });
+
+        return records.map(mapBusinessRecord);
+    }
+
+    async listBusinessesByUserAccess(userId: string, filters: BusinessListFilters = {}) {
+        const records = await this.prisma.business.findMany({
+            where: buildBusinessWhere(filters, {
+                OR: [
+                    { ownerId: userId },
+                    {
+                        managers: {
+                            some: {
+                                userId,
+                            },
+                        },
+                    },
+                ],
+            }),
+            select: businessDetailSelect,
         });
 
         return records.map(mapBusinessRecord);

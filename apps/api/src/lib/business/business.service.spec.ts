@@ -1,5 +1,5 @@
 import { createCurrentUser } from 'auth';
-import type { CreateBusinessInput, UserProfile } from 'types';
+import type { CreateBusinessInput } from 'types';
 
 import type {
     BusinessRepositoryPort,
@@ -98,6 +98,8 @@ function createBusinessRecord(overrides: Partial<RepositoryBusinessRecord> = {})
 function createRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
     return {
         listBusinesses: jest.fn(),
+        listBusinessesForManagement: jest.fn(),
+        listBusinessesByUserAccess: jest.fn(),
         findBusinessById: jest.fn(),
         findBusinessAccessById: jest.fn(),
         listPendingBusinesses: jest.fn(),
@@ -108,7 +110,7 @@ function createRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
     };
 }
 
-function createCurrentPlatfor-*---------------------------------------****-*-**-mUser(overrides: Partial<ReturnType<typeof createCurrentUser>> = {}) {
+function createCurrentPlatformUser(overrides: Partial<ReturnType<typeof createCurrentUser>> = {}) {
     return createCurrentUser({
         id: overrides.id ?? 'owner-sofia',
         fullName: overrides.fullName ?? 'Sofia Rivas',
@@ -167,6 +169,44 @@ describe('BusinessService', () => {
             promotions: [expect.objectContaining({ id: 'promo-1' })],
             reviews: [expect.objectContaining({ id: 'review-1', user: expect.objectContaining({ id: 'user-ana' }) })],
         });
+    });
+
+    it('listManagedBusinesses returns only businesses the authenticated owner can manage', async () => {
+        const actor = createCurrentPlatformUser();
+        const { service, repository } = createService(actor);
+        repository.listBusinessesByUserAccess.mockResolvedValue([createBusinessRecord()]);
+
+        const result = await service.listManagedBusinesses();
+
+        expect(repository.listBusinessesByUserAccess).toHaveBeenCalledWith('owner-sofia', { includePending: true });
+        expect(result).toEqual([
+            expect.objectContaining({
+                id: 'biz-casa-norte',
+                owner: expect.objectContaining({ id: 'owner-sofia' }),
+                managersDetailed: [expect.objectContaining({ id: 'manager-carlos' })],
+                products: [expect.objectContaining({ id: 'prod-1' })],
+            }),
+        ]);
+    });
+
+    it('listManagedBusinesses returns the full management view for platform admins', async () => {
+        const actor = createCurrentPlatformUser({
+            id: 'admin-luis',
+            fullName: 'Luis Admin',
+            email: 'luis@encuentralotodo.app',
+            role: 'ADMIN',
+            externalAuthId: 'firebase-admin-luis',
+        });
+        const { service, repository } = createService(actor);
+        repository.listBusinessesForManagement.mockResolvedValue([createBusinessRecord()]);
+
+        const result = await service.listManagedBusinesses({ search: 'Casa' });
+
+        expect(repository.listBusinessesForManagement).toHaveBeenCalledWith({
+            search: 'Casa',
+            includePending: true,
+        });
+        expect(result).toHaveLength(1);
     });
 
     it('create persists business correctly', async () => {

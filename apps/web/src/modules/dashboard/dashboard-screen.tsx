@@ -31,18 +31,28 @@ export function DashboardScreen() {
     roleView,
     tasks,
     canViewPlatformData,
+    hasManagedBusinesses,
+    ownsManagedBusinesses,
     isMockMode,
   } = useManagementData();
 
   const usesPlatformRoleView = isMockMode
     ? roleView === 'SUPERADMIN'
     : canViewPlatformData;
+  const usesOwnerView = isMockMode
+    ? roleView === 'OWNER'
+    : ownsManagedBusinesses;
 
-  if (!loading && !isMockMode && !canViewPlatformData) {
+  if (
+    !loading &&
+    !isMockMode &&
+    !canViewPlatformData &&
+    !hasManagedBusinesses
+  ) {
     return (
       <EmptyState
         title="Tu rol real no tiene acceso a esta consola"
-        description="La navegación autenticada ahora depende del rol global resuelto por el backend. Las vistas de negocio reales quedarán disponibles cuando exista autorización por membresía de negocio."
+        description="La navegación autenticada ahora depende del rol global resuelto por el backend y de tus membresías reales de negocio. Cuando tengas negocios asignados, esta consola se habilitará automáticamente."
       />
     );
   }
@@ -84,7 +94,7 @@ export function DashboardScreen() {
           variant: 'neutral' as const,
         },
       ]
-    : roleView === 'OWNER'
+    : usesOwnerView
       ? [
           {
             label: 'Negocios a cargo',
@@ -167,7 +177,7 @@ export function DashboardScreen() {
           href: '/admin/reports',
         },
       ]
-    : roleView === 'OWNER'
+    : usesOwnerView
       ? [
           {
             label: 'Actualizar negocio',

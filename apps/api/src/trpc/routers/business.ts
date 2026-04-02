@@ -4,11 +4,14 @@ import {
   listBusinessesInputSchema,
 } from 'types';
 
-import { publicProcedure, router } from '../trpc';
+import { protectedProcedure, publicProcedure, router } from '../trpc';
 
 export const businessRouter = router({
   list: publicProcedure.input(listBusinessesInputSchema.optional()).query(({ ctx, input }) => {
     return ctx.businessService.listBusinesses(input);
+  }),
+  managed: protectedProcedure.input(listBusinessesInputSchema.optional()).query(({ ctx, input }) => {
+    return ctx.businessService.listManagedBusinesses(input);
   }),
   byId: publicProcedure.input(getBusinessByIdInputSchema).query(({ ctx, input }) => {
     return ctx.businessService.getBusinessById(input.businessId);

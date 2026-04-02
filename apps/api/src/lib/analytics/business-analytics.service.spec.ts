@@ -1,4 +1,4 @@
-import type { UserProfile } from 'types';
+import { createCurrentUser } from 'auth';
 
 import type { BusinessRepositoryPort, RepositoryBusinessAccessRecord } from '../business/business.repository';
 import type {
@@ -58,6 +58,8 @@ function createOverviewRecord(overrides: Partial<RepositoryBusinessAnalyticsOver
 function createBusinessRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
     return {
         listBusinesses: jest.fn(),
+        listBusinessesForManagement: jest.fn(),
+        listBusinessesByUserAccess: jest.fn(),
         findBusinessById: jest.fn(),
         findBusinessAccessById: jest.fn(),
         listPendingBusinesses: jest.fn(),
@@ -75,7 +77,7 @@ function createAnalyticsRepositoryMock(): jest.Mocked<BusinessAnalyticsRepositor
     };
 }
 
-function createService(currentUser: UserProfile | null) {
+function createService(currentUser: ReturnType<typeof createCurrentUser> | null) {
     const businessRepository = createBusinessRepositoryMock();
     const repository = createAnalyticsRepositoryMock();
 
@@ -92,12 +94,15 @@ function createService(currentUser: UserProfile | null) {
 
 describe('BusinessAnalyticsService', () => {
     it('returns persisted overview metrics, trend points and monetization signals', async () => {
-        const { service, businessRepository, repository } = createService({
+        const { service, businessRepository, repository } = createService(createCurrentUser({
             id: 'owner-sofia',
             fullName: 'Sofia Rivas',
             email: 'sofia@encuentralotodo.app',
             role: 'USER',
-        });
+            authProvider: 'mock',
+            externalAuthId: 'owner-sofia',
+            emailVerified: true,
+        }));
         businessRepository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
         repository.getOverview.mockResolvedValue(createOverviewRecord());
         repository.listLeadTimestamps.mockResolvedValue([
@@ -134,12 +139,15 @@ describe('BusinessAnalyticsService', () => {
     });
 
     it('scopes access to owner or manager and rejects unrelated users', async () => {
-        const { service, businessRepository } = createService({
+        const { service, businessRepository } = createService(createCurrentUser({
             id: 'user-ana',
             fullName: 'Ana Mercado',
             email: 'ana@encuentralotodo.app',
             role: 'USER',
-        });
+            authProvider: 'mock',
+            externalAuthId: 'user-ana',
+            emailVerified: true,
+        }));
         businessRepository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
 
         await expect(service.getOverview({ businessId: 'biz-casa-norte' })).rejects.toMatchObject({
@@ -149,12 +157,15 @@ describe('BusinessAnalyticsService', () => {
     });
 
     it('returns empty-state analytics without inventing performance metrics', async () => {
-        const { service, businessRepository, repository } = createService({
+        const { service, businessRepository, repository } = createService(createCurrentUser({
             id: 'manager-carlos',
             fullName: 'Carlos Mena',
             email: 'carlos@encuentralotodo.app',
             role: 'USER',
-        });
+            authProvider: 'mock',
+            externalAuthId: 'manager-carlos',
+            emailVerified: true,
+        }));
         businessRepository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
         repository.getOverview.mockResolvedValue(createOverviewRecord({
             totalLeads: 0,

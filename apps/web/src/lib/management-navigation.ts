@@ -22,7 +22,12 @@ import { assignedPlatformRoles, platformAdminRoles, superAdminRoles } from './pl
 
 export type NavigationAccessContext =
     | { mode: 'mock'; role: ManagementRole }
-    | { mode: 'real'; role: UserRole | null | undefined };
+    | {
+          mode: 'real';
+          role: UserRole | null | undefined;
+          hasManagedBusinesses: boolean;
+          ownsManagedBusinesses: boolean;
+      };
 
 export type NavigationItem = {
     key: string;
@@ -32,6 +37,7 @@ export type NavigationItem = {
     description: string;
     demoRoles: ManagementRole[];
     platformRoles?: readonly UserRole[];
+    realBusinessAccess?: 'managed' | 'owned';
     mobilePriority?: number;
 };
 
@@ -44,6 +50,7 @@ export const navigationItems: NavigationItem[] = [
         description: 'Resumen operativo, indicadores clave y accesos rápidos según el rol.',
         demoRoles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
         platformRoles: platformAdminRoles,
+        realBusinessAccess: 'managed',
         mobilePriority: 1,
     },
     {
@@ -110,6 +117,7 @@ export const navigationItems: NavigationItem[] = [
         icon: BriefcaseBusiness,
         description: 'Marca, ubicación, horarios y estado de publicación.',
         demoRoles: ['OWNER', 'MANAGER'],
+        realBusinessAccess: 'managed',
         mobilePriority: 2,
     },
     {
@@ -119,6 +127,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Package,
         description: 'Catálogo, filtros y estado comercial del inventario.',
         demoRoles: ['OWNER', 'MANAGER'],
+        realBusinessAccess: 'managed',
         mobilePriority: 3,
     },
     {
@@ -128,6 +137,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Megaphone,
         description: 'Campañas activas, expiradas y puntos de creación.',
         demoRoles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        realBusinessAccess: 'managed',
         mobilePriority: 4,
     },
     {
@@ -137,6 +147,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Inbox,
         description: 'Seguimiento comercial, fuente y estado de atención.',
         demoRoles: ['OWNER', 'MANAGER'],
+        realBusinessAccess: 'managed',
         mobilePriority: 5,
     },
     {
@@ -146,6 +157,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Users,
         description: 'Coordinación entre propietario y encargados por negocio.',
         demoRoles: ['OWNER'],
+        realBusinessAccess: 'owned',
     },
     {
         key: 'analytics',
@@ -155,6 +167,7 @@ export const navigationItems: NavigationItem[] = [
         description: 'Rendimiento comercial, tráfico y conversión.',
         demoRoles: ['SUPERADMIN', 'OWNER'],
         platformRoles: platformAdminRoles,
+        realBusinessAccess: 'managed',
         mobilePriority: 5,
     },
     {
@@ -174,7 +187,19 @@ function isItemVisibleForContext(item: NavigationItem, context: NavigationAccess
         return item.demoRoles.includes(context.role);
     }
 
-    return Boolean(context.role && item.platformRoles?.includes(context.role));
+    if (context.role && item.platformRoles?.includes(context.role)) {
+        return true;
+    }
+
+    if (item.realBusinessAccess === 'owned') {
+        return context.ownsManagedBusinesses;
+    }
+
+    if (item.realBusinessAccess === 'managed') {
+        return context.hasManagedBusinesses;
+    }
+
+    return false;
 }
 
 export function getNavigationForAccess(context: NavigationAccessContext) {

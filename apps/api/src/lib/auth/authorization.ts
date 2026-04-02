@@ -20,12 +20,32 @@ export interface FutureBusinessPlanAuthorizationContext {
     limitKey?: string;
 }
 
+export interface BusinessAccessContext {
+    ownerId: string;
+    managers: readonly string[];
+}
+
 export function hasPlatformRole(subject: RoleSubject, allowedRoles: readonly UserRole[]) {
     return Boolean(subject && allowedRoles.includes(subject.role));
 }
 
 export function isSuperAdmin(subject: RoleSubject) {
     return hasPlatformRole(subject, superAdminRoles);
+}
+
+export function hasBusinessAccess(
+    subject: Pick<CurrentUser, 'id' | 'role'> | null | undefined,
+    business: BusinessAccessContext,
+) {
+    if (!subject) {
+        return false;
+    }
+
+    if (hasPlatformRole(subject, platformAdminRoles)) {
+        return true;
+    }
+
+    return subject.id === business.ownerId || business.managers.includes(subject.id);
 }
 
 export function requireAuthenticatedUser(currentUser: CurrentUser | null | undefined): CurrentUser {
@@ -62,6 +82,20 @@ export function requirePlatformRole(
 
 export function requireSuperAdmin(currentUser: CurrentUser | null | undefined) {
     return requirePlatformRole(currentUser, superAdminRoles, 'SuperAdmin access required.');
+}
+
+export function requireBusinessAccess(
+    currentUser: CurrentUser | null | undefined,
+    business: BusinessAccessContext,
+    message = 'Business access required.',
+) {
+    const activeUser = requireActiveUser(currentUser);
+
+    if (!hasBusinessAccess(activeUser, business)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message });
+    }
+
+    return activeUser;
 }
 
 function isInactiveSubject(subject: ActiveSubject) {

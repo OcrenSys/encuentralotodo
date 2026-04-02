@@ -17,6 +17,7 @@ import { useCurrentAuthUser } from '../../lib/auth-context';
 import { useCurrentPlatformUser } from '../../lib/platform-authorization';
 import { isSuperAdminRole } from '../../lib/platform-roles';
 import { useRoleView } from '../../lib/role-view';
+import { trpc } from '../../lib/trpc';
 import { ActiveSimulationFloating } from './active-simulation-floating';
 import { BottomNav } from './bottom-nav';
 import { Sidebar } from './sidebar';
@@ -44,10 +45,28 @@ export function AppShell({
   const { currentUser: backendUser, isLoading: isSessionLoading } =
     useCurrentPlatformUser();
   const requiresAuth = provider !== 'mock';
+  const shouldResolveManagedBusinesses =
+    requiresAuth &&
+    isAuthenticated &&
+    Boolean(backendUser) &&
+    backendUser?.isActive !== false &&
+    backendUser?.role !== 'UNASSIGNED';
+  const managedBusinessesQuery = trpc.business.managed.useQuery(undefined, {
+    enabled: shouldResolveManagedBusinesses,
+    retry: false,
+  });
+  const managedBusinesses = managedBusinessesQuery.data ?? [];
   const accessContext =
     provider === 'mock'
       ? { mode: 'mock' as const, role: roleView }
-      : { mode: 'real' as const, role: backendUser?.role };
+      : {
+          mode: 'real' as const,
+          role: backendUser?.role,
+          hasManagedBusinesses: managedBusinesses.length > 0,
+          ownsManagedBusinesses: managedBusinesses.some(
+            (business) => business.owner?.id === backendUser?.id,
+          ),
+        };
   const route = getNavigationItemByPath(activePath);
   const sidebarItems = getNavigationForAccess(accessContext);
   const mobileItems = getMobileNavigationForAccess(accessContext);
@@ -55,6 +74,8 @@ export function AppShell({
   const fallbackPath = getDefaultPathForAccess(accessContext);
   const isBackendSessionLoading =
     requiresAuth && isAuthenticated && isSessionLoading;
+  const isManagedBusinessAccessLoading =
+    requiresAuth && isAuthenticated && managedBusinessesQuery.isLoading;
   const isAccountDisabled = backendUser?.isActive === false;
   const isPendingRoleAssignment = isRoleAssignmentPending(backendUser?.role);
   const requiresPlatformUserManagementAccess = activePath === '/admin/users';
@@ -62,7 +83,9 @@ export function AppShell({
   const accessDeniedDescription =
     provider === 'mock'
       ? `Cambia la vista de rol o vuelve a ${fallbackPath} para continuar en una ruta válida.`
-      : `Tu sesión real no tiene permisos para esta ruta. Vuelve a ${fallbackPath} para continuar en una vista permitida.`;
+      : managedBusinesses.length === 0
+        ? `Tu sesión real no tiene negocios asignados ni permisos de plataforma para esta ruta. Vuelve a ${fallbackPath} para continuar.`
+        : `Tu sesión real no tiene permisos para esta ruta. Vuelve a ${fallbackPath} para continuar en una vista permitida.`;
 
   useEffect(() => {
     if (!requiresAuth || isAuthLoading || isAuthenticated) {
@@ -75,7 +98,10 @@ export function AppShell({
   if (
     !isReady ||
     (requiresAuth &&
-      (isAuthLoading || !isAuthenticated || isBackendSessionLoading))
+      (isAuthLoading ||
+        !isAuthenticated ||
+        isBackendSessionLoading ||
+        isManagedBusinessAccessLoading))
   ) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-4 py-8 sm:px-6 lg:px-8 xl:px-10">

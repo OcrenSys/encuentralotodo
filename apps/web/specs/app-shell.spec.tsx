@@ -25,6 +25,11 @@ jest.mock('../src/lib/trpc', () => ({
         useQuery: jest.fn(),
       },
     },
+    business: {
+      managed: {
+        useQuery: jest.fn(),
+      },
+    },
   },
 }));
 
@@ -59,6 +64,11 @@ const { trpc } = jest.requireMock('../src/lib/trpc') as {
         useQuery: jest.Mock;
       };
     };
+    business: {
+      managed: {
+        useQuery: jest.Mock;
+      };
+    };
   };
 };
 
@@ -79,6 +89,10 @@ describe('AppShell', () => {
           isActive: true,
         },
       },
+      isLoading: false,
+    });
+    trpc.business.managed.useQuery.mockReturnValue({
+      data: [],
       isLoading: false,
     });
   });
@@ -223,6 +237,41 @@ describe('AppShell', () => {
 
     const view = render(
       <AppShell activePath="/admin/users">
+        <div>Private content</div>
+      </AppShell>,
+    );
+
+    expect(view.getByText('Private content')).toBeTruthy();
+  });
+
+  it('allows real business routes when the authenticated user manages businesses', () => {
+    useCurrentAuthUser.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      provider: 'firebase',
+    });
+    trpc.auth.me.useQuery.mockReturnValue({
+      data: {
+        user: {
+          id: 'manager-carlos',
+          role: 'USER',
+          isActive: true,
+        },
+      },
+      isLoading: false,
+    });
+    trpc.business.managed.useQuery.mockReturnValue({
+      data: [
+        {
+          id: 'biz-casa-norte',
+          owner: { id: 'owner-sofia' },
+        },
+      ],
+      isLoading: false,
+    });
+
+    const view = render(
+      <AppShell activePath="/business">
         <div>Private content</div>
       </AppShell>,
     );

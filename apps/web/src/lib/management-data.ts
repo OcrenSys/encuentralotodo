@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import { marketplaceSeed, type BusinessSummary } from 'types';
+import { marketplaceSeed, type BusinessDetails, type BusinessSummary } from 'types';
 
 import { useCurrentAuthUser } from './auth-context';
 import { hasPlatformRole, platformAdminRoles } from './platform-roles';
@@ -31,6 +31,15 @@ type ActivityRecord = {
     title: string;
     detail: string;
     time: string;
+};
+
+type TeamMemberRecord = {
+    id: string;
+    fullName: string;
+    email: string;
+    avatarUrl?: string;
+    membershipRole: 'OWNER' | 'MANAGER';
+    businessIds: string[];
 };
 
 function formatActivityDate(value: string) {
@@ -154,6 +163,14 @@ export function useManagementData() {
     const platformRole = backendUser?.role;
     const isPlatformAdmin = hasPlatformRole(platformRole, platformAdminRoles);
     const canViewPlatformData = isMockMode ? roleView === 'SUPERADMIN' : isPlatformAdmin;
+    const managedBusinessesQuery = trpc.business.managed.useQuery(undefined, {
+        enabled:
+            !isMockMode &&
+            Boolean(backendUser) &&
+            backendUser?.isActive !== false &&
+            backendUser?.role !== 'UNASSIGNED',
+        retry: false,
+    });
     const platformAnalyticsQuery = trpc.analytics.platformOverview.useQuery(
         { period: '30D' },
         {
@@ -164,7 +181,7 @@ export function useManagementData() {
     const businessQuery = trpc.business.list.useQuery(
         { includePending: true },
         {
-            enabled: isMockMode || isPlatformAdmin,
+            enabled: isMockMode,
             retry: false,
         },
     );
@@ -177,14 +194,30 @@ export function useManagementData() {
         retry: false,
     });
 
+
+    const managedBusinesses = useMemo(
+        () => ((managedBusinessesQuery.data ?? []) as BusinessDetails[]).sort(sortByRecent),
+        [managedBusinessesQuery.data],
+    );
+
     const allBusinesses = useMemo(
-        () => ((businessQuery.data ?? []) as BusinessSummary[]).sort(sortByRecent),
-        [businessQuery.data],
+        () => {
+            if (isMockMode) {
+                return ((businessQuery.data ?? []) as BusinessSummary[]).sort(sortByRecent);
+            }
+
+            if (isPlatformAdmin) {
+                return managedBusinesses;
+            }
+
+            return [] as BusinessSummary[];
+        },
+        [businessQuery.data, isMockMode, isPlatformAdmin, managedBusinesses],
     );
 
     const accessibleBusinesses = useMemo(() => {
         if (!isMockMode) {
-            return isPlatformAdmin ? allBusinesses : [];
+            return managedBusinesses;
         }
 
         if (roleView === 'SUPERADMIN') {
@@ -196,9 +229,14 @@ export function useManagementData() {
         }
 
         return allBusinesses.filter((business) => business.managers.includes(roleProfile.userId));
-    }, [allBusinesses, isMockMode, isPlatformAdmin, roleProfile.userId, roleView]);
+    }, [allBusinesses, isMockMode, managedBusinesses, roleProfile.userId, roleView]);
 
-    const primaryBusiness = isMockMode ? accessibleBusinesses[0] ?? null : null;
+    const primaryBusiness = accessibleBusinesses[0] ?? null;
+    const hasManagedBusinesses = accessibleBusinesses.length > 0;
+    const ownsManagedBusinesses = isMockMode
+        ? roleView === 'OWNER'
+        : managedBusinesses.some((business) => business.owner?.id === backendUser?.id);
+    const shouldQueryBusinessAnalytics = Boolean(primaryBusiness) && !canViewPlatformData;
 
     const businessAnalyticsQuery = trpc.analytics.businessOverview.useQuery(
         {
@@ -206,7 +244,7 @@ export function useManagementData() {
             period: '30D',
         },
         {
-            enabled: isMockMode && roleView !== 'SUPERADMIN' && Boolean(primaryBusiness),
+            enabled: shouldQueryBusinessAnalytics,
             retry: false,
         },
     );
@@ -214,7 +252,15 @@ export function useManagementData() {
     const managedProducts = useMemo(
         () => {
             if (!isMockMode) {
-                return [];
+                return managedBusinesses
+                    .flatMap((business) =>
+                        business.products.map((product) => ({
+                            ...product,
+                            businessName: business.name,
+                            businessStatus: business.status,
+                        })),
+                    )
+                    .sort(sortByRecent);
             }
 
             return marketplaceSeed.products
@@ -230,12 +276,19 @@ export function useManagementData() {
                 })
                 .sort(sortByRecent);
         },
-        [accessibleBusinesses, allBusinesses, isMockMode],
+        [accessibleBusinesses, allBusinesses, isMockMode, managedBusinesses],
     );
 
     const managedPromotions = useMemo(() => {
         if (!isMockMode && !isPlatformAdmin) {
-            return [];
+            return managedBusinesses
+                .flatMap((business) =>
+                    business.promotions.map((promotion) => ({
+                        ...promotion,
+                        businessName: business.name,
+                    })),
+                )
+                .sort((left, right) => new Date(right.validUntil).getTime() - new Date(left.validUntil).getTime());
         }
 
         const promotionsSource = promotionsQuery.data ?? [];
@@ -249,11 +302,44 @@ export function useManagementData() {
                     allBusinesses.find((business) => business.id === promotion.businessId)?.name ??
                     'Negocio',
             }));
-    }, [accessibleBusinesses, allBusinesses, isMockMode, isPlatformAdmin, promotionsQuery.data, roleView]);
+    }, [accessibleBusinesses, allBusinesses, isMockMode, isPlatformAdmin, managedBusinesses, promotionsQuery.data, roleView]);
 
-    const teamMembers = useMemo(() => {
+    const teamMembers = useMemo<TeamMemberRecord[]>(() => {
         if (!isMockMode) {
-            return [];
+            const teamById = new Map<string, TeamMemberRecord>();
+
+            managedBusinesses.forEach((business) => {
+                if (business.owner) {
+                    const existingOwner = teamById.get(business.owner.id);
+                    teamById.set(business.owner.id, {
+                        id: business.owner.id,
+                        fullName: business.owner.fullName,
+                        email: business.owner.email,
+                        avatarUrl: business.owner.avatarUrl,
+                        membershipRole: 'OWNER',
+                        businessIds: existingOwner
+                            ? Array.from(new Set([...existingOwner.businessIds, business.id]))
+                            : [business.id],
+                    });
+                }
+
+                business.managersDetailed.forEach((manager) => {
+                    const existingManager = teamById.get(manager.id);
+                    teamById.set(manager.id, {
+                        id: manager.id,
+                        fullName: manager.fullName,
+                        email: manager.email,
+                        avatarUrl: manager.avatarUrl,
+                        membershipRole:
+                            existingManager?.membershipRole === 'OWNER' ? 'OWNER' : 'MANAGER',
+                        businessIds: existingManager
+                            ? Array.from(new Set([...existingManager.businessIds, business.id]))
+                            : [business.id],
+                    });
+                });
+            });
+
+            return Array.from(teamById.values());
         }
 
         const personIds = new Set<string>();
@@ -263,8 +349,23 @@ export function useManagementData() {
             business.managers.forEach((managerId) => personIds.add(managerId));
         });
 
-        return marketplaceSeed.users.filter((user) => personIds.has(user.id));
-    }, [accessibleBusinesses, isMockMode]);
+        return marketplaceSeed.users
+            .filter((user) => personIds.has(user.id))
+            .map((user) => ({
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email,
+                avatarUrl: user.avatarUrl,
+                membershipRole: accessibleBusinesses.some((business) => business.ownerId === user.id)
+                    ? 'OWNER'
+                    : 'MANAGER',
+                businessIds: accessibleBusinesses
+                    .filter(
+                        (business) => business.ownerId === user.id || business.managers.includes(user.id),
+                    )
+                    .map((business) => business.id),
+            }));
+    }, [accessibleBusinesses, isMockMode, managedBusinesses]);
 
     const recentActivity = useMemo<ActivityRecord[]>(() => {
         if (canViewPlatformData && platformAnalyticsQuery.data) {
@@ -370,10 +471,11 @@ export function useManagementData() {
 
     const analyticsLoading =
         (canViewPlatformData && platformAnalyticsQuery.isLoading) ||
-        (isMockMode && roleView !== 'SUPERADMIN' && Boolean(primaryBusiness) && businessAnalyticsQuery.isLoading);
+        (shouldQueryBusinessAnalytics && businessAnalyticsQuery.isLoading);
 
     const loading =
         businessQuery.isLoading ||
+        managedBusinessesQuery.isLoading ||
         promotionsQuery.isLoading ||
         sessionQuery.isLoading ||
         analyticsLoading ||
@@ -385,12 +487,15 @@ export function useManagementData() {
         platformRole,
         isPlatformAdmin,
         canViewPlatformData,
+        hasManagedBusinesses,
+        ownsManagedBusinesses,
         roleView,
         roleProfile,
         sessionQuery,
         businessAnalytics: businessAnalyticsQuery.data,
         businessAnalyticsQuery,
         businessQuery,
+        managedBusinessesQuery,
         promotionsQuery,
         platformAnalytics: platformAnalyticsQuery.data,
         platformAnalyticsQuery,
@@ -398,6 +503,7 @@ export function useManagementData() {
         loading,
         allBusinesses,
         accessibleBusinesses: uniqueBusinessesById(accessibleBusinesses),
+        managedBusinesses,
         primaryBusiness,
         managedProducts,
         managedPromotions,
