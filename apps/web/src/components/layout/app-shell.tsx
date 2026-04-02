@@ -1,9 +1,14 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
-import { EmptyState, LoadingSkeleton } from 'ui';
+import {
+  ContentSectionLoadingShell,
+  EmptyState,
+  LoadingSkeleton,
+  PageHeaderSkeleton,
+} from 'ui';
 
 import {
   getDefaultPathForAccess,
@@ -31,11 +36,13 @@ export function AppShell({
   activePath,
   children,
 }: {
-  activePath: string;
+  activePath?: string;
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const contentScrollRef = useRef<HTMLDivElement>(null);
+  const resolvedActivePath = activePath ?? pathname ?? '/settings';
   const { roleView, isReady } = useRoleView();
   const {
     isAuthenticated,
@@ -44,6 +51,7 @@ export function AppShell({
   } = useCurrentAuthUser();
   const { currentUser: backendUser, isLoading: isSessionLoading } =
     useCurrentPlatformUser();
+    
   const requiresAuth = provider !== 'mock';
   const shouldResolveManagedBusinesses =
     requiresAuth &&
@@ -51,6 +59,7 @@ export function AppShell({
     Boolean(backendUser) &&
     backendUser?.isActive !== false &&
     backendUser?.role !== 'UNASSIGNED';
+
   const managedBusinessesQuery = trpc.business.managed.useQuery(undefined, {
     enabled: shouldResolveManagedBusinesses,
     retry: false,
@@ -67,54 +76,110 @@ export function AppShell({
             (business) => business.owner?.id === backendUser?.id,
           ),
         };
-  const route = getNavigationItemByPath(activePath);
+
+  const route = getNavigationItemByPath(resolvedActivePath);
   const sidebarItems = getNavigationForAccess(accessContext);
   const mobileItems = getMobileNavigationForAccess(accessContext);
-  const isAllowed = isPathAllowedForAccess(activePath, accessContext);
+  const isAllowed = isPathAllowedForAccess(resolvedActivePath, accessContext);
   const fallbackPath = getDefaultPathForAccess(accessContext);
+
   const isBackendSessionLoading =
     requiresAuth && isAuthenticated && isSessionLoading;
   const isManagedBusinessAccessLoading =
     requiresAuth && isAuthenticated && managedBusinessesQuery.isLoading;
+  const isAuthenticationStateLoading =
+    requiresAuth && (isAuthLoading || !isAuthenticated);
+  const isShellAccessLoading =
+    !isReady ||
+    isAuthenticationStateLoading ||
+    isBackendSessionLoading ||
+    isManagedBusinessAccessLoading;
   const isAccountDisabled = backendUser?.isActive === false;
   const isPendingRoleAssignment = isRoleAssignmentPending(backendUser?.role);
-  const requiresPlatformUserManagementAccess = activePath === '/admin/users';
+  const requiresPlatformUserManagementAccess =
+    resolvedActivePath === '/admin/users';
   const hasPlatformUserAccess = isSuperAdminRole(backendUser?.role);
   const accessDeniedDescription =
     provider === 'mock'
       ? `Cambia la vista de rol o vuelve a ${fallbackPath} para continuar en una ruta válida.`
       : managedBusinesses.length === 0
-        ? `Tu sesión real no tiene negocios asignados ni permisos de plataforma para esta ruta. Vuelve a ${fallbackPath} para continuar.`
-        : `Tu sesión real no tiene permisos para esta ruta. Vuelve a ${fallbackPath} para continuar en una vista permitida.`;
+        ? `Tu sesión no tiene negocios asignados ni permisos de plataforma para esta ruta. Vuelve a ${fallbackPath} para continuar.`
+        : `Tu sesión no tiene permisos para esta ruta. Vuelve a ${fallbackPath} para continuar en una vista permitida.`;
 
   useEffect(() => {
     if (!requiresAuth || isAuthLoading || isAuthenticated) {
       return;
     }
 
-    router.replace(`/login?next=${encodeURIComponent(activePath)}`);
-  }, [activePath, isAuthenticated, isAuthLoading, requiresAuth, router]);
+    router.replace(`/login?next=${encodeURIComponent(resolvedActivePath)}`);
+  }, [
+    isAuthenticated,
+    isAuthLoading,
+    requiresAuth,
+    resolvedActivePath,
+    router,
+  ]);
 
-  if (
-    !isReady ||
-    (requiresAuth &&
-      (isAuthLoading ||
-        !isAuthenticated ||
-        isBackendSessionLoading ||
-        isManagedBusinessAccessLoading))
-  ) {
+  useEffect(() => {
+    const scrollContainer = contentScrollRef.current;
+
+    if (scrollContainer) {
+      scrollContainer.scrollTop = 0;
+      return;
+    }
+
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [resolvedActivePath]);
+
+  if (isShellAccessLoading) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
-        <LoadingSkeleton className="h-32" />
-        <LoadingSkeleton className="h-40" />
-        <LoadingSkeleton className="h-64" />
-      </main>
+      <div className="management-shell min-h-[100dvh] lg:grid lg:h-[100dvh] lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden">
+        <aside className="relative hidden h-[100dvh] min-h-0 border-r border-border-subtle bg-[var(--shell-gradient)] shadow-[inset_-1px_0_0_rgba(255,255,255,0.4)] backdrop-blur lg:block">
+          <div className="flex h-full min-h-0 flex-col gap-6 px-5 py-6">
+            <div className="space-y-3">
+              <LoadingSkeleton className="h-4 w-32 rounded-full" />
+              <LoadingSkeleton className="h-9 w-48" />
+              <LoadingSkeleton className="h-4 w-full" />
+              <LoadingSkeleton className="h-4 w-5/6" />
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <LoadingSkeleton className="h-20" key={`nav-${index}`} />
+              ))}
+            </div>
+            <LoadingSkeleton className="mt-auto h-36 rounded-2xl" />
+          </div>
+        </aside>
+
+        <div className="min-w-0 lg:min-h-0">
+          <div className="flex min-h-[100dvh] flex-col overflow-y-auto overscroll-y-contain pb-24 lg:h-[100dvh] lg:min-h-0 lg:pb-0">
+            <header className="sticky top-0 z-30 border-b border-border-subtle bg-[rgba(244,248,252,0.74)] backdrop-blur-xl">
+              <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
+                <PageHeaderSkeleton />
+                <div className="shell-chrome hidden items-center justify-between gap-4 rounded-lg px-4 py-3 lg:flex">
+                  <LoadingSkeleton className="h-10 w-48 rounded-full" />
+                  <LoadingSkeleton className="h-10 w-64 rounded-full" />
+                </div>
+              </div>
+            </header>
+
+            <main className="flex-1 px-4 py-4 sm:px-6 lg:min-h-0 lg:px-8 lg:py-5 xl:px-10">
+              <div className="surface-soft space-y-6 rounded-xl p-1 sm:p-1.5">
+                <div className="p-4 sm:p-5 lg:p-6">
+                  <ContentSectionLoadingShell variant="table" />
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="management-shell min-h-[100dvh] lg:grid lg:h-[100dvh] lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden">
-      <Sidebar activePath={activePath} items={sidebarItems} />
+      <Sidebar activePath={resolvedActivePath} items={sidebarItems} />
       {provider === 'mock' ? <ActiveSimulationFloating /> : null}
 
       <div className="min-w-0 lg:min-h-0">
@@ -123,9 +188,9 @@ export function AppShell({
           ref={contentScrollRef}
         >
           <Topbar
-            activePath={activePath}
+            activePath={resolvedActivePath}
             description={route?.description ?? 'Ruta de gestión.'}
-            eyebrow={routeEyebrows[activePath] ?? 'Gestión'}
+            eyebrow={routeEyebrows[resolvedActivePath] ?? 'Gestión'}
             scrollContainerRef={contentScrollRef}
             title={route?.label ?? 'Gestión'}
           />
@@ -160,7 +225,7 @@ export function AppShell({
             )}
           </main>
         </div>
-        <BottomNav activePath={activePath} items={mobileItems} />
+        <BottomNav activePath={resolvedActivePath} items={mobileItems} />
       </div>
     </div>
   );
