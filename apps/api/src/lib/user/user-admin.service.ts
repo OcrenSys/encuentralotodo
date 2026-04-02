@@ -1,13 +1,21 @@
 import { TRPCError } from '@trpc/server';
 import type { CurrentUser } from 'auth';
 import type {
+    PlatformUserSearchResult,
     PlatformUser,
+    SearchPlatformUsersInput,
     SetPlatformUserActiveInput,
     UpdatePlatformUserRoleInput,
 } from 'types';
 
-import { isSuperAdmin, requireSuperAdmin } from '../auth/authorization';
+import {
+    isSuperAdmin,
+    platformAdminRoles,
+    requirePlatformRole,
+    requireSuperAdmin,
+} from '../auth/authorization';
 import type {
+    RepositoryPlatformUserSearchRecord,
     RepositoryPlatformUserRecord,
     UserAdminRepositoryPort,
 } from './user-admin.repository';
@@ -40,6 +48,19 @@ function mapPlatformUser(record: RepositoryPlatformUserRecord): PlatformUser {
     };
 }
 
+function mapPlatformUserSearchResult(
+    record: RepositoryPlatformUserSearchRecord,
+): PlatformUserSearchResult {
+    return {
+        id: record.id,
+        fullName: record.fullName,
+        email: record.email,
+        role: record.role,
+        avatarUrl: record.avatarUrl ?? undefined,
+        isActive: record.isActive,
+    };
+}
+
 export class UserAdminService {
     constructor(private readonly dependencies: UserAdminServiceDependencies) { }
 
@@ -48,6 +69,16 @@ export class UserAdminService {
         const users = await this.dependencies.repository.listUsers();
 
         return users.map(mapPlatformUser);
+    }
+
+    async searchUsers(input: SearchPlatformUsersInput): Promise<PlatformUserSearchResult[]> {
+        this.assertPlatformAdmin();
+        const users = await this.dependencies.repository.searchUsers({
+            search: input.search,
+            limit: Math.min(input.limit, 10),
+        });
+
+        return users.map(mapPlatformUserSearchResult);
     }
 
     async updateUserRole(input: UpdatePlatformUserRoleInput): Promise<PlatformUser> {
@@ -100,6 +131,14 @@ export class UserAdminService {
 
     private assertSuperAdmin(): CurrentUser {
         return requireSuperAdmin(this.dependencies.currentUser);
+    }
+
+    private assertPlatformAdmin(): CurrentUser {
+        return requirePlatformRole(
+            this.dependencies.currentUser,
+            platformAdminRoles,
+            'Admin access required.',
+        );
     }
 
     private async getExistingUser(userId: string) {

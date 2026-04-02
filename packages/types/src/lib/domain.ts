@@ -169,6 +169,15 @@ export interface PlatformUser {
     identities: PlatformUserIdentity[];
 }
 
+export interface PlatformUserSearchResult {
+    id: string;
+    fullName: string;
+    email: string;
+    role: UserRole;
+    avatarUrl?: string;
+    isActive: boolean;
+}
+
 export interface AnalyticsTrendPoint {
     date: string;
     count: number;

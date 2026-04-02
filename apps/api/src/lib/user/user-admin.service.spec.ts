@@ -29,6 +29,7 @@ function createPlatformUser(overrides: Partial<RepositoryPlatformUserRecord> = {
 function createRepositoryMock(): jest.Mocked<UserAdminRepositoryPort> {
     return {
         listUsers: jest.fn(),
+        searchUsers: jest.fn(),
         findUserById: jest.fn(),
         updateUserRole: jest.fn(),
         setUserActive: jest.fn(),
@@ -78,12 +79,49 @@ describe('UserAdminService', () => {
         });
     });
 
+    it('searches platform users for admins with a hard limit of 10', async () => {
+        const { service, repository } = createService({ currentUserRole: 'ADMIN' });
+        repository.searchUsers.mockResolvedValue([
+            {
+                id: 'user-ana',
+                fullName: 'Ana Mercado',
+                email: 'ana@encuentralotodo.app',
+                role: 'USER',
+                avatarUrl: null,
+                isActive: true,
+            },
+        ]);
+
+        const result = await service.searchUsers({ search: 'ana', limit: 25 });
+
+        expect(repository.searchUsers).toHaveBeenCalledWith({ search: 'ana', limit: 10 });
+        expect(result).toEqual([
+            {
+                id: 'user-ana',
+                fullName: 'Ana Mercado',
+                email: 'ana@encuentralotodo.app',
+                role: 'USER',
+                avatarUrl: undefined,
+                isActive: true,
+            },
+        ]);
+    });
+
     it('rejects non-superadmin callers', async () => {
         const { service } = createService({ currentUserRole: 'ADMIN' });
 
         await expect(service.listUsers()).rejects.toMatchObject({
             code: 'FORBIDDEN',
             message: 'SuperAdmin access required.',
+        });
+    });
+
+    it('rejects non-admin callers from searching platform users', async () => {
+        const { service } = createService({ currentUserRole: 'USER' });
+
+        await expect(service.searchUsers({ search: 'ana', limit: 10 })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            message: 'Admin access required.',
         });
     });
 

@@ -21,8 +21,18 @@ export interface RepositoryPlatformUserRecord {
     identities: RepositoryPlatformUserIdentityRecord[];
 }
 
+export interface RepositoryPlatformUserSearchRecord {
+    id: string;
+    fullName: string;
+    email: string;
+    role: UserRole;
+    avatarUrl: string | null;
+    isActive: boolean;
+}
+
 export interface UserAdminRepositoryPort {
     listUsers(): Promise<RepositoryPlatformUserRecord[]>;
+    searchUsers(input: { search: string; limit: number }): Promise<RepositoryPlatformUserSearchRecord[]>;
     findUserById(userId: string): Promise<RepositoryPlatformUserRecord | null>;
     updateUserRole(userId: string, role: UserRole): Promise<RepositoryPlatformUserRecord | null>;
     setUserActive(userId: string, isActive: boolean): Promise<RepositoryPlatformUserRecord | null>;
@@ -82,6 +92,17 @@ function mapPlatformUserRecord(record: any): RepositoryPlatformUserRecord {
     };
 }
 
+function mapPlatformUserSearchRecord(record: any): RepositoryPlatformUserSearchRecord {
+    return {
+        id: record.id,
+        fullName: record.fullName,
+        email: record.email,
+        role: record.role,
+        avatarUrl: record.avatarUrl,
+        isActive: Boolean(record.isActive),
+    };
+}
+
 export class UserAdminRepository implements UserAdminRepositoryPort {
     constructor(private readonly prisma: ReturnType<typeof getPrismaClient>) { }
 
@@ -95,6 +116,65 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
         });
 
         return users.map(mapPlatformUserRecord);
+    }
+
+    async searchUsers(input: { search: string; limit: number }) {
+        const normalizedSearch = input.search.trim();
+        const users = await this.prisma.user.findMany({
+            where: normalizedSearch
+                ? {
+                    OR: [
+                        {
+                            fullName: {
+                                contains: normalizedSearch,
+                                mode: 'insensitive',
+                            },
+                        },
+                        {
+                            email: {
+                                contains: normalizedSearch,
+                                mode: 'insensitive',
+                            },
+                        },
+                        {
+                            identities: {
+                                some: {
+                                    OR: [
+                                        {
+                                            email: {
+                                                contains: normalizedSearch,
+                                                mode: 'insensitive',
+                                            },
+                                        },
+                                        {
+                                            externalUserId: {
+                                                contains: normalizedSearch,
+                                                mode: 'insensitive',
+                                            },
+                                        },
+                                    ],
+                                },
+                            },
+                        },
+                    ],
+                }
+                : undefined,
+            orderBy: [
+                { createdAt: 'desc' },
+                { fullName: 'asc' },
+            ],
+            take: input.limit,
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                role: true,
+                avatarUrl: true,
+                isActive: true,
+            },
+        });
+
+        return users.map(mapPlatformUserSearchRecord);
     }
 
     async findUserById(userId: string) {

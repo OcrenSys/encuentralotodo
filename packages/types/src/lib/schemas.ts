@@ -174,6 +174,11 @@ export const setPlatformUserActiveInputSchema = z.object({
     isActive: z.boolean(),
 });
 
+export const searchPlatformUsersInputSchema = z.object({
+    search: z.string().trim().max(80).optional().default(''),
+    limit: z.number().int().min(1).max(10).optional().default(10),
+});
+
 export type CreateBusinessInput = z.infer<typeof createBusinessInputSchema>;
 export type ListBusinessesInput = z.infer<typeof listBusinessesInputSchema>;
 export type GetBusinessByIdInput = z.infer<typeof getBusinessByIdInputSchema>;
@@ -194,3 +199,4 @@ export type CreateReviewInput = z.infer<typeof createReviewInputSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;
 export type UpdatePlatformUserRoleInput = z.infer<typeof updatePlatformUserRoleInputSchema>;
 export type SetPlatformUserActiveInput = z.infer<typeof setPlatformUserActiveInputSchema>;
+export type SearchPlatformUsersInput = z.infer<typeof searchPlatformUsersInputSchema>;
