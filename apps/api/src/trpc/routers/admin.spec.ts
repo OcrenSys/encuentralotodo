@@ -75,7 +75,7 @@ describe('admin router', () => {
             } as any,
         });
 
-        await expect(caller.admin.approveBusiness({ businessId: 'biz-casa-norte', approvedBy: 'user-ana' })).rejects.toMatchObject({
+        await expect(caller.admin.approveBusiness({ businessId: 'biz-casa-norte' })).rejects.toMatchObject({
             code: 'FORBIDDEN',
             message: 'Admin access required.',
         });

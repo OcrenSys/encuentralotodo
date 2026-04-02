@@ -1,10 +1,11 @@
 import { TRPCError } from '@trpc/server';
+import type { CurrentUser } from 'auth';
 import type {
     BusinessAnalyticsOverview,
     GetBusinessAnalyticsInput,
-    UserProfile,
 } from 'types';
 
+import { requireActiveUser } from '../auth/authorization';
 import { canManageBusiness } from '../business/business-access';
 import type { BusinessRepositoryPort } from '../business/business.repository';
 import {
@@ -22,13 +23,13 @@ import type { BusinessAnalyticsRepositoryPort } from './business-analytics.repos
 interface BusinessAnalyticsServiceDependencies {
     repository: BusinessAnalyticsRepositoryPort;
     businessRepository: BusinessRepositoryPort;
-    currentUser: UserProfile | null;
+    currentUser: CurrentUser | null;
 }
 
 export class BusinessAnalyticsService {
     private readonly repository: BusinessAnalyticsRepositoryPort;
     private readonly businessRepository: BusinessRepositoryPort;
-    private readonly currentUser: UserProfile | null;
+    private readonly currentUser: CurrentUser | null;
 
     constructor({ repository, businessRepository, currentUser }: BusinessAnalyticsServiceDependencies) {
         this.repository = repository;
@@ -122,11 +123,9 @@ export class BusinessAnalyticsService {
     }
 
     private ensureBusinessCanBeManaged(business: { ownerId: string; managers: string[] }) {
-        if (!this.currentUser) {
-            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
-        }
+        const currentUser = requireActiveUser(this.currentUser);
 
-        if (!canManageBusiness(this.currentUser, business)) {
+        if (!canManageBusiness(currentUser, business)) {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'Business access required.' });
         }
     }

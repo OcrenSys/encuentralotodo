@@ -133,4 +133,52 @@ describe('AuthIdentityService', () => {
             externalAuthId: 'firebase-user-1',
         });
     });
+
+    it('preserves an existing superadmin and avoids creating a duplicate user during login resolution', async () => {
+        const repository = {
+            findCurrentUserByIdentity: jest.fn(async (_provider, _externalUserId) => null),
+            findUserByEmail: jest.fn(async (_email: string) => ({
+                id: 'user-existing-superadmin',
+                fullName: 'Jairo Martinez',
+                email: 'ocrensys@gmail.com',
+                role: 'SUPERADMIN' as const,
+                avatarUrl: null,
+                isActive: true,
+            })),
+            createUserFromIdentity: jest.fn(async () => {
+                throw new Error('createUserFromIdentity should not be called for existing privileged users');
+            }),
+            upsertIdentityForUser: jest.fn(async (_userId: string, _identity: VerifiedIdentity) =>
+                createCurrentUser({
+                    id: 'user-existing-superadmin',
+                    fullName: 'Jairo Martinez',
+                    email: 'ocrensys@gmail.com',
+                    role: 'SUPERADMIN',
+                    isActive: true,
+                    authProvider: 'firebase',
+                    externalAuthId: 'firebase-superadmin-1',
+                    emailVerified: true,
+                }),
+            ),
+        } satisfies AuthIdentityRepositoryPort;
+        const service = new AuthIdentityService({ repository });
+
+        const currentUser = await service.resolveCurrentUser({
+            provider: 'firebase',
+            externalUserId: 'firebase-superadmin-1',
+            email: 'ocrensys@gmail.com',
+            emailVerified: true,
+            displayName: 'Jairo Martinez',
+            avatarUrl: null,
+        });
+
+        expect(repository.findUserByEmail).toHaveBeenCalledWith('ocrensys@gmail.com');
+        expect(repository.upsertIdentityForUser).toHaveBeenCalledWith('user-existing-superadmin', expect.any(Object));
+        expect(repository.createUserFromIdentity).not.toHaveBeenCalled();
+        expect(currentUser).toMatchObject({
+            id: 'user-existing-superadmin',
+            role: 'SUPERADMIN',
+            authProvider: 'firebase',
+        });
+    });
 });

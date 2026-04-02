@@ -1,12 +1,14 @@
 import type { UserProfile } from 'types';
 
+import { hasPlatformRole, platformAdminRoles } from '../auth/authorization';
+
 export interface BusinessAccessIdentity {
     ownerId: string;
     managers: string[];
 }
 
 export function isAdminUser(user: UserProfile | null | undefined) {
-    return Boolean(user && ['ADMIN', 'SUPERADMIN', 'GLOBALADMIN'].includes(user.role));
+    return hasPlatformRole(user, platformAdminRoles);
 }
 
 export function canManageBusiness(user: UserProfile | null | undefined, business: BusinessAccessIdentity) {

@@ -15,7 +15,7 @@ describe('Sidebar', () => {
             description: 'Vista principal',
             href: '/dashboard',
             icon: LayoutDashboard,
-            roles: ['SUPERADMIN'],
+            demoRoles: ['SUPERADMIN'],
           },
           {
             key: 'reports',
@@ -23,7 +23,7 @@ describe('Sidebar', () => {
             description: 'Seguimiento operativo',
             href: '/reports',
             icon: BarChart3,
-            roles: ['SUPERADMIN'],
+            demoRoles: ['SUPERADMIN'],
           },
         ]}
       />,

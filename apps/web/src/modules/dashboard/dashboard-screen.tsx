@@ -10,7 +10,7 @@ import {
   Megaphone,
   Package,
 } from 'lucide-react';
-import { Card, LoadingSkeleton } from 'ui';
+import { Card, EmptyState, LoadingSkeleton } from 'ui';
 
 import { ModuleHeader } from '../../components/management/module-header';
 import { QuickActionsPanel } from '../../components/management/quick-actions-panel';
@@ -30,169 +30,180 @@ export function DashboardScreen() {
     recentActivity,
     roleView,
     tasks,
+    canViewPlatformData,
+    isMockMode,
   } = useManagementData();
 
-  const stats =
-    roleView === 'SUPERADMIN'
+  const usesPlatformRoleView = isMockMode
+    ? roleView === 'SUPERADMIN'
+    : canViewPlatformData;
+
+  if (!loading && !isMockMode && !canViewPlatformData) {
+    return (
+      <EmptyState
+        title="Tu rol real no tiene acceso a esta consola"
+        description="La navegación autenticada ahora depende del rol global resuelto por el backend. Las vistas de negocio reales quedarán disponibles cuando exista autorización por membresía de negocio."
+      />
+    );
+  }
+
+  const stats = usesPlatformRoleView
+    ? [
+        {
+          label: 'Negocios aprobados',
+          value:
+            platformAnalytics?.summary.totalApprovedBusinesses ??
+            allBusinesses.length,
+          helper: 'Negocios con aprobación completa y visibles en plataforma.',
+          icon: Building2,
+          variant: 'blue' as const,
+        },
+        {
+          label: 'Aprobaciones pendientes',
+          value:
+            platformAnalytics?.summary.pendingBusinesses ??
+            pendingBusinessesQuery.data?.length ??
+            0,
+          helper:
+            'Perfiles que todavía necesitan revisión antes de salir en móvil.',
+          icon: CheckCheck,
+          variant: 'amber' as const,
+        },
+        {
+          label: 'Leads totales',
+          value: platformAnalytics?.summary.totalLeads ?? 0,
+          helper: 'Volumen acumulado de leads persistidos en plataforma.',
+          icon: Inbox,
+          variant: 'green' as const,
+        },
+        {
+          label: 'Salud de la plataforma',
+          value: platformHealth,
+          helper: 'Lectura rápida del estado operativo del catálogo.',
+          icon: Activity,
+          variant: 'neutral' as const,
+        },
+      ]
+    : roleView === 'OWNER'
       ? [
           {
-            label: 'Negocios aprobados',
-            value:
-              platformAnalytics?.summary.totalApprovedBusinesses ??
-              allBusinesses.length,
-            helper:
-              'Negocios con aprobación completa y visibles en plataforma.',
-            icon: Building2,
+            label: 'Negocios a cargo',
+            value: accessibleBusinesses.length,
+            helper: 'Negocios que dependen del propietario actual.',
+            icon: BriefcaseBusiness,
             variant: 'blue' as const,
           },
           {
-            label: 'Aprobaciones pendientes',
-            value:
-              platformAnalytics?.summary.pendingBusinesses ??
-              pendingBusinessesQuery.data?.length ??
-              0,
+            label: 'Productos del negocio',
+            value: businessAnalytics?.overview.totalProducts ?? 0,
+            helper: 'Productos persistidos para el negocio principal visible.',
+            icon: Package,
+            variant: 'neutral' as const,
+          },
+          {
+            label: 'Promociones cargadas',
+            value: businessAnalytics?.overview.totalPromotions ?? 0,
             helper:
-              'Perfiles que todavía necesitan revisión antes de salir en móvil.',
+              'Promociones registradas para el negocio principal visible.',
+            icon: Megaphone,
+            variant: 'green' as const,
+          },
+          {
+            label: 'Leads últimos 30d',
+            value: businessAnalytics?.overview.leadsLast30Days ?? 0,
+            helper: 'Actividad reciente basada en leads persistidos.',
+            icon: Inbox,
+            variant: 'amber' as const,
+          },
+        ]
+      : [
+          {
+            label: 'Tareas asignadas',
+            value: tasks.length,
+            helper: 'Acciones tácticas asignadas al encargado.',
             icon: CheckCheck,
             variant: 'amber' as const,
           },
           {
-            label: 'Leads totales',
-            value: platformAnalytics?.summary.totalLeads ?? 0,
-            helper: 'Volumen acumulado de leads persistidos en plataforma.',
-            icon: Inbox,
+            label: 'Productos del negocio',
+            value: businessAnalytics?.overview.totalProducts ?? 0,
+            helper: 'Catálogo persistido del negocio principal visible.',
+            icon: Package,
+            variant: 'neutral' as const,
+          },
+          {
+            label: 'Promociones cargadas',
+            value: businessAnalytics?.overview.totalPromotions ?? 0,
+            helper: 'Promos registradas que requieren seguimiento diario.',
+            icon: Megaphone,
             variant: 'green' as const,
           },
           {
-            label: 'Salud de la plataforma',
-            value: platformHealth,
-            helper: 'Lectura rápida del estado operativo del catálogo.',
-            icon: Activity,
-            variant: 'neutral' as const,
+            label: 'Leads últimos 7d',
+            value: businessAnalytics?.overview.leadsLast7Days ?? 0,
+            helper: 'Mensajes recientes esperando seguimiento operativo.',
+            icon: Inbox,
+            variant: 'blue' as const,
           },
-        ]
-      : roleView === 'OWNER'
-        ? [
-            {
-              label: 'Negocios a cargo',
-              value: accessibleBusinesses.length,
-              helper: 'Negocios que dependen del propietario actual.',
-              icon: BriefcaseBusiness,
-              variant: 'blue' as const,
-            },
-            {
-              label: 'Productos del negocio',
-              value: businessAnalytics?.overview.totalProducts ?? 0,
-              helper:
-                'Productos persistidos para el negocio principal visible.',
-              icon: Package,
-              variant: 'neutral' as const,
-            },
-            {
-              label: 'Promociones cargadas',
-              value: businessAnalytics?.overview.totalPromotions ?? 0,
-              helper:
-                'Promociones registradas para el negocio principal visible.',
-              icon: Megaphone,
-              variant: 'green' as const,
-            },
-            {
-              label: 'Leads últimos 30d',
-              value: businessAnalytics?.overview.leadsLast30Days ?? 0,
-              helper: 'Actividad reciente basada en leads persistidos.',
-              icon: Inbox,
-              variant: 'amber' as const,
-            },
-          ]
-        : [
-            {
-              label: 'Tareas asignadas',
-              value: tasks.length,
-              helper: 'Acciones tácticas asignadas al encargado.',
-              icon: CheckCheck,
-              variant: 'amber' as const,
-            },
-            {
-              label: 'Productos del negocio',
-              value: businessAnalytics?.overview.totalProducts ?? 0,
-              helper: 'Catálogo persistido del negocio principal visible.',
-              icon: Package,
-              variant: 'neutral' as const,
-            },
-            {
-              label: 'Promociones cargadas',
-              value: businessAnalytics?.overview.totalPromotions ?? 0,
-              helper: 'Promos registradas que requieren seguimiento diario.',
-              icon: Megaphone,
-              variant: 'green' as const,
-            },
-            {
-              label: 'Leads últimos 7d',
-              value: businessAnalytics?.overview.leadsLast7Days ?? 0,
-              helper: 'Mensajes recientes esperando seguimiento operativo.',
-              icon: Inbox,
-              variant: 'blue' as const,
-            },
-          ];
+        ];
 
-  const quickActions =
-    roleView === 'SUPERADMIN'
+  const quickActions = usesPlatformRoleView
+    ? [
+        {
+          label: 'Revisar aprobaciones',
+          helper:
+            'Atiende la cola pendiente y publica solo perfiles completos.',
+          href: '/admin/approvals',
+          primary: true,
+        },
+        {
+          label: 'Revisar catálogo de negocios',
+          helper: 'Revisa negocios activos y estados de publicación.',
+          href: '/admin/businesses',
+        },
+        {
+          label: 'Ver reportes',
+          helper: 'Consulta incidencias de salud y reportes de plataforma.',
+          href: '/admin/reports',
+        },
+      ]
+    : roleView === 'OWNER'
       ? [
           {
-            label: 'Revisar aprobaciones',
-            helper:
-              'Atiende la cola pendiente y publica solo perfiles completos.',
-            href: '/admin/approvals',
+            label: 'Actualizar negocio',
+            helper: 'Ajusta branding, contacto, horarios y dirección.',
+            href: '/business',
             primary: true,
           },
           {
-            label: 'Revisar catálogo de negocios',
-            helper: 'Revisa negocios activos y estados de publicación.',
-            href: '/admin/businesses',
+            label: 'Revisar contactos',
+            helper: 'Da seguimiento a mensajes de alto valor.',
+            href: '/leads',
           },
           {
-            label: 'Ver reportes',
-            helper: 'Consulta incidencias de salud y reportes de plataforma.',
-            href: '/admin/reports',
+            label: 'Lanzar promoción',
+            helper: 'Revisa campañas activas y próximas expiraciones.',
+            href: '/promotions',
           },
         ]
-      : roleView === 'OWNER'
-        ? [
-            {
-              label: 'Actualizar negocio',
-              helper: 'Ajusta branding, contacto, horarios y dirección.',
-              href: '/business',
-              primary: true,
-            },
-            {
-              label: 'Revisar contactos',
-              helper: 'Da seguimiento a mensajes de alto valor.',
-              href: '/leads',
-            },
-            {
-              label: 'Lanzar promoción',
-              helper: 'Revisa campañas activas y próximas expiraciones.',
-              href: '/promotions',
-            },
-          ]
-        : [
-            {
-              label: 'Revisar productos',
-              helper: 'Verifica productos destacados y cambios pendientes.',
-              href: '/products',
-              primary: true,
-            },
-            {
-              label: 'Atender contactos',
-              helper: 'Prioriza nuevos contactos con respuesta rápida.',
-              href: '/leads',
-            },
-            {
-              label: 'Revisar negocio',
-              helper: 'Confirma datos operativos visibles al cliente final.',
-              href: '/business',
-            },
-          ];
+      : [
+          {
+            label: 'Revisar productos',
+            helper: 'Verifica productos destacados y cambios pendientes.',
+            href: '/products',
+            primary: true,
+          },
+          {
+            label: 'Atender contactos',
+            helper: 'Prioriza nuevos contactos con respuesta rápida.',
+            href: '/leads',
+          },
+          {
+            label: 'Revisar negocio',
+            helper: 'Confirma datos operativos visibles al cliente final.',
+            href: '/business',
+          },
+        ];
 
   if (loading) {
     return (

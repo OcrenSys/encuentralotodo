@@ -6,35 +6,21 @@ import { useRouter } from 'next/navigation';
 import { EmptyState, LoadingSkeleton } from 'ui';
 
 import {
-  getDefaultPathForRole,
-  getMobileNavigationForRole,
-  getNavigationForRole,
+  getDefaultPathForAccess,
+  getMobileNavigationForAccess,
+  getNavigationForAccess,
   getNavigationItemByPath,
-  isPathAllowedForRole,
+  isPathAllowedForAccess,
   routeEyebrows,
 } from '../../lib/management-navigation';
 import { useCurrentAuthUser } from '../../lib/auth-context';
+import { useCurrentPlatformUser } from '../../lib/platform-authorization';
+import { isSuperAdminRole } from '../../lib/platform-roles';
 import { useRoleView } from '../../lib/role-view';
-import { trpc } from '../../lib/trpc';
 import { ActiveSimulationFloating } from './active-simulation-floating';
 import { BottomNav } from './bottom-nav';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
-
-function resolveEffectiveRoleView(
-  roleView: ReturnType<typeof useRoleView>['roleView'],
-  backendRole: string | undefined,
-) {
-  if (backendRole === 'SUPERADMIN' || backendRole === 'GLOBALADMIN') {
-    return 'SUPERADMIN';
-  }
-
-  return roleView;
-}
-
-function hasPlatformUserManagementAccess(role: string | undefined) {
-  return role === 'SUPERADMIN' || role === 'GLOBALADMIN';
-}
 
 function isRoleAssignmentPending(role: string | undefined) {
   return role === 'UNASSIGNED';
@@ -55,29 +41,28 @@ export function AppShell({
     isLoading: isAuthLoading,
     provider,
   } = useCurrentAuthUser();
+  const { currentUser: backendUser, isLoading: isSessionLoading } =
+    useCurrentPlatformUser();
   const requiresAuth = provider !== 'mock';
-  const sessionQuery = trpc.auth.me.useQuery(undefined, {
-    enabled: requiresAuth && isAuthenticated,
-    retry: false,
-  });
-  const backendUser = sessionQuery.data?.user;
-  const effectiveRoleView = resolveEffectiveRoleView(
-    roleView,
-    backendUser?.role,
-  );
+  const accessContext =
+    provider === 'mock'
+      ? { mode: 'mock' as const, role: roleView }
+      : { mode: 'real' as const, role: backendUser?.role };
   const route = getNavigationItemByPath(activePath);
-  const sidebarItems = getNavigationForRole(effectiveRoleView);
-  const mobileItems = getMobileNavigationForRole(effectiveRoleView);
-  const isAllowed = isPathAllowedForRole(activePath, effectiveRoleView);
-  const fallbackPath = getDefaultPathForRole(effectiveRoleView);
+  const sidebarItems = getNavigationForAccess(accessContext);
+  const mobileItems = getMobileNavigationForAccess(accessContext);
+  const isAllowed = isPathAllowedForAccess(activePath, accessContext);
+  const fallbackPath = getDefaultPathForAccess(accessContext);
   const isBackendSessionLoading =
-    requiresAuth && isAuthenticated && sessionQuery.isLoading;
+    requiresAuth && isAuthenticated && isSessionLoading;
   const isAccountDisabled = backendUser?.isActive === false;
   const isPendingRoleAssignment = isRoleAssignmentPending(backendUser?.role);
   const requiresPlatformUserManagementAccess = activePath === '/admin/users';
-  const hasPlatformUserAccess = hasPlatformUserManagementAccess(
-    backendUser?.role,
-  );
+  const hasPlatformUserAccess = isSuperAdminRole(backendUser?.role);
+  const accessDeniedDescription =
+    provider === 'mock'
+      ? `Cambia la vista de rol o vuelve a ${fallbackPath} para continuar en una ruta válida.`
+      : `Tu sesión real no tiene permisos para esta ruta. Vuelve a ${fallbackPath} para continuar en una vista permitida.`;
 
   useEffect(() => {
     if (!requiresAuth || isAuthLoading || isAuthenticated) {
@@ -104,7 +89,7 @@ export function AppShell({
   return (
     <div className="management-shell min-h-[100dvh] lg:grid lg:h-[100dvh] lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden">
       <Sidebar activePath={activePath} items={sidebarItems} />
-      <ActiveSimulationFloating />
+      {provider === 'mock' ? <ActiveSimulationFloating /> : null}
 
       <div className="min-w-0 lg:min-h-0">
         <div
@@ -144,7 +129,7 @@ export function AppShell({
             ) : (
               <EmptyState
                 title="Esta vista no está disponible para el rol actual"
-                description={`Cambia la vista de rol o vuelve a ${fallbackPath} para continuar en una ruta válida.`}
+                description={accessDeniedDescription}
               />
             )}
           </main>

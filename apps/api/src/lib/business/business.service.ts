@@ -1,11 +1,11 @@
 import { TRPCError } from '@trpc/server';
+import type { CurrentUser } from 'auth';
 import type {
-    ApproveBusinessInput,
     BusinessListFilters,
     CreateBusinessInput,
-    UserProfile,
 } from 'types';
 
+import { requirePlatformRole, platformAdminRoles } from '../auth/authorization';
 import type { EmailService } from '../email';
 import { isAdminUser } from './business-access';
 import { mapBusiness, mapBusinessDetails, mapBusinessSummary } from './business.mappers';
@@ -14,7 +14,7 @@ import type { BusinessRepositoryPort } from './business.repository';
 interface BusinessServiceDependencies {
     repository: BusinessRepositoryPort;
     emailService: EmailService;
-    currentUser: UserProfile | null;
+    currentUser: CurrentUser | null;
 }
 
 function sortBusinessSummaries(left: ReturnType<typeof mapBusinessSummary>, right: ReturnType<typeof mapBusinessSummary>) {
@@ -24,7 +24,7 @@ function sortBusinessSummaries(left: ReturnType<typeof mapBusinessSummary>, righ
 export class BusinessService {
     private readonly repository: BusinessRepositoryPort;
     private readonly emailService: EmailService;
-    private readonly currentUser: UserProfile | null;
+    private readonly currentUser: CurrentUser | null;
 
     constructor({ repository, emailService, currentUser }: BusinessServiceDependencies) {
         this.repository = repository;
@@ -68,7 +68,7 @@ export class BusinessService {
         return businesses.map(mapBusinessSummary).sort(sortBusinessSummaries);
     }
 
-    async approveBusiness(input: ApproveBusinessInput) {
+    async approveBusiness(input: { businessId: string }) {
         this.ensureAdmin();
 
         const approvedBusiness = await this.repository.approveBusiness(input.businessId);
@@ -93,9 +93,7 @@ export class BusinessService {
     }
 
     private ensureAdmin() {
-        if (!isAdminUser(this.currentUser)) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required.' });
-        }
+        return requirePlatformRole(this.currentUser, platformAdminRoles, 'Admin access required.');
     }
 
     private async resolveOwnerId(requestedOwnerId: string) {

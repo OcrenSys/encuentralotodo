@@ -62,7 +62,6 @@ export const getBusinessByIdInputSchema = z.object({
 
 export const approveBusinessInputSchema = z.object({
     businessId: z.string().min(2),
-    approvedBy: z.string().min(2),
 });
 
 export const getBusinessAnalyticsInputSchema = z.object({

@@ -9,7 +9,7 @@ import { adminProcedure, router, superAdminProcedure } from '../trpc';
 export const adminRouter = router({
   pendingBusinesses: adminProcedure.query(({ ctx }) => ctx.businessService.listPendingBusinesses()),
   approveBusiness: adminProcedure.input(approveBusinessInputSchema).mutation(({ ctx, input }) => {
-    return ctx.businessService.approveBusiness(input);
+    return ctx.businessService.approveBusiness({ businessId: input.businessId });
   }),
   listUsers: superAdminProcedure.query(({ ctx }) => ctx.userAdminService.listUsers()),
   updateUserRole: superAdminProcedure.input(updatePlatformUserRoleInputSchema).mutation(({ ctx, input }) => {

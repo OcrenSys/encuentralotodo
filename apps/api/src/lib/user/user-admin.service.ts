@@ -6,6 +6,7 @@ import type {
     UpdatePlatformUserRoleInput,
 } from 'types';
 
+import { isSuperAdmin, requireSuperAdmin } from '../auth/authorization';
 import type {
     RepositoryPlatformUserRecord,
     UserAdminRepositoryPort,
@@ -17,7 +18,7 @@ interface UserAdminServiceDependencies {
 }
 
 function hasSuperAdminAccess(currentUser: CurrentUser | null) {
-    return Boolean(currentUser && ['SUPERADMIN', 'GLOBALADMIN'].includes(currentUser.role));
+    return isSuperAdmin(currentUser);
 }
 
 function mapPlatformUser(record: RepositoryPlatformUserRecord): PlatformUser {
@@ -98,23 +99,7 @@ export class UserAdminService {
     }
 
     private assertSuperAdmin(): CurrentUser {
-        const currentUser = this.dependencies.currentUser;
-
-        if (!currentUser || !hasSuperAdminAccess(currentUser)) {
-            throw new TRPCError({
-                code: 'FORBIDDEN',
-                message: 'SuperAdmin access required.',
-            });
-        }
-
-        if (currentUser.isActive === false) {
-            throw new TRPCError({
-                code: 'FORBIDDEN',
-                message: 'User account is disabled.',
-            });
-        }
-
-        return currentUser;
+        return requireSuperAdmin(this.dependencies.currentUser);
     }
 
     private async getExistingUser(userId: string) {

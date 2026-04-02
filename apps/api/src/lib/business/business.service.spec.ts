@@ -1,3 +1,4 @@
+import { createCurrentUser } from 'auth';
 import type { CreateBusinessInput, UserProfile } from 'types';
 
 import type {
@@ -107,7 +108,21 @@ function createRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
     };
 }
 
-function createService(currentUser: UserProfile | null, repository = createRepositoryMock()) {
+function createCurrentPlatfor-*---------------------------------------****-*-**-mUser(overrides: Partial<ReturnType<typeof createCurrentUser>> = {}) {
+    return createCurrentUser({
+        id: overrides.id ?? 'owner-sofia',
+        fullName: overrides.fullName ?? 'Sofia Rivas',
+        email: overrides.email ?? 'sofia@encuentralotodo.app',
+        role: overrides.role ?? 'USER',
+        isActive: overrides.isActive ?? true,
+        authProvider: overrides.authProvider ?? 'firebase',
+        externalAuthId: overrides.externalAuthId ?? 'firebase-owner-sofia',
+        emailVerified: overrides.emailVerified ?? true,
+        avatarUrl: overrides.avatarUrl,
+    });
+}
+
+function createService(currentUser: ReturnType<typeof createCurrentPlatformUser> | null, repository = createRepositoryMock()) {
     return {
         repository,
         service: new BusinessService({
@@ -122,7 +137,7 @@ function createService(currentUser: UserProfile | null, repository = createRepos
 
 describe('BusinessService', () => {
     it('list returns mapped business summaries from repository data', async () => {
-        const { service, repository } = createService(baseUser as UserProfile);
+        const { service, repository } = createService(createCurrentPlatformUser());
         repository.listBusinesses.mockResolvedValue([createBusinessRecord()]);
 
         const results = await service.listBusinesses();
@@ -139,7 +154,7 @@ describe('BusinessService', () => {
     });
 
     it('byId returns aggregated mapped business details', async () => {
-        const { service, repository } = createService(baseUser as UserProfile);
+        const { service, repository } = createService(createCurrentPlatformUser());
         repository.findBusinessById.mockResolvedValue(createBusinessRecord());
 
         const result = await service.getBusinessById('biz-casa-norte');
@@ -155,12 +170,7 @@ describe('BusinessService', () => {
     });
 
     it('create persists business correctly', async () => {
-        const actor = {
-            id: 'owner-sofia',
-            fullName: 'Sofia Rivas',
-            email: 'sofia@encuentralotodo.app',
-            role: 'USER',
-        } as UserProfile;
+        const actor = createCurrentPlatformUser();
         const { service, repository } = createService(actor);
         const input: CreateBusinessInput = {
             name: 'Nuevo negocio',
@@ -213,12 +223,13 @@ describe('BusinessService', () => {
     });
 
     it('pending list only returns pending businesses', async () => {
-        const admin = {
+        const admin = createCurrentPlatformUser({
             id: 'admin-luis',
             fullName: 'Luis Admin',
             email: 'luis@encuentralotodo.app',
             role: 'ADMIN',
-        } as UserProfile;
+            externalAuthId: 'firebase-admin-luis',
+        });
         const { service, repository } = createService(admin);
         repository.listPendingBusinesses.mockResolvedValue([
             createBusinessRecord({ id: 'biz-pending', status: 'PENDING', products: [], promotions: [], reviews: [] }),
@@ -230,12 +241,13 @@ describe('BusinessService', () => {
     });
 
     it('approve updates business status correctly', async () => {
-        const admin = {
+        const admin = createCurrentPlatformUser({
             id: 'admin-luis',
             fullName: 'Luis Admin',
             email: 'luis@encuentralotodo.app',
             role: 'ADMIN',
-        } as UserProfile;
+            externalAuthId: 'firebase-admin-luis',
+        });
         const repository = createRepositoryMock();
         const sendBusinessApprovedEmail = jest.fn(async () => undefined);
         const service = new BusinessService({
@@ -246,7 +258,7 @@ describe('BusinessService', () => {
 
         repository.approveBusiness.mockResolvedValue(createBusinessRecord({ status: 'APPROVED' }));
 
-        const result = await service.approveBusiness({ businessId: 'biz-casa-norte', approvedBy: 'admin-luis' });
+        const result = await service.approveBusiness({ businessId: 'biz-casa-norte' });
 
         expect(repository.approveBusiness).toHaveBeenCalledWith('biz-casa-norte');
         expect(result.business.status).toBe('APPROVED');
@@ -254,12 +266,7 @@ describe('BusinessService', () => {
     });
 
     it('create does not rely on client supplied owner identity as authoritative truth', async () => {
-        const actor = {
-            id: 'owner-sofia',
-            fullName: 'Sofia Rivas',
-            email: 'sofia@encuentralotodo.app',
-            role: 'USER',
-        } as UserProfile;
+        const actor = createCurrentPlatformUser();
         const { service, repository } = createService(actor);
         const input: CreateBusinessInput = {
             name: 'Otro negocio',
