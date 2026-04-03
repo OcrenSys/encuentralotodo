@@ -47,6 +47,7 @@ export interface RepositoryManagedProductListResult {
 export interface ProductRepositoryPort {
     listByBusiness(businessId: string): Promise<RepositoryProductRecord[]>;
     listManaged(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean): Promise<RepositoryManagedProductListResult>;
+    listManagedForExport(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean): Promise<RepositoryManagedProductListRecord[]>;
     findById(productId: string): Promise<RepositoryProductRecord | null>;
     findByIdWithBusiness(productId: string): Promise<RepositoryProductWithBusinessRecord | null>;
     create(input: CreateProductInput): Promise<RepositoryProductRecord>;
@@ -209,6 +210,35 @@ export class ProductRepository implements ProductRepositoryPort {
             items: records.map(mapManagedProductListRecord),
             total,
         };
+    }
+
+    async listManagedForExport(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean) {
+        const where = buildManagedProductsWhere(input, actorId, includeAllBusinesses);
+        const records = await this.prisma.product.findMany({
+            where,
+            orderBy: [
+                { lastUpdated: 'desc' },
+                { name: 'asc' },
+            ],
+            select: {
+                ...productSelect,
+                business: {
+                    select: {
+                        id: true,
+                        name: true,
+                        ownerId: true,
+                        status: true,
+                        managers: {
+                            select: {
+                                userId: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return records.map(mapManagedProductListRecord);
     }
 
     async findById(productId: string) {

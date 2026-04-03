@@ -1,7 +1,8 @@
 'use client';
 
 import { useDeferredValue, useEffect, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Download, Plus, Search } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button, Card, EmptyState, GhostButton, LoadingSkeleton } from 'ui';
 
 import { ManagementListToolbar } from '../../components/management/management-list-toolbar';
@@ -25,6 +26,7 @@ function formatPrice(price?: number) {
 }
 
 export function ProductsScreen() {
+  const utils = trpc.useUtils();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -56,6 +58,19 @@ export function ProductsScreen() {
       retry: false,
     },
   );
+  const exportCatalogQuery = trpc.product.exportManagedCsv.useQuery(
+    {
+      businessId: selectedBusinessId !== 'ALL' ? selectedBusinessId : undefined,
+      featured: statusFilter,
+      page: 1,
+      pageSize: 10,
+      search: deferredSearch,
+    },
+    {
+      enabled: false,
+      retry: false,
+    },
+  );
 
   const businessOptions = (managedBusinessesQuery.data ?? []).map(
     (business) => ({
@@ -84,6 +99,37 @@ export function ProductsScreen() {
 
   const products = productsQuery.data?.items ?? [];
 
+  async function handleExportCatalog() {
+    try {
+      const file = await exportCatalogQuery.refetch();
+
+      if (!file.data) {
+        toast.error('No fue posible generar el archivo CSV.');
+        return;
+      }
+
+      const blob = new Blob([`\uFEFF${file.data.content}`], {
+        type: file.data.mimeType,
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+
+      anchor.href = downloadUrl;
+      anchor.download = file.data.fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      await utils.product.managed.invalidate();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible exportar el catálogo.',
+      );
+    }
+  }
+
   return (
     <div className="space-y-6">
       <ModuleHeader
@@ -91,7 +137,16 @@ export function ProductsScreen() {
         description="Catálogo operativo con búsqueda, filtros y paginación real para crear y revisar productos por negocio."
         actions={
           <>
-            <GhostButton type="button">Importar catálogo</GhostButton>
+            <GhostButton
+              disabled={exportCatalogQuery.isFetching}
+              onClick={handleExportCatalog}
+              type="button"
+            >
+              <Download className="mr-2 size-4" />
+              {exportCatalogQuery.isFetching
+                ? 'Exportando...'
+                : 'Exportar catálogo'}
+            </GhostButton>
             <Button onClick={() => setIsCreateOpen(true)} type="button">
               <Plus className="mr-2 size-4" />
               Nuevo producto

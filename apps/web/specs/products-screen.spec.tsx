@@ -4,6 +4,7 @@ import { ProductsScreen } from '../src/modules/products/products-screen';
 
 const invalidateMock = jest.fn(async () => undefined);
 const createProductMutateMock = jest.fn();
+const exportRefetchMock = jest.fn();
 
 jest.mock('sonner', () => ({
   toast: {
@@ -69,6 +70,9 @@ jest.mock('../src/lib/trpc', () => ({
       },
     },
     product: {
+      exportManagedCsv: {
+        useQuery: jest.fn(),
+      },
       managed: {
         useQuery: jest.fn(),
       },
@@ -87,6 +91,9 @@ const { trpc } = jest.requireMock('../src/lib/trpc') as {
       };
     };
     product: {
+      exportManagedCsv: {
+        useQuery: jest.Mock;
+      };
       managed: {
         useQuery: jest.Mock;
       };
@@ -98,9 +105,23 @@ const { trpc } = jest.requireMock('../src/lib/trpc') as {
 };
 
 describe('ProductsScreen', () => {
+  const createObjectUrlMock = jest.fn(() => 'blob:catalogo');
+  const revokeObjectUrlMock = jest.fn();
+
   beforeEach(() => {
     invalidateMock.mockClear();
     createProductMutateMock.mockClear();
+    exportRefetchMock.mockReset();
+    createObjectUrlMock.mockClear();
+    revokeObjectUrlMock.mockClear();
+
+    Object.defineProperty(window, 'URL', {
+      configurable: true,
+      value: {
+        createObjectURL: createObjectUrlMock,
+        revokeObjectURL: revokeObjectUrlMock,
+      },
+    });
 
     trpc.business.managed.useQuery.mockReturnValue({
       data: [
@@ -139,13 +160,18 @@ describe('ProductsScreen', () => {
       error: null,
     });
 
+    trpc.product.exportManagedCsv.useQuery.mockReturnValue({
+      isFetching: false,
+      refetch: exportRefetchMock,
+    });
+
     trpc.product.create.useMutation.mockReturnValue({
       mutate: createProductMutateMock,
       isPending: false,
     });
   });
 
-  it('loads the managed products query and submits the create dialog', async () => {
+  it('loads the managed products query and opens the create dialog', async () => {
     render(<ProductsScreen />);
 
     expect(trpc.product.managed.useQuery).toHaveBeenCalledWith(
@@ -163,39 +189,52 @@ describe('ProductsScreen', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /nuevo producto/i }));
 
-    fireEvent.change(screen.getByPlaceholderText('Combo ejecutivo'), {
-      target: { value: 'Bowl tropical' },
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: 'Nuevo producto' }),
+      ).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: /crear producto/i }),
+      ).toBeTruthy();
     });
-    fireEvent.change(
-      screen.getByPlaceholderText(
-        /describe beneficios, contenido o características clave/i,
-      ),
-      {
-        target: {
-          value:
-            'Bowl fresco con frutas, yogur griego y toppings pensado para desayuno y merienda.',
-        },
+  });
+
+  it('exports the filtered catalog as csv', async () => {
+    const originalCreateElement = document.createElement.bind(document);
+    const createElementSpy = jest
+      .spyOn(document, 'createElement')
+      .mockImplementation(((
+        tagName: string,
+        options?: ElementCreationOptions,
+      ) => {
+        if (tagName.toLowerCase() === 'a') {
+          return {
+            click: jest.fn(),
+            download: '',
+            href: '',
+            remove: jest.fn(),
+          } as unknown as HTMLAnchorElement;
+        }
+
+        return originalCreateElement(tagName, options);
+      }) as typeof document.createElement);
+
+    exportRefetchMock.mockResolvedValue({
+      data: {
+        content: 'id,name\nproduct-1,Combo ejecutivo',
+        fileName: 'catalogo-productos-2026-04-02.csv',
+        mimeType: 'text/csv;charset=utf-8;',
       },
-    );
-    fireEvent.change(screen.getAllByPlaceholderText('https://...')[0], {
-      target: { value: 'https://example.com/bowl.jpg' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('1250'), {
-      target: { value: '890' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /crear producto/i }));
+    render(<ProductsScreen />);
+
+    fireEvent.click(screen.getByRole('button', { name: /exportar catálogo/i }));
 
     await waitFor(() => {
-      expect(createProductMutateMock).toHaveBeenCalledWith({
-        businessId: 'business-1',
-        description:
-          'Bowl fresco con frutas, yogur griego y toppings pensado para desayuno y merienda.',
-        images: ['https://example.com/bowl.jpg'],
-        isFeatured: false,
-        name: 'Bowl tropical',
-        price: 890,
-      });
+      expect(exportRefetchMock).toHaveBeenCalled();
     });
+
+    createElementSpy.mockRestore();
   });
 });

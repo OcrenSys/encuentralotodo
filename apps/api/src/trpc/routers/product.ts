@@ -13,6 +13,9 @@ export const productRouter = router({
   create: publicProcedure.input(createProductInputSchema).mutation(({ ctx, input }) => {
     return ctx.productService.create(input);
   }),
+  exportManagedCsv: protectedProcedure.input(listManagedProductsInputSchema).query(({ ctx, input }) => {
+    return ctx.productService.exportManagedCsv(input);
+  }),
   managed: protectedProcedure.input(listManagedProductsInputSchema).query(({ ctx, input }) => {
     return ctx.productService.listManaged(input);
   }),
