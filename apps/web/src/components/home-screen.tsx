@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useDeferredValue, useState } from 'react';
 import {
@@ -113,18 +114,18 @@ export function MarketplaceHomeScreen() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
-                <a href="/submit-business">
-                  <Button className="gap-2">
+                <Button asChild className="gap-2">
+                  <Link href="/submit-business">
                     <Plus className="size-4" />
                     Crear negocio
-                  </Button>
-                </a>
-                <a href="/admin">
-                  <GhostButton className="gap-2">
+                  </Link>
+                </Button>
+                <GhostButton asChild className="gap-2">
+                  <Link href="/admin">
                     <ShieldCheck className="size-4" />
                     Aprobar publicaciones
-                  </GhostButton>
-                </a>
+                  </Link>
+                </GhostButton>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-3 lg:w-[520px] lg:gap-4 xl:w-[580px]">
@@ -204,13 +205,13 @@ export function MarketplaceHomeScreen() {
               description="Cards rápidas para escanear categoría, rating, zona y promoción sin entrar a un checkout tradicional."
             />
             {spotlightBusiness ? (
-              <a
+              <Link
                 className="hidden items-center gap-2 text-sm font-semibold text-[var(--color-primary)] sm:inline-flex"
                 href={`/business/${spotlightBusiness.id}`}
               >
                 Abrir destacado
                 <ArrowRight className="size-4" />
-              </a>
+              </Link>
             ) : null}
           </div>
           {businessQuery.isLoading ? (

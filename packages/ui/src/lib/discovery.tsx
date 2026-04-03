@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 import {
   MapPin,
@@ -141,21 +142,24 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
         {business.description}
       </p>
       <div className="mt-auto flex gap-2">
-        <a className="flex-1" href={`/business/${business.id}`}>
-          <Button className="w-full">Ver negocio</Button>
-        </a>
-        <a
-          href={buildWhatsAppLink(
-            business.whatsappNumber,
-            `Hola ${business.name}, te encontré en EncuentraloTodo.`,
-          )}
-          rel="noreferrer"
-          target="_blank"
+        <Button asChild className="w-full flex-1">
+          <Link href={`/business/${business.id}`}>Ver negocio</Link>
+        </Button>
+        <GhostButton
+          asChild
+          aria-label={`Contactar ${business.name} por WhatsApp`}
         >
-          <GhostButton aria-label={`Contactar ${business.name} por WhatsApp`}>
+          <a
+            href={buildWhatsAppLink(
+              business.whatsappNumber,
+              `Hola ${business.name}, te encontré en EncuentraloTodo.`,
+            )}
+            rel="noreferrer"
+            target="_blank"
+          >
             <MessageCircle className="size-4" />
-          </GhostButton>
-        </a>
+          </a>
+        </GhostButton>
       </div>
     </Card>
   );

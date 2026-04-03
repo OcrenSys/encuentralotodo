@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { quickLinks } from '../../lib/management-navigation';
 import { cn } from 'utils';
 
@@ -37,7 +39,8 @@ export function Sidebar({
               const active = activePath === item.href;
 
               return (
-                <a
+                <Link
+                  aria-current={active ? 'page' : undefined}
                   className={cn(
                     'group relative flex items-start gap-3 overflow-hidden rounded-lg border px-4 py-3 transition-all duration-normal',
                     active
@@ -46,6 +49,7 @@ export function Sidebar({
                   )}
                   href={item.href}
                   key={item.key}
+                  scroll={false}
                 >
                   <span
                     className={cn(
@@ -69,7 +73,7 @@ export function Sidebar({
                       {item.description}
                     </span>
                   </span>
-                </a>
+                </Link>
               );
             })}
           </nav>
@@ -80,13 +84,14 @@ export function Sidebar({
                 Accesos rápidos
               </p>
               {quickLinks.map((item) => (
-                <a
+                <Link
                   className="block rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-white/90 hover:shadow-sm"
                   href={item.href}
                   key={item.href}
+                  scroll={false}
                 >
                   {item.label}
-                </a>
+                </Link>
               ))}
             </div>
           </div>

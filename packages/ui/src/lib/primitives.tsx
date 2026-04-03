@@ -1,4 +1,5 @@
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import { Slot } from '@radix-ui/react-slot';
 
 import { cn } from 'utils';
 
@@ -91,14 +92,18 @@ export function Panel(
 }
 
 export function Button({
+  asChild = false,
   className,
   variant = 'primary',
   ...props
 }: ComponentPropsWithoutRef<'button'> & {
+  asChild?: boolean;
   variant?: keyof typeof buttonVariants;
 }) {
+  const Component = asChild ? Slot : 'button';
+
   return (
-    <button
+    <Component
       className={cn(
         'inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-normal disabled:cursor-not-allowed disabled:opacity-60',
         buttonVariants[variant],
@@ -110,10 +115,20 @@ export function Button({
 }
 
 export function GhostButton({
+  asChild = false,
   className,
   ...props
-}: ComponentPropsWithoutRef<'button'>) {
-  return <Button className={className} variant="ghost" {...props} />;
+}: ComponentPropsWithoutRef<'button'> & {
+  asChild?: boolean;
+}) {
+  return (
+    <Button
+      asChild={asChild}
+      className={className}
+      variant="ghost"
+      {...props}
+    />
+  );
 }
 
 export function Badge({

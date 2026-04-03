@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useDeferredValue, useEffect, useState } from 'react';
 import type { PlatformUser, UserRole } from 'types';
 import { toast } from 'sonner';
 import { Badge, Button, Card, EmptyState, LoadingSkeleton, Select } from 'ui';
 
+import { ManagementListToolbar } from '../../components/management/management-list-toolbar';
+import { ManagementPagination } from '../../components/management/management-pagination';
 import { ModuleHeader } from '../../components/management/module-header';
 import { SurfaceTable } from '../../components/management/surface-table';
 import { trpc } from '../../lib/trpc';
@@ -78,18 +80,39 @@ function UserAccessSummary({ user }: { user: PlatformUser }) {
 export function UsersScreen() {
   const utils = trpc.useUtils();
   const sessionQuery = trpc.auth.me.useQuery(undefined, { retry: false });
-  const usersQuery = trpc.admin.listUsers.useQuery(undefined, { retry: false });
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [roleFilter, setRoleFilter] = useState<'ALL' | UserRole>('ALL');
+  const [statusFilter, setStatusFilter] = useState<
+    'ALL' | 'ACTIVE' | 'INACTIVE'
+  >('ALL');
+  const deferredSearch = useDeferredValue(search);
+  const usersQuery = trpc.admin.listUsersPage.useQuery(
+    {
+      page,
+      pageSize,
+      role: roleFilter,
+      search: deferredSearch,
+      status: statusFilter,
+    },
+    { placeholderData: (previousData) => previousData, retry: false },
+  );
   const [draftRoles, setDraftRoles] = useState<Record<string, UserRole>>({});
 
   useEffect(() => {
-    if (!usersQuery.data) {
+    setPage(1);
+  }, [deferredSearch, roleFilter, statusFilter]);
+
+  useEffect(() => {
+    if (!usersQuery.data?.items) {
       return;
     }
 
     setDraftRoles((current) => {
       const next = { ...current };
 
-      usersQuery.data.forEach((user) => {
+      usersQuery.data.items.forEach((user) => {
         next[user.id] = next[user.id] ?? user.role;
       });
 
@@ -103,7 +126,10 @@ export function UsersScreen() {
         ...current,
         [user.id]: user.role,
       }));
-      await utils.admin.listUsers.invalidate();
+      await Promise.all([
+        utils.admin.listUsers.invalidate(),
+        utils.admin.listUsersPage.invalidate(),
+      ]);
       toast.success('Rol actualizado correctamente.');
     },
     onError: (error) => {
@@ -114,6 +140,7 @@ export function UsersScreen() {
   const setUserActive = trpc.admin.setUserActive.useMutation({
     onSuccess: async (user) => {
       await Promise.all([
+        utils.admin.listUsersPage.invalidate(),
         utils.admin.listUsers.invalidate(),
         user.id === sessionQuery.data?.user?.id
           ? utils.auth.me.invalidate()
@@ -143,7 +170,7 @@ export function UsersScreen() {
     );
   }
 
-  if (!usersQuery.data?.length) {
+  if (!usersQuery.data?.items.length) {
     return (
       <EmptyState
         title="No hay usuarios registrados"
@@ -159,11 +186,43 @@ export function UsersScreen() {
         description="Lista centralizada para ajustar roles y desactivar cuentas cuando sea necesario. Los cambios aplican sobre el usuario real persistido en Prisma."
       />
 
+      <ManagementListToolbar
+        filters={[
+          {
+            label: 'Rol',
+            onValueChange: (value) => setRoleFilter(value as 'ALL' | UserRole),
+            options: [
+              { label: 'Todos los roles', value: 'ALL' },
+              ...roleOptions.map((role) => ({
+                label: roleLabels[role],
+                value: role,
+              })),
+            ],
+            value: roleFilter,
+          },
+          {
+            label: 'Estado del usuario',
+            onValueChange: (value) =>
+              setStatusFilter(value as 'ALL' | 'ACTIVE' | 'INACTIVE'),
+            options: [
+              { label: 'Todos los estados', value: 'ALL' },
+              { label: 'Activos', value: 'ACTIVE' },
+              { label: 'Inactivos', value: 'INACTIVE' },
+            ],
+            value: statusFilter,
+          },
+        ]}
+        searchPlaceholder="Buscar usuarios por nombre o correo"
+        searchValue={search}
+        summary={`${usersQuery.data?.total ?? 0} usuarios encontrados`}
+        onSearchChange={setSearch}
+      />
+
       <div className="hidden lg:block">
         <SurfaceTable
           columns={['Usuario', 'Acceso', 'Rol', 'Estado', 'Acciones']}
         >
-          {usersQuery.data.map((user) => {
+          {usersQuery.data.items.map((user) => {
             const selectedRole = draftRoles[user.id] ?? user.role;
             const isSelf = currentUserId === user.id;
             const isRolePending =
@@ -213,21 +272,19 @@ export function UsersScreen() {
                   <Select
                     aria-label={`Rol para ${user.fullName}`}
                     disabled={isSelf || isRolePending}
-                    onChange={(event) => {
-                      const role = event.target.value as UserRole;
+                    onValueChange={(value) => {
+                      const role = value as UserRole;
                       setDraftRoles((current) => ({
                         ...current,
                         [user.id]: role,
                       }));
                     }}
+                    options={roleOptions.map((role) => ({
+                      label: roleLabels[role],
+                      value: role,
+                    }))}
                     value={selectedRole}
-                  >
-                    {roleOptions.map((role) => (
-                      <option key={role} value={role}>
-                        {roleLabels[role]}
-                      </option>
-                    ))}
-                  </Select>
+                  />
                   <p className="text-xs text-text-muted">
                     {isSelf
                       ? 'Tu propio rol se protege para evitar perder acceso.'
@@ -283,7 +340,7 @@ export function UsersScreen() {
       </div>
 
       <div className="grid gap-4 lg:hidden">
-        {usersQuery.data.map((user) => {
+        {usersQuery.data.items.map((user) => {
           const selectedRole = draftRoles[user.id] ?? user.role;
           const isSelf = currentUserId === user.id;
           const isRolePending =
@@ -333,21 +390,19 @@ export function UsersScreen() {
                 <Select
                   aria-label={`Rol móvil para ${user.fullName}`}
                   disabled={isSelf || isRolePending}
-                  onChange={(event) => {
-                    const role = event.target.value as UserRole;
+                  onValueChange={(value) => {
+                    const role = value as UserRole;
                     setDraftRoles((current) => ({
                       ...current,
                       [user.id]: role,
                     }));
                   }}
+                  options={roleOptions.map((role) => ({
+                    label: roleLabels[role],
+                    value: role,
+                  }))}
                   value={selectedRole}
-                >
-                  {roleOptions.map((role) => (
-                    <option key={role} value={role}>
-                      {roleLabels[role]}
-                    </option>
-                  ))}
-                </Select>
+                />
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">
@@ -385,6 +440,18 @@ export function UsersScreen() {
           );
         })}
       </div>
+
+      <ManagementPagination
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
+        page={usersQuery.data?.page ?? page}
+        pageSize={usersQuery.data?.pageSize ?? pageSize}
+        total={usersQuery.data?.total ?? 0}
+        totalPages={usersQuery.data?.totalPages ?? 1}
+      />
     </div>
   );
 }

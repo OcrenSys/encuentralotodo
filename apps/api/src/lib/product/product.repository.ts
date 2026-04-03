@@ -1,5 +1,6 @@
 import type {
     CreateProductInput,
+    ListManagedProductsInput,
     UpdateProductInput,
 } from 'types';
 
@@ -20,6 +21,7 @@ export interface RepositoryProductRecord {
 export interface RepositoryProductWithBusinessRecord extends RepositoryProductRecord {
     business: {
         id: string;
+        name: string;
         ownerId: string;
         subscriptionType: 'FREE_TRIAL' | 'PREMIUM' | 'PREMIUM_PLUS';
         status: 'PENDING' | 'APPROVED';
@@ -27,8 +29,25 @@ export interface RepositoryProductWithBusinessRecord extends RepositoryProductRe
     };
 }
 
+export interface RepositoryManagedProductListRecord extends RepositoryProductRecord {
+    business: {
+        id: string;
+        name: string;
+        ownerId: string;
+        status: 'PENDING' | 'APPROVED';
+        managers: Array<{ userId: string }>;
+    };
+}
+
+export interface RepositoryManagedProductListResult {
+    items: RepositoryManagedProductListRecord[];
+    total: number;
+}
+
 export interface ProductRepositoryPort {
     listByBusiness(businessId: string): Promise<RepositoryProductRecord[]>;
+    listManaged(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean): Promise<RepositoryManagedProductListResult>;
+    listManagedForExport(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean): Promise<RepositoryManagedProductListRecord[]>;
     findById(productId: string): Promise<RepositoryProductRecord | null>;
     findByIdWithBusiness(productId: string): Promise<RepositoryProductWithBusinessRecord | null>;
     create(input: CreateProductInput): Promise<RepositoryProductRecord>;
@@ -68,12 +87,73 @@ function mapProductWithBusinessRecord(record: any): RepositoryProductWithBusines
         ...mapProductRecord(record),
         business: {
             id: record.business.id,
+            name: record.business.name,
             ownerId: record.business.ownerId,
             subscriptionType: record.business.subscriptionType,
             status: record.business.status,
             managers: (record.business.managers ?? []).map((manager: any) => ({ userId: manager.userId })),
         },
     };
+}
+
+function mapManagedProductListRecord(record: any): RepositoryManagedProductListRecord {
+    return {
+        ...mapProductRecord(record),
+        business: {
+            id: record.business.id,
+            name: record.business.name,
+            ownerId: record.business.ownerId,
+            status: record.business.status,
+            managers: (record.business.managers ?? []).map((manager: any) => ({ userId: manager.userId })),
+        },
+    };
+}
+
+function buildManagedProductsWhere(
+    input: ListManagedProductsInput,
+    actorId: string | null,
+    includeAllBusinesses: boolean,
+) {
+    const clauses: Record<string, unknown>[] = [];
+
+    if (input.businessId) {
+        clauses.push({ businessId: input.businessId });
+    }
+
+    if (input.featured === 'FEATURED') {
+        clauses.push({ isFeatured: true });
+    }
+
+    if (input.featured === 'CATALOG') {
+        clauses.push({ isFeatured: false });
+    }
+
+    if (input.search) {
+        clauses.push({
+            OR: [
+                { name: { contains: input.search, mode: 'insensitive' } },
+                { description: { contains: input.search, mode: 'insensitive' } },
+                { business: { name: { contains: input.search, mode: 'insensitive' } } },
+            ],
+        });
+    }
+
+    if (!includeAllBusinesses && actorId) {
+        clauses.push({
+            business: {
+                OR: [
+                    { ownerId: actorId },
+                    { managers: { some: { userId: actorId } } },
+                ],
+            },
+        });
+    }
+
+    if (clauses.length === 0) {
+        return undefined;
+    }
+
+    return { AND: clauses };
 }
 
 export class ProductRepository implements ProductRepositoryPort {
@@ -93,6 +173,74 @@ export class ProductRepository implements ProductRepositoryPort {
         return records.map(mapProductRecord);
     }
 
+    async listManaged(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean) {
+        const where = buildManagedProductsWhere(input, actorId, includeAllBusinesses);
+        const skip = (input.page - 1) * input.pageSize;
+
+        const [records, total] = await Promise.all([
+            this.prisma.product.findMany({
+                where,
+                orderBy: [
+                    { lastUpdated: 'desc' },
+                    { name: 'asc' },
+                ],
+                skip,
+                take: input.pageSize,
+                select: {
+                    ...productSelect,
+                    business: {
+                        select: {
+                            id: true,
+                            name: true,
+                            ownerId: true,
+                            status: true,
+                            managers: {
+                                select: {
+                                    userId: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            }),
+            this.prisma.product.count({ where }),
+        ]);
+
+        return {
+            items: records.map(mapManagedProductListRecord),
+            total,
+        };
+    }
+
+    async listManagedForExport(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean) {
+        const where = buildManagedProductsWhere(input, actorId, includeAllBusinesses);
+        const records = await this.prisma.product.findMany({
+            where,
+            orderBy: [
+                { lastUpdated: 'desc' },
+                { name: 'asc' },
+            ],
+            select: {
+                ...productSelect,
+                business: {
+                    select: {
+                        id: true,
+                        name: true,
+                        ownerId: true,
+                        status: true,
+                        managers: {
+                            select: {
+                                userId: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return records.map(mapManagedProductListRecord);
+    }
+
     async findById(productId: string) {
         const record = await this.prisma.product.findUnique({
             where: { id: productId },
@@ -110,6 +258,7 @@ export class ProductRepository implements ProductRepositoryPort {
                 business: {
                     select: {
                         id: true,
+                        name: true,
                         ownerId: true,
                         subscriptionType: true,
                         status: true,

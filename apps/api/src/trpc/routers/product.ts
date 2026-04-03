@@ -3,14 +3,21 @@ import {
   deleteProductInputSchema,
   getBusinessByIdInputSchema,
   getProductByIdInputSchema,
+  listManagedProductsInputSchema,
   updateProductInputSchema,
 } from 'types';
 
-import { publicProcedure, router } from '../trpc';
+import { protectedProcedure, publicProcedure, router } from '../trpc';
 
 export const productRouter = router({
   create: publicProcedure.input(createProductInputSchema).mutation(({ ctx, input }) => {
     return ctx.productService.create(input);
+  }),
+  exportManagedCsv: protectedProcedure.input(listManagedProductsInputSchema).query(({ ctx, input }) => {
+    return ctx.productService.exportManagedCsv(input);
+  }),
+  managed: protectedProcedure.input(listManagedProductsInputSchema).query(({ ctx, input }) => {
+    return ctx.productService.listManaged(input);
   }),
   listByBusiness: publicProcedure.input(getBusinessByIdInputSchema).query(({ ctx, input }) => {
     return ctx.productService.listByBusiness(input.businessId);

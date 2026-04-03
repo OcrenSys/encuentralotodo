@@ -1,5 +1,6 @@
 import {
   approveBusinessInputSchema,
+  listPlatformUsersInputSchema,
   searchPlatformUsersInputSchema,
   setPlatformUserActiveInputSchema,
   updatePlatformUserRoleInputSchema,
@@ -16,6 +17,9 @@ export const adminRouter = router({
     return ctx.userAdminService.searchUsers(input);
   }),
   listUsers: superAdminProcedure.query(({ ctx }) => ctx.userAdminService.listUsers()),
+  listUsersPage: superAdminProcedure.input(listPlatformUsersInputSchema).query(({ ctx, input }) => {
+    return ctx.userAdminService.listUsersPage(input);
+  }),
   updateUserRole: superAdminProcedure.input(updatePlatformUserRoleInputSchema).mutation(({ ctx, input }) => {
     return ctx.userAdminService.updateUserRole(input);
   }),

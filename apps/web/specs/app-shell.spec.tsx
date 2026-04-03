@@ -3,11 +3,13 @@ import { render, waitFor } from '@testing-library/react';
 import { AppShell } from '../src/components/layout/app-shell';
 
 const replaceMock = jest.fn();
+const usePathnameMock = jest.fn();
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     replace: replaceMock,
   }),
+  usePathname: () => usePathnameMock(),
 }));
 
 jest.mock('../src/lib/auth-context', () => ({
@@ -75,6 +77,7 @@ const { trpc } = jest.requireMock('../src/lib/trpc') as {
 describe('AppShell', () => {
   beforeEach(() => {
     replaceMock.mockReset();
+    usePathnameMock.mockReturnValue('/dashboard');
 
     useRoleView.mockReturnValue({
       roleView: 'SUPERADMIN',
@@ -113,6 +116,35 @@ describe('AppShell', () => {
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith('/login?next=%2Fdashboard');
     });
+  });
+
+  it('derives the active path from the current pathname when rendered from a shared layout', () => {
+    usePathnameMock.mockReturnValue('/admin/users');
+    useCurrentAuthUser.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      provider: 'firebase',
+    });
+    trpc.auth.me.useQuery.mockReturnValue({
+      data: {
+        user: {
+          id: 'admin-luis',
+          role: 'ADMIN',
+          isActive: true,
+        },
+      },
+      isLoading: false,
+    });
+
+    const view = render(
+      <AppShell>
+        <div>Private content</div>
+      </AppShell>,
+    );
+
+    expect(
+      view.getByText('Esta vista requiere permisos de SuperAdmin'),
+    ).toBeTruthy();
   });
 
   it('renders management content in mock mode without redirect', () => {

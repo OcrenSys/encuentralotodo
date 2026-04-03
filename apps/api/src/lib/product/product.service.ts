@@ -3,6 +3,9 @@ import type {
     CreateProductInput,
     DeleteProductInput,
     GetProductByIdInput,
+    ListManagedProductsInput,
+    ManagedProductListItem,
+    ManagementListResult,
     UpdateProductInput,
     UserProfile,
 } from 'types';
@@ -24,6 +27,15 @@ interface ProductServiceDependencies {
     currentUser: UserProfile | null;
 }
 
+function escapeCsvCell(value: string | number | boolean | null | undefined) {
+    const normalizedValue = value == null ? '' : String(value);
+    return `"${normalizedValue.replace(/"/g, '""')}"`;
+}
+
+function toCsvDate(value: Date) {
+    return value.toISOString();
+}
+
 export class ProductService {
     private readonly repository: ProductRepositoryPort;
     private readonly businessRepository: BusinessRepositoryPort;
@@ -43,6 +55,78 @@ export class ProductService {
 
         const products = await this.repository.listByBusiness(businessId);
         return this.applyVisibility(products.map(mapProduct), business.subscriptionType);
+    }
+
+    async listManaged(input: ListManagedProductsInput): Promise<ManagementListResult<ManagedProductListItem>> {
+        const currentUser = this.currentUser;
+        if (!currentUser) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
+        }
+
+        const includeAllBusinesses = currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN' || currentUser.role === 'GLOBALADMIN';
+        const result = await this.repository.listManaged(input, currentUser.id, includeAllBusinesses);
+
+        return {
+            items: result.items.map((product) => ({
+                ...mapProduct(product),
+                businessName: product.business.name,
+                businessStatus: product.business.status,
+            })),
+            page: input.page,
+            pageSize: input.pageSize,
+            total: result.total,
+            totalPages: Math.max(1, Math.ceil(result.total / input.pageSize)),
+        };
+    }
+
+    async exportManagedCsv(input: ListManagedProductsInput) {
+        const currentUser = this.currentUser;
+        if (!currentUser) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
+        }
+
+        const includeAllBusinesses = currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN' || currentUser.role === 'GLOBALADMIN';
+        const products = await this.repository.listManagedForExport(input, currentUser.id, includeAllBusinesses);
+        const header = [
+            'id',
+            'businessId',
+            'businessName',
+            'businessStatus',
+            'name',
+            'description',
+            'price',
+            'isFeatured',
+            'image1',
+            'image2',
+            'image3',
+            'lastUpdated',
+            'createdAt',
+        ];
+        const rows = products.map((product) => [
+            product.id,
+            product.businessId,
+            product.business.name,
+            product.business.status,
+            product.name,
+            product.description,
+            product.price ?? '',
+            product.isFeatured,
+            product.images[0] ?? '',
+            product.images[1] ?? '',
+            product.images[2] ?? '',
+            toCsvDate(product.lastUpdated),
+            toCsvDate(product.createdAt),
+        ]);
+        const content = [header, ...rows]
+            .map((row) => row.map((cell) => escapeCsvCell(cell)).join(','))
+            .join('\n');
+        const fileSuffix = new Date().toISOString().slice(0, 10);
+
+        return {
+            content,
+            fileName: `catalogo-productos-${fileSuffix}.csv`,
+            mimeType: 'text/csv;charset=utf-8;',
+        };
     }
 
     async getById(input: GetProductByIdInput) {

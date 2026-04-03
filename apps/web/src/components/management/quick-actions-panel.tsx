@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { Button, Card, GhostButton } from 'ui';
 
 type ActionItem = {
@@ -14,6 +16,28 @@ export function QuickActionsPanel({
   title: string;
   items: ActionItem[];
 }) {
+  const renderAction = (item: ActionItem) => {
+    const ActionButton = item.primary ? Button : GhostButton;
+
+    if (!item.href) {
+      return <ActionButton type="button">{item.label}</ActionButton>;
+    }
+
+    if (item.href.startsWith('/')) {
+      return (
+        <ActionButton asChild>
+          <Link href={item.href}>{item.label}</Link>
+        </ActionButton>
+      );
+    }
+
+    return (
+      <ActionButton asChild>
+        <a href={item.href}>{item.label}</a>
+      </ActionButton>
+    );
+  };
+
   return (
     <Card className="space-y-4" interactive={false} variant="soft">
       <div>
@@ -39,19 +63,7 @@ export function QuickActionsPanel({
                 {item.helper}
               </p>
             </div>
-            {item.href ? (
-              <a href={item.href}>
-                {item.primary ? (
-                  <Button>{item.label}</Button>
-                ) : (
-                  <GhostButton>{item.label}</GhostButton>
-                )}
-              </a>
-            ) : item.primary ? (
-              <Button type="button">{item.label}</Button>
-            ) : (
-              <GhostButton type="button">{item.label}</GhostButton>
-            )}
+            {renderAction(item)}
           </div>
         ))}
       </div>

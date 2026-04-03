@@ -48,15 +48,14 @@ export function BusinessScreen() {
         actions={
           accessibleBusinesses.length > 1 ? (
             <Select
+              onValueChange={setSelectedBusinessId}
+              options={accessibleBusinesses.map((business) => ({
+                label: business.name,
+                value: business.id,
+              }))}
+              placeholder="Selecciona un negocio"
               value={selectedBusiness.id}
-              onChange={(event) => setSelectedBusinessId(event.target.value)}
-            >
-              {accessibleBusinesses.map((business) => (
-                <option key={business.id} value={business.id}>
-                  {business.name}
-                </option>
-              ))}
-            </Select>
+            />
           ) : null
         }
       />

@@ -24,6 +24,12 @@ export const leadVolumeBucketSchema = z.enum(leadVolumeBuckets);
 export const promotionUsageLevelSchema = z.enum(promotionUsageLevels);
 export const reviewStrengthLevelSchema = z.enum(reviewStrengthLevels);
 
+const managementPaginationInputSchema = z.object({
+    page: z.number().int().min(1).optional().default(1),
+    pageSize: z.number().int().min(1).max(50).optional().default(10),
+    search: z.string().trim().max(80).optional().default(''),
+});
+
 export const businessLocationSchema = z.object({
     lat: z.number(),
     lng: z.number(),
@@ -97,6 +103,11 @@ export const updateProductInputSchema = z.object({
 
 export const deleteProductInputSchema = z.object({
     productId: z.string().min(2),
+});
+
+export const listManagedProductsInputSchema = managementPaginationInputSchema.extend({
+    businessId: z.string().min(2).optional(),
+    featured: z.enum(['ALL', 'FEATURED', 'CATALOG']).optional().default('ALL'),
 });
 
 export const createPromotionInputSchema = z.object({
@@ -174,6 +185,16 @@ export const setPlatformUserActiveInputSchema = z.object({
     isActive: z.boolean(),
 });
 
+export const listManagedBusinessesInputSchema = managementPaginationInputSchema.extend({
+    category: businessCategorySchema.or(z.literal('ALL')).optional().default('ALL'),
+    status: businessStatusSchema.or(z.literal('ALL')).optional().default('ALL'),
+});
+
+export const listPlatformUsersInputSchema = managementPaginationInputSchema.extend({
+    role: userRoleSchema.or(z.literal('ALL')).optional().default('ALL'),
+    status: z.enum(['ALL', 'ACTIVE', 'INACTIVE']).optional().default('ALL'),
+});
+
 export const searchPlatformUsersInputSchema = z.object({
     search: z.string().trim().max(80).optional().default(''),
     limit: z.number().int().min(1).max(10).optional().default(10),
@@ -189,6 +210,7 @@ export type CreateProductInput = z.infer<typeof createProductInputSchema>;
 export type GetProductByIdInput = z.infer<typeof getProductByIdInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;
 export type DeleteProductInput = z.infer<typeof deleteProductInputSchema>;
+export type ListManagedProductsInput = z.infer<typeof listManagedProductsInputSchema>;
 export type CreatePromotionInput = z.infer<typeof createPromotionInputSchema>;
 export type GetPromotionByIdInput = z.infer<typeof getPromotionByIdInputSchema>;
 export type UpdatePromotionInput = z.infer<typeof updatePromotionInputSchema>;
@@ -199,4 +221,6 @@ export type CreateReviewInput = z.infer<typeof createReviewInputSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;
 export type UpdatePlatformUserRoleInput = z.infer<typeof updatePlatformUserRoleInputSchema>;
 export type SetPlatformUserActiveInput = z.infer<typeof setPlatformUserActiveInputSchema>;
+export type ListManagedBusinessesInput = z.infer<typeof listManagedBusinessesInputSchema>;
+export type ListPlatformUsersInput = z.infer<typeof listPlatformUsersInputSchema>;
 export type SearchPlatformUsersInput = z.infer<typeof searchPlatformUsersInputSchema>;

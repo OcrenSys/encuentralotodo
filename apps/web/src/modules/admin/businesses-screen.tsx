@@ -1,7 +1,10 @@
 'use client';
 
-import { Card, LoadingSkeleton } from 'ui';
+import { useDeferredValue, useEffect, useState } from 'react';
+import { Card, EmptyState, LoadingSkeleton } from 'ui';
 
+import { ManagementListToolbar } from '../../components/management/management-list-toolbar';
+import { ManagementPagination } from '../../components/management/management-pagination';
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
 import { SurfaceTable } from '../../components/management/surface-table';
@@ -9,14 +12,48 @@ import {
   formatBusinessCategoryLabel,
   formatSubscriptionLabel,
 } from '../../lib/display-labels';
-import { useManagementData } from '../../lib/management-data';
+import { trpc } from '../../lib/trpc';
 
 export function AdminBusinessesScreen() {
-  const { allBusinesses, loading } = useManagementData();
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [category, setCategory] = useState('ALL');
+  const [status, setStatus] = useState('ALL');
+  const deferredSearch = useDeferredValue(search);
 
-  if (loading) {
+  useEffect(() => {
+    setPage(1);
+  }, [category, deferredSearch, status]);
+
+  const businessesQuery = trpc.business.managedPage.useQuery(
+    {
+      category: category as 'ALL' | 'GENERAL_STORE' | 'RESTAURANT' | 'SERVICE',
+      page,
+      pageSize,
+      search: deferredSearch,
+      status: status as 'ALL' | 'PENDING' | 'APPROVED',
+    },
+    {
+      placeholderData: (previousData) => previousData,
+      retry: false,
+    },
+  );
+
+  if (businessesQuery.isLoading) {
     return <LoadingSkeleton className="h-[420px]" />;
   }
+
+  if (businessesQuery.error) {
+    return (
+      <EmptyState
+        title="No fue posible cargar los negocios"
+        description={businessesQuery.error.message}
+      />
+    );
+  }
+
+  const businesses = businessesQuery.data?.items ?? [];
 
   return (
     <div className="space-y-6">
@@ -25,11 +62,41 @@ export function AdminBusinessesScreen() {
         description="Vista global de negocios, responsables y estado de publicación. Está pensada para control y operación diaria."
       />
 
+      <ManagementListToolbar
+        filters={[
+          {
+            label: 'Categoría',
+            onValueChange: setCategory,
+            options: [
+              { label: 'Todas las categorías', value: 'ALL' },
+              { label: 'Tienda general', value: 'GENERAL_STORE' },
+              { label: 'Restaurante', value: 'RESTAURANT' },
+              { label: 'Servicio', value: 'SERVICE' },
+            ],
+            value: category,
+          },
+          {
+            label: 'Estado del negocio',
+            onValueChange: setStatus,
+            options: [
+              { label: 'Todos los estados', value: 'ALL' },
+              { label: 'Pendiente', value: 'PENDING' },
+              { label: 'Aprobado', value: 'APPROVED' },
+            ],
+            value: status,
+          },
+        ]}
+        searchPlaceholder="Buscar negocios por nombre, descripción, zona o dirección"
+        searchValue={search}
+        summary={`${businessesQuery.data?.total ?? 0} negocios encontrados`}
+        onSearchChange={setSearch}
+      />
+
       <div className="hidden lg:block">
         <SurfaceTable
           columns={['Negocio', 'Zona', 'Plan', 'Responsable', 'Estado']}
         >
-          {allBusinesses.map((business) => (
+          {businesses.map((business) => (
             <div
               className="grid grid-cols-5 gap-4 border-b border-border-default px-5 py-4 last:border-b-0 hover:bg-white/70"
               key={business.id}
@@ -63,7 +130,7 @@ export function AdminBusinessesScreen() {
       </div>
 
       <div className="grid gap-4 lg:hidden">
-        {allBusinesses.map((business) => (
+        {businesses.map((business) => (
           <Card
             className="space-y-3"
             interactive={false}
@@ -83,6 +150,25 @@ export function AdminBusinessesScreen() {
           </Card>
         ))}
       </div>
+
+      {!businesses.length ? (
+        <EmptyState
+          title="No hay negocios para esos filtros"
+          description="Prueba otra búsqueda o cambia los filtros de categoría y estado."
+        />
+      ) : null}
+
+      <ManagementPagination
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
+        page={businessesQuery.data?.page ?? page}
+        pageSize={businessesQuery.data?.pageSize ?? pageSize}
+        total={businessesQuery.data?.total ?? 0}
+        totalPages={businessesQuery.data?.totalPages ?? 1}
+      />
     </div>
   );
 }
