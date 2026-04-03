@@ -1,4 +1,4 @@
-import type { UserRole } from 'types';
+import type { ListPlatformUsersInput, UserRole } from 'types';
 
 import type { getPrismaClient } from '../prisma';
 
@@ -30,8 +30,14 @@ export interface RepositoryPlatformUserSearchRecord {
     isActive: boolean;
 }
 
+export interface RepositoryPlatformUserListResult {
+    items: RepositoryPlatformUserRecord[];
+    total: number;
+}
+
 export interface UserAdminRepositoryPort {
     listUsers(): Promise<RepositoryPlatformUserRecord[]>;
+    listUsersPage(input: ListPlatformUsersInput): Promise<RepositoryPlatformUserListResult>;
     searchUsers(input: { search: string; limit: number }): Promise<RepositoryPlatformUserSearchRecord[]>;
     findUserById(userId: string): Promise<RepositoryPlatformUserRecord | null>;
     updateUserRole(userId: string, role: UserRole): Promise<RepositoryPlatformUserRecord | null>;
@@ -116,6 +122,42 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
         });
 
         return users.map(mapPlatformUserRecord);
+    }
+
+    async listUsersPage(input: ListPlatformUsersInput) {
+        const normalizedSearch = input.search.trim();
+        const where = {
+            AND: [
+                ...(normalizedSearch ? [{
+                    OR: [
+                        { fullName: { contains: normalizedSearch, mode: 'insensitive' as const } },
+                        { email: { contains: normalizedSearch, mode: 'insensitive' as const } },
+                    ],
+                }] : []),
+                ...(input.role !== 'ALL' ? [{ role: input.role }] : []),
+                ...(input.status === 'ACTIVE' ? [{ isActive: true }] : []),
+                ...(input.status === 'INACTIVE' ? [{ isActive: false }] : []),
+            ],
+        };
+        const skip = (input.page - 1) * input.pageSize;
+        const [users, total] = await Promise.all([
+            this.prisma.user.findMany({
+                where,
+                orderBy: [
+                    { createdAt: 'desc' },
+                    { fullName: 'asc' },
+                ],
+                skip,
+                take: input.pageSize,
+                select: userSelect,
+            }),
+            this.prisma.user.count({ where }),
+        ]);
+
+        return {
+            items: users.map(mapPlatformUserRecord),
+            total,
+        };
     }
 
     async searchUsers(input: { search: string; limit: number }) {

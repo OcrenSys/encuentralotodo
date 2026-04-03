@@ -13,11 +13,45 @@ jest.mock('sonner', () => ({
   },
 }));
 
+jest.mock('ui', () => {
+  const actual = jest.requireActual('ui');
+
+  return {
+    ...actual,
+    Select: ({
+      options,
+      value,
+      onValueChange,
+      'aria-label': ariaLabel,
+    }: {
+      options: Array<{ label: string; value: string }>;
+      value?: string;
+      onValueChange?: (value: string) => void;
+      'aria-label'?: string;
+    }) => (
+      <select
+        aria-label={ariaLabel}
+        onChange={(event) => onValueChange?.(event.target.value)}
+        value={value}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    ),
+  };
+});
+
 jest.mock('../src/lib/trpc', () => ({
   trpc: {
     useUtils: () => ({
       admin: {
         listUsers: {
+          invalidate: invalidateMock,
+        },
+        listUsersPage: {
           invalidate: invalidateMock,
         },
       },
@@ -33,7 +67,7 @@ jest.mock('../src/lib/trpc', () => ({
       },
     },
     admin: {
-      listUsers: {
+      listUsersPage: {
         useQuery: jest.fn(),
       },
       updateUserRole: {
@@ -54,7 +88,7 @@ const { trpc } = jest.requireMock('../src/lib/trpc') as {
       };
     };
     admin: {
-      listUsers: {
+      listUsersPage: {
         useQuery: jest.Mock;
       };
       updateUserRole: {
@@ -80,26 +114,32 @@ describe('UsersScreen', () => {
         },
       },
     });
-    trpc.admin.listUsers.useQuery.mockReturnValue({
-      data: [
-        {
-          id: 'user-ana',
-          fullName: 'Ana Mercado',
-          email: 'ana@encuentralotodo.app',
-          role: 'UNASSIGNED',
-          isActive: true,
-          createdAt: '2026-04-01T10:00:00.000Z',
-          updatedAt: '2026-04-01T10:00:00.000Z',
-          identities: [
-            {
-              provider: 'firebase',
-              externalUserId: 'firebase-user-ana',
-              email: 'ana@encuentralotodo.app',
-              emailVerified: true,
-            },
-          ],
-        },
-      ],
+    trpc.admin.listUsersPage.useQuery.mockReturnValue({
+      data: {
+        items: [
+          {
+            id: 'user-ana',
+            fullName: 'Ana Mercado',
+            email: 'ana@encuentralotodo.app',
+            role: 'UNASSIGNED',
+            isActive: true,
+            createdAt: '2026-04-01T10:00:00.000Z',
+            updatedAt: '2026-04-01T10:00:00.000Z',
+            identities: [
+              {
+                provider: 'firebase',
+                externalUserId: 'firebase-user-ana',
+                email: 'ana@encuentralotodo.app',
+                emailVerified: true,
+              },
+            ],
+          },
+        ],
+        page: 1,
+        pageSize: 10,
+        total: 1,
+        totalPages: 1,
+      },
       isLoading: false,
       error: null,
     });

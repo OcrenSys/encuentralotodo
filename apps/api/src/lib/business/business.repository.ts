@@ -1,4 +1,10 @@
-import type { BusinessListFilters, BusinessStatus, CreateBusinessInput, UserRole } from 'types';
+import type {
+    BusinessListFilters,
+    BusinessStatus,
+    CreateBusinessInput,
+    ListManagedBusinessesInput,
+    UserRole,
+} from 'types';
 
 import type { getPrismaClient } from '../prisma';
 
@@ -80,10 +86,17 @@ export interface RepositoryBusinessAccessRecord {
     status: 'PENDING' | 'APPROVED';
 }
 
+export interface RepositoryManagedBusinessesPage {
+    items: RepositoryBusinessRecord[];
+    total: number;
+}
+
 export interface BusinessRepositoryPort {
     listBusinesses(filters?: BusinessListFilters): Promise<RepositoryBusinessRecord[]>;
     listBusinessesForManagement(filters?: BusinessListFilters): Promise<RepositoryBusinessRecord[]>;
     listBusinessesByUserAccess(userId: string, filters?: BusinessListFilters): Promise<RepositoryBusinessRecord[]>;
+    listBusinessesForManagementPage(filters: ListManagedBusinessesInput): Promise<RepositoryManagedBusinessesPage>;
+    listBusinessesByUserAccessPage(userId: string, filters: ListManagedBusinessesInput): Promise<RepositoryManagedBusinessesPage>;
     findBusinessById(businessId: string): Promise<RepositoryBusinessRecord | null>;
     findBusinessAccessById(businessId: string): Promise<RepositoryBusinessAccessRecord | null>;
     listPendingBusinesses(): Promise<RepositoryBusinessRecord[]>;
@@ -295,6 +308,39 @@ function buildBusinessWhere(filters: BusinessListFilters = {}, accessClause?: Re
     return { AND: clauses };
 }
 
+function buildManagedBusinessWhere(filters: ListManagedBusinessesInput, accessClause?: Record<string, unknown>) {
+    const clauses: Record<string, unknown>[] = [];
+
+    if (filters.category && filters.category !== 'ALL') {
+        clauses.push({ category: filters.category });
+    }
+
+    if (filters.status && filters.status !== 'ALL') {
+        clauses.push({ status: filters.status });
+    }
+
+    if (filters.search) {
+        clauses.push({
+            OR: [
+                { name: { contains: filters.search, mode: 'insensitive' } },
+                { description: { contains: filters.search, mode: 'insensitive' } },
+                { zone: { contains: filters.search, mode: 'insensitive' } },
+                { address: { contains: filters.search, mode: 'insensitive' } },
+            ],
+        });
+    }
+
+    if (accessClause) {
+        clauses.push(accessClause);
+    }
+
+    if (clauses.length === 0) {
+        return undefined;
+    }
+
+    return { AND: clauses };
+}
+
 export class BusinessRepository implements BusinessRepositoryPort {
     private readonly prisma: ReturnType<typeof getPrismaClient>;
 
@@ -338,6 +384,63 @@ export class BusinessRepository implements BusinessRepositoryPort {
         });
 
         return records.map(mapBusinessRecord);
+    }
+
+    async listBusinessesForManagementPage(filters: ListManagedBusinessesInput) {
+        const where = buildManagedBusinessWhere(filters);
+        const skip = (filters.page - 1) * filters.pageSize;
+        const [records, total] = await Promise.all([
+            this.prisma.business.findMany({
+                where,
+                select: businessDetailSelect,
+                orderBy: [
+                    { lastUpdated: 'desc' },
+                    { name: 'asc' },
+                ],
+                skip,
+                take: filters.pageSize,
+            }),
+            this.prisma.business.count({ where }),
+        ]);
+
+        return {
+            items: records.map(mapBusinessRecord),
+            total,
+        };
+    }
+
+    async listBusinessesByUserAccessPage(userId: string, filters: ListManagedBusinessesInput) {
+        const where = buildManagedBusinessWhere(filters, {
+            OR: [
+                { ownerId: userId },
+                {
+                    managers: {
+                        some: {
+                            userId,
+                        },
+                    },
+                },
+            ],
+        });
+        const skip = (filters.page - 1) * filters.pageSize;
+        const [records, total] = await Promise.all([
+            this.prisma.business.findMany({
+                where,
+                select: businessDetailSelect,
+                orderBy: [
+                    { lastUpdated: 'desc' },
+                    { name: 'asc' },
+                ],
+                skip,
+                take: filters.pageSize,
+            }),
+            this.prisma.business.count({ where }),
+        ]);
+
+        return {
+            items: records.map(mapBusinessRecord),
+            total,
+        };
     }
 
     async findBusinessById(businessId: string) {

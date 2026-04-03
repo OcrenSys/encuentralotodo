@@ -3,6 +3,9 @@ import type { CurrentUser } from 'auth';
 import type {
     BusinessListFilters,
     CreateBusinessInput,
+    ListManagedBusinessesInput,
+    ManagementListResult,
+    BusinessDetails,
 } from 'types';
 
 import { platformAdminRoles, requireActiveUser, requirePlatformRole } from '../auth/authorization';
@@ -66,6 +69,21 @@ export class BusinessService {
             : await this.repository.listBusinessesByUserAccess(currentUser.id, managedFilters);
 
         return businesses.map(mapBusinessDetails).sort(sortBusinessLikeSummaries);
+    }
+
+    async listManagedBusinessesPage(filters: ListManagedBusinessesInput): Promise<ManagementListResult<BusinessDetails>> {
+        const currentUser = requireActiveUser(this.currentUser);
+        const result = isAdminUser(currentUser)
+            ? await this.repository.listBusinessesForManagementPage(filters)
+            : await this.repository.listBusinessesByUserAccessPage(currentUser.id, filters);
+
+        return {
+            items: result.items.map(mapBusinessDetails),
+            page: filters.page,
+            pageSize: filters.pageSize,
+            total: result.total,
+            totalPages: Math.max(1, Math.ceil(result.total / filters.pageSize)),
+        };
     }
 
     async createBusiness(input: CreateBusinessInput) {

@@ -178,6 +178,43 @@ export interface PlatformUserSearchResult {
     isActive: boolean;
 }
 
+export interface ManagementListResult<TItem> {
+    items: TItem[];
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+}
+
+export interface ManagedProductListItem extends Product {
+    businessName: string;
+    businessStatus: BusinessStatus;
+}
+
+export interface ManagedProductListFilters {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    businessId?: string;
+    featured?: 'ALL' | 'FEATURED' | 'CATALOG';
+}
+
+export interface ManagedBusinessListFilters {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    category?: BusinessCategory | 'ALL';
+    status?: BusinessStatus | 'ALL';
+}
+
+export interface PlatformUsersListFilters {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    role?: UserRole | 'ALL';
+    status?: 'ALL' | 'ACTIVE' | 'INACTIVE';
+}
+
 export interface AnalyticsTrendPoint {
     date: string;
     count: number;

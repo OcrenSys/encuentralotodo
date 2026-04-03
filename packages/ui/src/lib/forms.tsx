@@ -4,6 +4,18 @@ import { forwardRef } from 'react';
 import { cn } from 'utils';
 
 import { Panel } from './primitives';
+import {
+  ShadSelect,
+  ShadSelectContent,
+  ShadSelectItem,
+  ShadSelectTrigger,
+  ShadSelectValue,
+} from './select';
+
+type SelectOption = {
+  label: string;
+  value: string;
+};
 
 export const Input = forwardRef<
   HTMLInputElement,
@@ -12,7 +24,7 @@ export const Input = forwardRef<
   return (
     <input
       className={cn(
-        'field-control h-11 px-4 text-sm placeholder:text-text-muted',
+        'field-control h-12 px-4 text-sm placeholder:text-text-muted',
         className,
       )}
       ref={ref}
@@ -22,18 +34,46 @@ export const Input = forwardRef<
   );
 });
 
-export const Select = forwardRef<
-  HTMLSelectElement,
-  ComponentPropsWithoutRef<'select'>
->(function Select({ className, ...props }, ref) {
+export function Select({
+  'aria-label': ariaLabel,
+  className,
+  disabled,
+  name,
+  onValueChange,
+  options,
+  placeholder,
+  required,
+  value,
+}: {
+  'aria-label'?: string;
+  className?: string;
+  disabled?: boolean;
+  name?: string;
+  onValueChange?: (value: string) => void;
+  options: SelectOption[];
+  placeholder?: string;
+  required?: boolean;
+  value?: string;
+}) {
   return (
-    <select
-      className={cn('field-control h-11 px-4 text-sm font-medium', className)}
-      ref={ref}
-      {...props}
-    />
+    <ShadSelect disabled={disabled} onValueChange={onValueChange} value={value}>
+      <ShadSelectTrigger
+        aria-label={ariaLabel}
+        className={cn('text-sm font-medium', className)}
+        name={name}
+      >
+        <ShadSelectValue placeholder={placeholder} />
+      </ShadSelectTrigger>
+      <ShadSelectContent>
+        {options.map((option) => (
+          <ShadSelectItem key={option.value} value={option.value}>
+            {option.label}
+          </ShadSelectItem>
+        ))}
+      </ShadSelectContent>
+    </ShadSelect>
   );
-});
+}
 
 export const Textarea = forwardRef<
   HTMLTextAreaElement,
@@ -42,7 +82,7 @@ export const Textarea = forwardRef<
   return (
     <textarea
       className={cn(
-        'field-control min-h-32 px-4 py-3 text-sm placeholder:text-text-muted',
+        'field-control min-h-32 px-4 py-3.5 text-sm placeholder:text-text-muted',
         className,
       )}
       ref={ref}

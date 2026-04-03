@@ -20,13 +20,14 @@ export function RoleSwitcher() {
       </span>
       <Select
         className="min-w-[180px]"
+        onValueChange={(value) => setRoleView(value as typeof roleView)}
+        options={[
+          { label: 'Administrador general', value: 'SUPERADMIN' },
+          { label: 'Propietario', value: 'OWNER' },
+          { label: 'Encargado', value: 'MANAGER' },
+        ]}
         value={roleView}
-        onChange={(event) => setRoleView(event.target.value as typeof roleView)}
-      >
-        <option value="SUPERADMIN">Administrador general</option>
-        <option value="OWNER">Propietario</option>
-        <option value="MANAGER">Encargado</option>
-      </Select>
+      />
     </label>
   );
 }

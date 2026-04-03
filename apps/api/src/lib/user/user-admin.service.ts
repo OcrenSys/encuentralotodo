@@ -1,6 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import type { CurrentUser } from 'auth';
 import type {
+    ListPlatformUsersInput,
+    ManagementListResult,
     PlatformUserSearchResult,
     PlatformUser,
     SearchPlatformUsersInput,
@@ -69,6 +71,19 @@ export class UserAdminService {
         const users = await this.dependencies.repository.listUsers();
 
         return users.map(mapPlatformUser);
+    }
+
+    async listUsersPage(input: ListPlatformUsersInput): Promise<ManagementListResult<PlatformUser>> {
+        this.assertSuperAdmin();
+        const result = await this.dependencies.repository.listUsersPage(input);
+
+        return {
+            items: result.items.map(mapPlatformUser),
+            page: input.page,
+            pageSize: input.pageSize,
+            total: result.total,
+            totalPages: Math.max(1, Math.ceil(result.total / input.pageSize)),
+        };
     }
 
     async searchUsers(input: SearchPlatformUsersInput): Promise<PlatformUserSearchResult[]> {
