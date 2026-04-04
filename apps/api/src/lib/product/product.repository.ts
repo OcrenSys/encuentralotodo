@@ -1,6 +1,7 @@
 import type {
     CreateProductInput,
     ListManagedProductsInput,
+    ProductType,
     UpdateProductInput,
 } from 'types';
 
@@ -11,6 +12,8 @@ export interface RepositoryProductRecord {
     name: string;
     description: string;
     images: string[];
+    type: ProductType;
+    configurationSummary: string | null;
     price: number | null;
     isFeatured: boolean;
     businessId: string;
@@ -48,6 +51,7 @@ export interface ProductRepositoryPort {
     listByBusiness(businessId: string): Promise<RepositoryProductRecord[]>;
     listManaged(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean): Promise<RepositoryManagedProductListResult>;
     listManagedForExport(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean): Promise<RepositoryManagedProductListRecord[]>;
+    createMany(input: CreateProductInput[]): Promise<RepositoryProductRecord[]>;
     findById(productId: string): Promise<RepositoryProductRecord | null>;
     findByIdWithBusiness(productId: string): Promise<RepositoryProductWithBusinessRecord | null>;
     create(input: CreateProductInput): Promise<RepositoryProductRecord>;
@@ -61,6 +65,8 @@ const productSelect = {
     name: true,
     description: true,
     images: true,
+    type: true,
+    configurationSummary: true,
     price: true,
     isFeatured: true,
     businessId: true,
@@ -74,6 +80,8 @@ function mapProductRecord(record: any): RepositoryProductRecord {
         name: record.name,
         description: record.description,
         images: record.images,
+        type: record.type,
+        configurationSummary: record.configurationSummary,
         price: record.price,
         isFeatured: record.isFeatured,
         businessId: record.businessId,
@@ -213,7 +221,10 @@ export class ProductRepository implements ProductRepositoryPort {
     }
 
     async listManagedForExport(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean) {
-        const where = buildManagedProductsWhere(input, actorId, includeAllBusinesses);
+        const filters = buildManagedProductsWhere(input, actorId, includeAllBusinesses);
+        const where = filters
+            ? { AND: [filters, { type: 'simple' }] }
+            : { type: 'simple' };
         const records = await this.prisma.product.findMany({
             where,
             orderBy: [
@@ -239,6 +250,26 @@ export class ProductRepository implements ProductRepositoryPort {
         });
 
         return records.map(mapManagedProductListRecord);
+    }
+
+    async createMany(input: CreateProductInput[]) {
+        const records = await this.prisma.$transaction(
+            input.map((item) => this.prisma.product.create({
+                data: {
+                    businessId: item.businessId,
+                    name: item.name,
+                    description: item.description,
+                    images: item.images,
+                    type: item.type,
+                    configurationSummary: item.type === 'configurable' ? item.configurationSummary ?? null : null,
+                    price: item.type === 'configurable' ? null : item.price,
+                    isFeatured: item.isFeatured,
+                },
+                select: productSelect,
+            })),
+        );
+
+        return records.map(mapProductRecord);
     }
 
     async findById(productId: string) {
@@ -282,7 +313,9 @@ export class ProductRepository implements ProductRepositoryPort {
                 name: input.name,
                 description: input.description,
                 images: input.images,
-                price: input.price,
+                type: input.type,
+                configurationSummary: input.type === 'configurable' ? input.configurationSummary ?? null : null,
+                price: input.type === 'configurable' ? null : input.price,
                 isFeatured: input.isFeatured,
             },
             select: productSelect,
@@ -307,6 +340,8 @@ export class ProductRepository implements ProductRepositoryPort {
                 name: input.name,
                 description: input.description,
                 images: input.images,
+                type: input.type,
+                configurationSummary: input.configurationSummary === undefined ? undefined : input.configurationSummary,
                 price: input.price === undefined ? undefined : input.price,
                 isFeatured: input.isFeatured,
             },

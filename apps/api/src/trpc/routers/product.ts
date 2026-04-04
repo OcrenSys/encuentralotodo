@@ -3,6 +3,7 @@ import {
   deleteProductInputSchema,
   getBusinessByIdInputSchema,
   getProductByIdInputSchema,
+  importManagedProductsInputSchema,
   listManagedProductsInputSchema,
   updateProductInputSchema,
 } from 'types';
@@ -12,6 +13,12 @@ import { protectedProcedure, publicProcedure, router } from '../trpc';
 export const productRouter = router({
   create: publicProcedure.input(createProductInputSchema).mutation(({ ctx, input }) => {
     return ctx.productService.create(input);
+  }),
+  importManaged: protectedProcedure.input(importManagedProductsInputSchema).mutation(({ ctx, input }) => {
+    return ctx.productService.importManaged(input);
+  }),
+  previewManagedImport: protectedProcedure.input(importManagedProductsInputSchema).mutation(({ ctx, input }) => {
+    return ctx.productService.previewManagedImport(input);
   }),
   exportManagedCsv: protectedProcedure.input(listManagedProductsInputSchema).query(({ ctx, input }) => {
     return ctx.productService.exportManagedCsv(input);

@@ -26,11 +26,26 @@ function mapUser(record: RepositoryUserRecord): UserProfile {
 }
 
 function mapProduct(record: RepositoryProductRecord) {
+    if (record.type === 'configurable' && record.configurationSummary) {
+        return {
+            id: record.id,
+            name: record.name,
+            description: record.description,
+            images: record.images,
+            type: 'configurable' as const,
+            configurationSummary: record.configurationSummary,
+            isFeatured: record.isFeatured,
+            businessId: record.businessId,
+            lastUpdated: toIsoString(record.lastUpdated),
+        };
+    }
+
     return {
         id: record.id,
         name: record.name,
         description: record.description,
         images: record.images,
+        type: 'simple' as const,
         price: record.price ?? undefined,
         isFeatured: record.isFeatured,
         businessId: record.businessId,

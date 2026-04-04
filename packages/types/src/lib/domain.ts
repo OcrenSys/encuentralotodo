@@ -69,16 +69,29 @@ export interface Business {
     lastUpdated: string;
 }
 
-export interface Product {
+export type ProductType = 'simple' | 'configurable';
+
+type ProductBase = {
     id: string;
     name: string;
     description: string;
     images: string[];
-    price?: number;
     isFeatured: boolean;
     businessId: string;
     lastUpdated: string;
-}
+};
+
+export type Product =
+    | (ProductBase & {
+        type?: 'simple';
+        price?: number;
+        configurationSummary?: undefined;
+    })
+    | (ProductBase & {
+        type: 'configurable';
+        price?: undefined;
+        configurationSummary: string;
+    });
 
 export interface Promotion {
     id: string;
@@ -186,10 +199,10 @@ export interface ManagementListResult<TItem> {
     totalPages: number;
 }
 
-export interface ManagedProductListItem extends Product {
+export type ManagedProductListItem = Product & {
     businessName: string;
     businessStatus: BusinessStatus;
-}
+};
 
 export interface ManagedProductListFilters {
     page?: number;

@@ -223,6 +223,13 @@ export function ProductCard({
   businessName: string;
   product: Product;
 }) {
+  const primaryMeta =
+    product.type === 'configurable'
+      ? product.configurationSummary
+      : typeof product.price === 'number'
+        ? formatCurrency(product.price)
+        : null;
+
   return (
     <Card className="flex h-full flex-col gap-4 lg:gap-3">
       <div className="grid h-40 grid-cols-3 gap-2 overflow-hidden rounded-[20px] bg-[var(--color-background)] xl:h-36">
@@ -255,9 +262,9 @@ export function ProductCard({
           <Store className="size-4" />
           {businessName}
         </span>
-        {product.price ? (
-          <strong className="text-[var(--color-primary)]">
-            {formatCurrency(product.price)}
+        {primaryMeta ? (
+          <strong className="max-w-[12rem] text-right text-[var(--color-primary)]">
+            {primaryMeta}
           </strong>
         ) : null}
       </div>

@@ -3,9 +3,12 @@ import type {
     CreateProductInput,
     DeleteProductInput,
     GetProductByIdInput,
+    ImportManagedProductDraft,
+    ImportManagedProductsInput,
     ListManagedProductsInput,
     ManagedProductListItem,
     ManagementListResult,
+    ProductType,
     UpdateProductInput,
     UserProfile,
 } from 'types';
@@ -34,6 +37,15 @@ function escapeCsvCell(value: string | number | boolean | null | undefined) {
 
 function toCsvDate(value: Date) {
     return value.toISOString();
+}
+
+function buildImportValidationMessage(rowNumber: number, message: string) {
+    return `Fila ${rowNumber}: ${message}`;
+}
+
+function normalizeConfigurationSummary(value: string | null | undefined) {
+    const normalizedValue = value?.trim();
+    return normalizedValue ? normalizedValue : undefined;
 }
 
 export class ProductService {
@@ -129,6 +141,36 @@ export class ProductService {
         };
     }
 
+    async previewManagedImport(input: ImportManagedProductsInput) {
+        const validation = await this.validateManagedImport(input);
+
+        return {
+            businessCount: validation.businessCount,
+            errors: validation.errors,
+            totalItems: input.items.length,
+            valid: validation.errors.length === 0,
+        };
+    }
+
+    async importManaged(input: ImportManagedProductsInput) {
+        const validation = await this.validateManagedImport(input);
+
+        if (validation.errors.length > 0) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: validation.errors.join(' | '),
+            });
+        }
+
+        const createdProducts = await this.repository.createMany(
+            input.items.map((item) => this.toCreateProductInput(item.product, input.businessId)),
+        );
+
+        return {
+            importedCount: createdProducts.length,
+        };
+    }
+
     async getById(input: GetProductByIdInput) {
         const product = await this.repository.findById(input.productId);
         return product ? mapProduct(product) : null;
@@ -139,7 +181,15 @@ export class ProductService {
         this.ensureBusinessCanBeManaged(business);
         await this.ensureFeaturedRulesForCreate(business, input.isFeatured);
 
-        const product = await this.repository.create(input);
+        this.assertValidProductShape(input.type, input.configurationSummary, input.price);
+
+        const product = await this.repository.create({
+            ...input,
+            configurationSummary: input.type === 'configurable'
+                ? normalizeConfigurationSummary(input.configurationSummary)
+                : undefined,
+            price: input.type === 'configurable' ? undefined : input.price,
+        });
         return mapProduct(product);
     }
 
@@ -150,11 +200,25 @@ export class ProductService {
         const nextIsFeatured = input.isFeatured ?? product.isFeatured;
         await this.ensureFeaturedRulesForUpdate(product, nextIsFeatured);
 
+        const nextType = input.type ?? product.type;
+        const nextConfigurationSummary = input.configurationSummary === undefined
+            ? product.configurationSummary ?? undefined
+            : normalizeConfigurationSummary(input.configurationSummary);
+        const nextPrice = input.price === undefined
+            ? product.price ?? undefined
+            : input.price ?? undefined;
+
+        this.assertValidProductShape(nextType, nextConfigurationSummary, nextPrice);
+
         const updatedProduct = await this.repository.update(input.productId, {
             name: input.name,
             description: input.description,
             images: input.images,
-            price: input.price,
+            type: nextType,
+            configurationSummary: nextType === 'configurable'
+                ? nextConfigurationSummary ?? null
+                : null,
+            price: nextType === 'configurable' ? null : nextPrice ?? null,
             isFeatured: input.isFeatured,
         });
 
@@ -184,6 +248,90 @@ export class ProductService {
         }
 
         return business;
+    }
+
+    private async validateManagedImport(input: ImportManagedProductsInput) {
+        const currentUser = this.currentUser;
+        if (!currentUser) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
+        }
+
+        const errors: string[] = [];
+        const business = await this.businessRepository.findBusinessAccessById(input.businessId);
+
+        if (!business) {
+            input.items.forEach((row) => {
+                errors.push(buildImportValidationMessage(row.rowNumber, 'El negocio seleccionado no existe.'));
+            });
+
+            return {
+                businessCount: 0,
+                errors,
+            };
+        }
+
+        if (!canManageBusiness(currentUser, { ownerId: business.ownerId, managers: business.managers })) {
+            input.items.forEach((row) => {
+                errors.push(buildImportValidationMessage(row.rowNumber, 'No tienes acceso para importar productos en este negocio.'));
+            });
+
+            return {
+                businessCount: 0,
+                errors,
+            };
+        }
+
+        let featuredCount = await this.repository.countFeaturedByBusiness(input.businessId);
+
+        for (const item of input.items) {
+            if (business.subscriptionType === 'FREE_TRIAL' && !item.product.isFeatured) {
+                errors.push(buildImportValidationMessage(item.rowNumber, 'FREE_TRIAL solo permite productos destacados.'));
+                continue;
+            }
+
+            if (business.subscriptionType === 'FREE_TRIAL' && item.product.isFeatured) {
+                featuredCount += 1;
+
+                if (featuredCount > 5) {
+                    errors.push(buildImportValidationMessage(item.rowNumber, 'FREE_TRIAL permite un máximo de 5 productos destacados.'));
+                }
+            }
+        }
+
+        return {
+            businessCount: 1,
+            errors,
+        };
+    }
+
+    private toCreateProductInput(product: ImportManagedProductDraft, businessId: string): CreateProductInput {
+        return {
+            businessId,
+            description: product.description,
+            images: product.images,
+            isFeatured: product.isFeatured,
+            name: product.name,
+            price: product.price,
+            type: 'simple',
+        };
+    }
+
+    private assertValidProductShape(type: ProductType, configurationSummary: string | undefined, price: number | undefined) {
+        if (type === 'configurable') {
+            if (!configurationSummary) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Los productos configurables requieren un resumen breve visible en catálogo.',
+                });
+            }
+
+            if (price !== undefined) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Los productos configurables no usan un precio fijo todavía.',
+                });
+            }
+        }
     }
 
     private async requireProductWithAccess(productId: string) {

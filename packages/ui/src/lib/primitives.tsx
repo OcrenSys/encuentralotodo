@@ -22,6 +22,7 @@ const buttonVariants = {
   primary: 'action-primary',
   secondary: 'action-secondary',
   ghost: 'action-secondary border-transparent bg-transparent shadow-none',
+  outline: 'action-secondary border',
 } as const;
 
 const badgeVariants = {
