@@ -25,7 +25,7 @@ export function ModuleHeader({
           {description}
         </p>
       </div>
-      {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
+      {actions ? <div className="flex flex-row w-full">{actions}</div> : null}
     </Panel>
   );
 }

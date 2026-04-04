@@ -110,6 +110,24 @@ export const listManagedProductsInputSchema = managementPaginationInputSchema.ex
     featured: z.enum(['ALL', 'FEATURED', 'CATALOG']).optional().default('ALL'),
 });
 
+export const importManagedProductDraftSchema = z.object({
+    name: z.string().min(2).max(80),
+    description: z.string().min(10).max(300),
+    images: z.array(z.string().url()).max(3).default([]),
+    price: z.number().positive(),
+    isFeatured: z.boolean(),
+});
+
+export const importManagedProductRowInputSchema = z.object({
+    rowNumber: z.number().int().min(2),
+    product: importManagedProductDraftSchema,
+});
+
+export const importManagedProductsInputSchema = z.object({
+    businessId: z.string().min(2),
+    items: z.array(importManagedProductRowInputSchema).min(1).max(200),
+});
+
 export const createPromotionInputSchema = z.object({
     businessId: z.string().min(2),
     title: z.string().min(2).max(80),
@@ -211,6 +229,9 @@ export type GetProductByIdInput = z.infer<typeof getProductByIdInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;
 export type DeleteProductInput = z.infer<typeof deleteProductInputSchema>;
 export type ListManagedProductsInput = z.infer<typeof listManagedProductsInputSchema>;
+export type ImportManagedProductDraft = z.infer<typeof importManagedProductDraftSchema>;
+export type ImportManagedProductRowInput = z.infer<typeof importManagedProductRowInputSchema>;
+export type ImportManagedProductsInput = z.infer<typeof importManagedProductsInputSchema>;
 export type CreatePromotionInput = z.infer<typeof createPromotionInputSchema>;
 export type GetPromotionByIdInput = z.infer<typeof getPromotionByIdInputSchema>;
 export type UpdatePromotionInput = z.infer<typeof updatePromotionInputSchema>;

@@ -48,6 +48,7 @@ export interface ProductRepositoryPort {
     listByBusiness(businessId: string): Promise<RepositoryProductRecord[]>;
     listManaged(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean): Promise<RepositoryManagedProductListResult>;
     listManagedForExport(input: ListManagedProductsInput, actorId: string | null, includeAllBusinesses: boolean): Promise<RepositoryManagedProductListRecord[]>;
+    createMany(input: CreateProductInput[]): Promise<RepositoryProductRecord[]>;
     findById(productId: string): Promise<RepositoryProductRecord | null>;
     findByIdWithBusiness(productId: string): Promise<RepositoryProductWithBusinessRecord | null>;
     create(input: CreateProductInput): Promise<RepositoryProductRecord>;
@@ -239,6 +240,24 @@ export class ProductRepository implements ProductRepositoryPort {
         });
 
         return records.map(mapManagedProductListRecord);
+    }
+
+    async createMany(input: CreateProductInput[]) {
+        const records = await this.prisma.$transaction(
+            input.map((item) => this.prisma.product.create({
+                data: {
+                    businessId: item.businessId,
+                    name: item.name,
+                    description: item.description,
+                    images: item.images,
+                    price: item.price,
+                    isFeatured: item.isFeatured,
+                },
+                select: productSelect,
+            })),
+        );
+
+        return records.map(mapProductRecord);
     }
 
     async findById(productId: string) {

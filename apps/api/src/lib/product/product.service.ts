@@ -3,6 +3,8 @@ import type {
     CreateProductInput,
     DeleteProductInput,
     GetProductByIdInput,
+    ImportManagedProductDraft,
+    ImportManagedProductsInput,
     ListManagedProductsInput,
     ManagedProductListItem,
     ManagementListResult,
@@ -34,6 +36,10 @@ function escapeCsvCell(value: string | number | boolean | null | undefined) {
 
 function toCsvDate(value: Date) {
     return value.toISOString();
+}
+
+function buildImportValidationMessage(rowNumber: number, message: string) {
+    return `Fila ${rowNumber}: ${message}`;
 }
 
 export class ProductService {
@@ -129,6 +135,36 @@ export class ProductService {
         };
     }
 
+    async previewManagedImport(input: ImportManagedProductsInput) {
+        const validation = await this.validateManagedImport(input);
+
+        return {
+            businessCount: validation.businessCount,
+            errors: validation.errors,
+            totalItems: input.items.length,
+            valid: validation.errors.length === 0,
+        };
+    }
+
+    async importManaged(input: ImportManagedProductsInput) {
+        const validation = await this.validateManagedImport(input);
+
+        if (validation.errors.length > 0) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: validation.errors.join(' | '),
+            });
+        }
+
+        const createdProducts = await this.repository.createMany(
+            input.items.map((item) => this.toCreateProductInput(item.product, input.businessId)),
+        );
+
+        return {
+            importedCount: createdProducts.length,
+        };
+    }
+
     async getById(input: GetProductByIdInput) {
         const product = await this.repository.findById(input.productId);
         return product ? mapProduct(product) : null;
@@ -184,6 +220,71 @@ export class ProductService {
         }
 
         return business;
+    }
+
+    private async validateManagedImport(input: ImportManagedProductsInput) {
+        const currentUser = this.currentUser;
+        if (!currentUser) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
+        }
+
+        const errors: string[] = [];
+        const business = await this.businessRepository.findBusinessAccessById(input.businessId);
+
+        if (!business) {
+            input.items.forEach((row) => {
+                errors.push(buildImportValidationMessage(row.rowNumber, 'El negocio seleccionado no existe.'));
+            });
+
+            return {
+                businessCount: 0,
+                errors,
+            };
+        }
+
+        if (!canManageBusiness(currentUser, { ownerId: business.ownerId, managers: business.managers })) {
+            input.items.forEach((row) => {
+                errors.push(buildImportValidationMessage(row.rowNumber, 'No tienes acceso para importar productos en este negocio.'));
+            });
+
+            return {
+                businessCount: 0,
+                errors,
+            };
+        }
+
+        let featuredCount = await this.repository.countFeaturedByBusiness(input.businessId);
+
+        for (const item of input.items) {
+            if (business.subscriptionType === 'FREE_TRIAL' && !item.product.isFeatured) {
+                errors.push(buildImportValidationMessage(item.rowNumber, 'FREE_TRIAL solo permite productos destacados.'));
+                continue;
+            }
+
+            if (business.subscriptionType === 'FREE_TRIAL' && item.product.isFeatured) {
+                featuredCount += 1;
+
+                if (featuredCount > 5) {
+                    errors.push(buildImportValidationMessage(item.rowNumber, 'FREE_TRIAL permite un máximo de 5 productos destacados.'));
+                }
+            }
+        }
+
+        return {
+            businessCount: 1,
+            errors,
+        };
+    }
+
+    private toCreateProductInput(product: ImportManagedProductDraft, businessId: string): CreateProductInput {
+        return {
+            businessId,
+            description: product.description,
+            images: product.images,
+            isFeatured: product.isFeatured,
+            name: product.name,
+            price: product.price,
+        };
     }
 
     private async requireProductWithAccess(productId: string) {
