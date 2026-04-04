@@ -1,5 +1,6 @@
 'use client';
 
+import type { ManagedProductListItem } from 'types';
 import { useDeferredValue, useEffect, useState } from 'react';
 import { FileUp, Plus, Search } from 'lucide-react';
 import { Button, Card, EmptyState, GhostButton, LoadingSkeleton } from 'ui';
@@ -11,7 +12,7 @@ import { StatusBadge } from '../../components/management/status-badge';
 import { formatStatusLabel } from '../../lib/display-labels';
 import { trpc } from '../../lib/trpc';
 import { ProductCatalogCsvDialog } from './product-catalog-csv-dialog';
-import { ProductCreateDialog } from './product-create-dialog';
+import { ProductUpsertDialog } from './product-create-dialog';
 
 function formatPrice(price?: number) {
   if (typeof price !== 'number') {
@@ -34,7 +35,9 @@ export function ProductsScreen() {
     'ALL' | 'FEATURED' | 'CATALOG'
   >('ALL');
   const [isCatalogCsvOpen, setIsCatalogCsvOpen] = useState(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingProduct, setEditingProduct] =
+    useState<ManagedProductListItem | null>(null);
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
@@ -86,13 +89,21 @@ export function ProductsScreen() {
 
   const products = productsQuery.data?.items ?? [];
 
+  function handleProductDialogChange(open: boolean) {
+    setIsProductDialogOpen(open);
+
+    if (!open) {
+      setEditingProduct(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <ModuleHeader
         title="Productos"
         description="Catálogo operativo con búsqueda, filtros y paginación real para crear y revisar productos por negocio."
         actions={
-          <div className='flex flex-row gap-2 w-full'>
+          <div className="flex flex-row gap-2 w-full">
             <Button
               onClick={() => setIsCatalogCsvOpen(true)}
               type="button"
@@ -102,7 +113,14 @@ export function ProductsScreen() {
               <FileUp className="mr-2 size-4" />
               Catálogo CSV
             </Button>
-            <Button onClick={() => setIsCreateOpen(true)} type="button" className='w-full'>
+            <Button
+              onClick={() => {
+                setEditingProduct(null);
+                setIsProductDialogOpen(true);
+              }}
+              type="button"
+              className="w-full"
+            >
               <Plus className="mr-2 size-4" />
               Nuevo producto
             </Button>
@@ -173,21 +191,38 @@ export function ProductsScreen() {
                     <p className="mt-1 text-sm text-text-muted">
                       {product.businessName}
                     </p>
+                    <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                      {product.type === 'configurable'
+                        ? 'Configurable'
+                        : 'Simple'}
+                    </p>
                   </div>
                   <StatusBadge
                     status={product.isFeatured ? 'FEATURED' : 'CATALOG'}
                   />
                 </div>
                 <p className="text-sm leading-6 text-text-muted">
-                  {product.description}
+                  {product.type === 'configurable'
+                    ? product.configurationSummary
+                    : product.description}
                 </p>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-text-muted">
-                    {formatPrice(product.price)}
+                    {product.type === 'configurable'
+                      ? 'Configurable por selección'
+                      : formatPrice(product.price)}
                   </span>
-                  <GhostButton type="button">Editar después</GhostButton>
+                  <GhostButton
+                    onClick={() => {
+                      setEditingProduct(product);
+                      setIsProductDialogOpen(true);
+                    }}
+                    type="button"
+                  >
+                    Editar
+                  </GhostButton>
                 </div>
                 <span className="block text-text-muted">
                   Estado del negocio:{' '}
@@ -216,10 +251,11 @@ export function ProductsScreen() {
         totalPages={productsQuery.data?.totalPages ?? 1}
       />
 
-      <ProductCreateDialog
+      <ProductUpsertDialog
         businessOptions={businessOptions}
-        onOpenChange={setIsCreateOpen}
-        open={isCreateOpen}
+        onOpenChange={handleProductDialogChange}
+        open={isProductDialogOpen}
+        product={editingProduct ?? undefined}
       />
 
       <ProductCatalogCsvDialog

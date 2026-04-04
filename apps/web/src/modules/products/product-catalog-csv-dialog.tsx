@@ -371,6 +371,7 @@ export function ProductCatalogCsvDialog({
           <DialogDescription>
             Exporta el catálogo filtrado actual o importa un CSV. La importación
             solo se habilita cuando todo el archivo pasa la validación completa.
+            El formato actual sigue siendo solo para productos simples.
           </DialogDescription>
         </DialogHeader>
 
@@ -384,8 +385,8 @@ export function ProductCatalogCsvDialog({
               Descargar plantilla actual
             </p>
             <p className="text-sm text-text-muted">
-              El CSV exportado respeta los filtros visibles y sirve como base
-              para nuevas importaciones.
+              El CSV exportado incluye únicamente productos simples dentro de
+              los filtros visibles y sirve como base para nuevas importaciones.
             </p>
           </div>
           <GhostButton
@@ -399,7 +400,7 @@ export function ProductCatalogCsvDialog({
         </Panel>
 
         <FormField
-          hint="Campos requeridos: name, description, price, isFeatured. image1, image2 e image3 son opcionales. createdAt y updatedAt se generan automáticamente."
+          hint="Campos requeridos: name, description, price, isFeatured. image1, image2 e image3 son opcionales. Esta plantilla aplica solo a productos simples. createdAt y updatedAt se generan automáticamente."
           label="Archivo CSV"
         >
           <Input

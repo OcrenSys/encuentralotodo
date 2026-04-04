@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import type { Product, ProductType } from 'types';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import {
@@ -21,29 +22,56 @@ import {
 
 import { trpc } from '../../lib/trpc';
 
-const productCreateFormSchema = z.object({
-  businessId: z.string().min(2, 'Selecciona un negocio.'),
-  name: z.string().min(2, 'Ingresa un nombre.').max(80),
-  description: z.string().min(10, 'Agrega una descripción más clara.').max(300),
-  imagePrimary: z.string().url('Ingresa una URL válida.'),
-  imageSecondary: z.union([
-    z.literal(''),
-    z.string().url('Ingresa una URL válida.'),
-  ]),
-  imageTertiary: z.union([
-    z.literal(''),
-    z.string().url('Ingresa una URL válida.'),
-  ]),
-  price: z.string().optional(),
-  isFeatured: z.boolean(),
-});
+const productFormSchema = z
+  .object({
+    businessId: z.string().min(2, 'Selecciona un negocio.'),
+    name: z.string().min(2, 'Ingresa un nombre.').max(80),
+    description: z
+      .string()
+      .min(10, 'Agrega una descripción más clara.')
+      .max(300),
+    type: z.enum(['simple', 'configurable']),
+    configurationSummary: z.string().trim().max(160).optional(),
+    imagePrimary: z.string().url('Ingresa una URL válida.'),
+    imageSecondary: z.union([
+      z.literal(''),
+      z.string().url('Ingresa una URL válida.'),
+    ]),
+    imageTertiary: z.union([
+      z.literal(''),
+      z.string().url('Ingresa una URL válida.'),
+    ]),
+    price: z.string().optional(),
+    isFeatured: z.boolean(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.type === 'configurable') {
+      if (values.price?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Los configurables no usan precio fijo todavía.',
+          path: ['price'],
+        });
+      }
 
-type ProductCreateFormValues = z.infer<typeof productCreateFormSchema>;
+      if (!values.configurationSummary?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Agrega un resumen visible para el catálogo.',
+          path: ['configurationSummary'],
+        });
+      }
+    }
+  });
 
-const emptyValues: ProductCreateFormValues = {
+type ProductFormValues = z.infer<typeof productFormSchema>;
+
+const emptyValues: ProductFormValues = {
   businessId: '',
   name: '',
   description: '',
+  type: 'simple',
+  configurationSummary: '',
   imagePrimary: '',
   imageSecondary: '',
   imageTertiary: '',
@@ -51,19 +79,53 @@ const emptyValues: ProductCreateFormValues = {
   isFeatured: false,
 };
 
-export function ProductCreateDialog({
+function getInitialValues({
+  businessOptions,
+  product,
+}: {
+  businessOptions: Array<{ label: string; value: string }>;
+  product?: Product;
+}): ProductFormValues {
+  const productType = product?.type ?? 'simple';
+
+  return {
+    businessId:
+      product?.businessId ??
+      (businessOptions.length === 1 ? (businessOptions[0]?.value ?? '') : ''),
+    name: product?.name ?? '',
+    description: product?.description ?? '',
+    type: productType,
+    configurationSummary:
+      productType === 'configurable'
+        ? (product?.configurationSummary ?? '')
+        : '',
+    imagePrimary: product?.images[0] ?? '',
+    imageSecondary: product?.images[1] ?? '',
+    imageTertiary: product?.images[2] ?? '',
+    price:
+      productType === 'simple' && typeof product?.price === 'number'
+        ? String(product.price)
+        : '',
+    isFeatured: product?.isFeatured ?? false,
+  };
+}
+
+export function ProductUpsertDialog({
   businessOptions,
   onOpenChange,
   open,
+  product,
 }: {
   businessOptions: Array<{ label: string; value: string }>;
   onOpenChange: (open: boolean) => void;
   open: boolean;
+  product?: Product;
 }) {
+  const isEditing = Boolean(product);
   const utils = trpc.useUtils();
-  const form = useForm<ProductCreateFormValues>({
+  const form = useForm<ProductFormValues>({
     defaultValues: emptyValues,
-    resolver: zodResolver(productCreateFormSchema),
+    resolver: zodResolver(productFormSchema),
   });
 
   useEffect(() => {
@@ -71,12 +133,8 @@ export function ProductCreateDialog({
       return;
     }
 
-    form.reset({
-      ...emptyValues,
-      businessId:
-        businessOptions.length === 1 ? (businessOptions[0]?.value ?? '') : '',
-    });
-  }, [businessOptions, form, open]);
+    form.reset(getInitialValues({ businessOptions, product }));
+  }, [businessOptions, form, open, product]);
 
   const createProduct = trpc.product.create.useMutation({
     onSuccess: async () => {
@@ -85,7 +143,21 @@ export function ProductCreateDialog({
         utils.business.managed.invalidate(),
         utils.business.managedPage.invalidate(),
       ]);
-      toast.success('Producto creado correctamente.');
+      toast.success('Producto guardado correctamente.');
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+  const updateProduct = trpc.product.update.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.product.managed.invalidate(),
+        utils.business.managed.invalidate(),
+        utils.business.managedPage.invalidate(),
+      ]);
+      toast.success('Producto guardado correctamente.');
       onOpenChange(false);
     },
     onError: (error) => {
@@ -94,12 +166,16 @@ export function ProductCreateDialog({
   });
 
   const handleSubmit = form.handleSubmit((values) => {
-    const normalizedPrice = values.price?.trim()
-      ? Number(values.price.trim())
-      : undefined;
-
-    createProduct.mutate({
-      businessId: values.businessId,
+    const normalizedType = values.type as ProductType;
+    const normalizedPrice =
+      normalizedType === 'simple' && values.price?.trim()
+        ? Number(values.price.trim())
+        : undefined;
+    const normalizedConfigurationSummary =
+      normalizedType === 'configurable'
+        ? values.configurationSummary?.trim()
+        : undefined;
+    const payload = {
       description: values.description,
       images: [
         values.imagePrimary,
@@ -108,21 +184,45 @@ export function ProductCreateDialog({
       ].filter(Boolean),
       isFeatured: values.isFeatured,
       name: values.name,
+      type: normalizedType,
+    } as const;
+
+    if (isEditing && product) {
+      updateProduct.mutate({
+        productId: product.id,
+        ...payload,
+        configurationSummary:
+          normalizedType === 'configurable'
+            ? normalizedConfigurationSummary
+            : null,
+        price: normalizedType === 'simple' ? (normalizedPrice ?? null) : null,
+      });
+      return;
+    }
+
+    createProduct.mutate({
+      businessId: values.businessId,
+      ...payload,
+      configurationSummary: normalizedConfigurationSummary,
       price: normalizedPrice,
     });
   });
 
-  const isPending = createProduct.isPending;
+  const isPending = createProduct.isPending || updateProduct.isPending;
   const selectedBusinessId = form.watch('businessId');
+  const selectedType = form.watch('type');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nuevo producto</DialogTitle>
+          <DialogTitle>
+            {isEditing ? 'Editar producto' : 'Nuevo producto'}
+          </DialogTitle>
           <DialogDescription>
-            Crea un producto real en el catálogo del negocio. Al guardar, la
-            lista se actualiza con la consulta de gestión activa.
+            {isEditing
+              ? 'Actualiza el producto usando el mismo contrato de creación para mantener simple y configurable alineados.'
+              : 'Crea un producto real en el catálogo del negocio. Al guardar, la lista se actualiza con la consulta de gestión activa.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -146,19 +246,54 @@ export function ProductCreateDialog({
             </FormField>
 
             <FormField
-              error={form.formState.errors.price?.message}
-              hint="Opcional. Usa números sin símbolo de moneda."
-              label="Precio"
+              error={form.formState.errors.type?.message}
+              hint="Simple mantiene precio fijo. Configurable usa un resumen público mientras llegan variantes reales."
+              label="Tipo"
             >
-              <Input
-                inputMode="decimal"
-                placeholder="1250"
-                {...form.register('price')}
+              <Select
+                aria-label="Tipo de producto"
+                disabled={isPending}
+                onValueChange={(value) => {
+                  form.setValue('type', value as ProductType, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+
+                  if (value === 'configurable') {
+                    form.setValue('price', '', { shouldDirty: true });
+                  }
+                }}
+                options={[
+                  { label: 'Simple', value: 'simple' },
+                  { label: 'Configurable', value: 'configurable' },
+                ]}
+                value={selectedType}
               />
             </FormField>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
+            <FormField
+              error={form.formState.errors.price?.message}
+              hint={
+                selectedType === 'simple'
+                  ? 'Opcional. Usa números sin símbolo de moneda.'
+                  : 'Los configurables todavía no usan precio fijo en catálogo.'
+              }
+              label="Precio"
+            >
+              <Input
+                disabled={selectedType === 'configurable' || isPending}
+                inputMode="decimal"
+                placeholder={
+                  selectedType === 'simple'
+                    ? '1250'
+                    : 'Se definirá por opciones'
+                }
+                {...form.register('price')}
+              />
+            </FormField>
+
             <FormField
               error={form.formState.errors.name?.message}
               label="Nombre"
@@ -177,6 +312,19 @@ export function ProductCreateDialog({
               </span>
             </label>
           </div>
+
+          {selectedType === 'configurable' ? (
+            <FormField
+              error={form.formState.errors.configurationSummary?.message}
+              hint="Resumen corto que aparecerá en listas públicas hasta que existan variantes reales."
+              label="Resumen configurable"
+            >
+              <Input
+                placeholder="Elige tamaño, topping o combinación al solicitarlo"
+                {...form.register('configurationSummary')}
+              />
+            </FormField>
+          ) : null}
 
           <FormField
             error={form.formState.errors.description?.message}
@@ -234,7 +382,11 @@ export function ProductCreateDialog({
               disabled={isPending || businessOptions.length === 0}
               type="submit"
             >
-              {isPending ? 'Guardando...' : 'Crear producto'}
+              {isPending
+                ? 'Guardando...'
+                : isEditing
+                  ? 'Guardar cambios'
+                  : 'Crear producto'}
             </Button>
           </DialogFooter>
         </form>

@@ -5,6 +5,7 @@ import { getProductCatalogPrimaryActionLabel } from '../src/modules/products/pro
 
 const invalidateMock = jest.fn(async () => undefined);
 const createProductMutateMock = jest.fn();
+const updateProductMutateMock = jest.fn();
 const exportRefetchMock = jest.fn();
 const previewImportMutateAsyncMock = jest.fn();
 const importManagedMutateAsyncMock = jest.fn();
@@ -88,6 +89,9 @@ jest.mock('../src/lib/trpc', () => ({
       create: {
         useMutation: jest.fn(),
       },
+      update: {
+        useMutation: jest.fn(),
+      },
     },
   },
 }));
@@ -115,6 +119,9 @@ const { trpc } = jest.requireMock('../src/lib/trpc') as {
       create: {
         useMutation: jest.Mock;
       };
+      update: {
+        useMutation: jest.Mock;
+      };
     };
   };
 };
@@ -126,6 +133,7 @@ describe('ProductsScreen', () => {
   beforeEach(() => {
     invalidateMock.mockClear();
     createProductMutateMock.mockClear();
+    updateProductMutateMock.mockClear();
     exportRefetchMock.mockReset();
     previewImportMutateAsyncMock.mockReset();
     importManagedMutateAsyncMock.mockReset();
@@ -159,6 +167,7 @@ describe('ProductsScreen', () => {
             name: 'Combo ejecutivo',
             description: 'Almuerzo completo con bebida y postre para oficina.',
             images: ['https://example.com/product-1.jpg'],
+            type: 'simple',
             price: 1250,
             isFeatured: true,
             businessId: 'business-1',
@@ -194,6 +203,11 @@ describe('ProductsScreen', () => {
 
     trpc.product.create.useMutation.mockReturnValue({
       mutate: createProductMutateMock,
+      isPending: false,
+    });
+
+    trpc.product.update.useMutation.mockReturnValue({
+      mutate: updateProductMutateMock,
       isPending: false,
     });
   });
@@ -290,6 +304,7 @@ describe('ProductsScreen', () => {
             name: 'Combo ejecutivo',
             description: 'Almuerzo completo con bebida y postre para oficina.',
             images: ['https://example.com/product-1.jpg'],
+            type: 'simple',
             price: 1250,
             isFeatured: true,
             businessId: 'business-1',
@@ -349,5 +364,20 @@ describe('ProductsScreen', () => {
         previewPending: false,
       }),
     ).toBe('Import Products');
+  });
+
+  it('opens the shared dialog in edit mode from a product card', async () => {
+    render(<ProductsScreen />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: 'Editar producto' }),
+      ).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: /guardar cambios/i }),
+      ).toBeTruthy();
+    });
   });
 });

@@ -119,16 +119,18 @@ model BusinessManager {
 }
 
 model Product {
-    id          String   @id @default(cuid())
-    name        String
-    description String
-    images      String[]
-    price       Float?
-    isFeatured  Boolean  @default(false)
-    businessId  String
-    business    Business @relation(fields: [businessId], references: [id])
-    lastUpdated DateTime @updatedAt
-    createdAt   DateTime @default(now())
+    id                   String   @id @default(cuid())
+    name                 String
+    description          String
+    images               String[]
+    type                 String   @default("simple")
+    configurationSummary String?
+    price                Float?
+    isFeatured           Boolean  @default(false)
+    businessId           String
+    business             Business @relation(fields: [businessId], references: [id])
+    lastUpdated          DateTime @updatedAt
+    createdAt            DateTime @default(now())
 }
 
 model Promotion {

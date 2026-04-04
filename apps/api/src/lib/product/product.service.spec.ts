@@ -34,6 +34,8 @@ function createProductRecord(overrides: Partial<RepositoryProductRecord> = {}): 
         name: 'Pack familiar',
         description: 'Selección semanal.',
         images: ['https://example.com/product.jpg'],
+        type: 'simple',
+        configurationSummary: null,
         price: 1250,
         isFeatured: true,
         businessId: 'biz-casa-norte',
@@ -50,6 +52,7 @@ function createProductWithBusinessRecord(overrides: Partial<RepositoryProductWit
         ...base,
         business: {
             id: base.businessId,
+            name: 'Casa Norte',
             ownerId: 'owner-sofia',
             subscriptionType: 'PREMIUM_PLUS',
             status: 'APPROVED',
@@ -62,6 +65,9 @@ function createProductWithBusinessRecord(overrides: Partial<RepositoryProductWit
 function createProductRepositoryMock(): jest.Mocked<ProductRepositoryPort> {
     return {
         listByBusiness: jest.fn(),
+        listManaged: jest.fn(),
+        listManagedForExport: jest.fn(),
+        createMany: jest.fn(),
         findById: jest.fn(),
         findByIdWithBusiness: jest.fn(),
         create: jest.fn(),
@@ -76,6 +82,8 @@ function createBusinessRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
         listBusinesses: jest.fn(),
         listBusinessesForManagement: jest.fn(),
         listBusinessesByUserAccess: jest.fn(),
+        listBusinessesForManagementPage: jest.fn(),
+        listBusinessesByUserAccessPage: jest.fn(),
         findBusinessById: jest.fn(),
         findBusinessAccessById: jest.fn(),
         listPendingBusinesses: jest.fn(),
@@ -147,6 +155,7 @@ describe('ProductService', () => {
             name: 'Nuevo producto',
             description: 'Descripción suficientemente larga.',
             images: ['https://example.com/new-product.jpg'],
+            type: 'simple',
             price: 200,
             isFeatured: false,
         };
@@ -157,6 +166,40 @@ describe('ProductService', () => {
 
         expect(repository.create).toHaveBeenCalledWith(input);
         expect(result).toMatchObject({ id: 'prod-new', name: 'Nuevo producto', price: 200, isFeatured: false });
+    });
+
+    it('create supports configurable products with a lightweight summary', async () => {
+        const { service, repository, businessRepository } = createService(ownerUser);
+        const input: CreateProductInput = {
+            businessId: 'biz-casa-norte',
+            name: 'Pizza por mitades',
+            description: 'Producto configurable con combinaciones de sabor.',
+            images: ['https://example.com/pizza.jpg'],
+            type: 'configurable',
+            configurationSummary: 'Elige tamaño y combinación al pedirlo.',
+            isFeatured: true,
+        };
+        businessRepository.findBusinessAccessById.mockResolvedValue(createBusinessAccess({ subscriptionType: 'PREMIUM_PLUS' }));
+        repository.create.mockResolvedValue(createProductRecord({
+            id: 'prod-configurable',
+            name: 'Pizza por mitades',
+            type: 'configurable',
+            configurationSummary: 'Elige tamaño y combinación al pedirlo.',
+            price: null,
+        }));
+
+        const result = await service.create(input);
+
+        expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'configurable',
+            configurationSummary: 'Elige tamaño y combinación al pedirlo.',
+            price: undefined,
+        }));
+        expect(result).toMatchObject({
+            id: 'prod-configurable',
+            type: 'configurable',
+            configurationSummary: 'Elige tamaño y combinación al pedirlo.',
+        });
     });
 
     it('update persists product correctly for an authorized business user', async () => {
@@ -202,6 +245,7 @@ describe('ProductService', () => {
             name: 'Producto',
             description: 'Descripción suficientemente larga.',
             images: ['https://example.com/product.jpg'],
+            type: 'simple',
             price: 100,
             isFeatured: true,
         })).rejects.toMatchObject({ code: 'FORBIDDEN', message: 'Business access required.' });
@@ -217,6 +261,7 @@ describe('ProductService', () => {
             name: 'Producto',
             description: 'Descripción suficientemente larga.',
             images: ['https://example.com/product.jpg'],
+            type: 'simple',
             price: 100,
             isFeatured: true,
         })).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'Business not found.' });
@@ -236,6 +281,7 @@ describe('ProductService', () => {
             name: 'Pack familiar',
             description: 'Selección semanal.',
             images: ['https://example.com/product.jpg'],
+            type: 'simple',
             price: undefined,
             isFeatured: true,
             businessId: 'biz-casa-norte',

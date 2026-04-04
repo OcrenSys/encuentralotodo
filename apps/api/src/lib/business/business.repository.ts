@@ -3,6 +3,7 @@ import type {
     BusinessStatus,
     CreateBusinessInput,
     ListManagedBusinessesInput,
+    ProductType,
     UserRole,
 } from 'types';
 
@@ -26,6 +27,8 @@ export interface RepositoryProductRecord {
     name: string;
     description: string;
     images: string[];
+    type: ProductType;
+    configurationSummary: string | null;
     price: number | null;
     isFeatured: boolean;
     businessId: string;
@@ -119,6 +122,8 @@ const productSelect = {
     name: true,
     description: true,
     images: true,
+    type: true,
+    configurationSummary: true,
     price: true,
     isFeatured: true,
     businessId: true,

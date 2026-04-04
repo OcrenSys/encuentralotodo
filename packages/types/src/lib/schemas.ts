@@ -79,13 +79,37 @@ export const getPlatformAnalyticsInputSchema = z.object({
     period: analyticsPeriodSchema.optional(),
 });
 
+export const productTypeSchema = z.enum(['simple', 'configurable']);
+
+const configurationSummarySchema = z.string().trim().min(10).max(160);
+
 export const createProductInputSchema = z.object({
     businessId: z.string().min(2),
     name: z.string().min(2).max(80),
     description: z.string().min(10).max(300),
     images: z.array(z.string().url()).min(1).max(3),
+    type: productTypeSchema.default('simple'),
+    configurationSummary: configurationSummarySchema.optional(),
     price: z.number().positive().optional(),
     isFeatured: z.boolean().default(false),
+}).superRefine((value, ctx) => {
+    if (value.type === 'configurable') {
+        if (value.price !== undefined) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Los productos configurables no usan un precio fijo todavía.',
+                path: ['price'],
+            });
+        }
+
+        if (!value.configurationSummary) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Agrega un resumen breve para el producto configurable.',
+                path: ['configurationSummary'],
+            });
+        }
+    }
 });
 
 export const getProductByIdInputSchema = z.object({
@@ -97,8 +121,18 @@ export const updateProductInputSchema = z.object({
     name: z.string().min(2).max(80).optional(),
     description: z.string().min(10).max(300).optional(),
     images: z.array(z.string().url()).min(1).max(3).optional(),
+    type: productTypeSchema.optional(),
+    configurationSummary: configurationSummarySchema.nullable().optional(),
     price: z.number().positive().nullable().optional(),
     isFeatured: z.boolean().optional(),
+}).superRefine((value, ctx) => {
+    if (value.type === 'configurable' && value.price !== undefined && value.price !== null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Los productos configurables no usan un precio fijo todavía.',
+            path: ['price'],
+        });
+    }
 });
 
 export const deleteProductInputSchema = z.object({
@@ -114,6 +148,7 @@ export const importManagedProductDraftSchema = z.object({
     name: z.string().min(2).max(80),
     description: z.string().min(10).max(300),
     images: z.array(z.string().url()).max(3).default([]),
+    type: z.literal('simple').default('simple'),
     price: z.number().positive(),
     isFeatured: z.boolean(),
 });

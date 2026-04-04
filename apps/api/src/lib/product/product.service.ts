@@ -8,6 +8,7 @@ import type {
     ListManagedProductsInput,
     ManagedProductListItem,
     ManagementListResult,
+    ProductType,
     UpdateProductInput,
     UserProfile,
 } from 'types';
@@ -40,6 +41,11 @@ function toCsvDate(value: Date) {
 
 function buildImportValidationMessage(rowNumber: number, message: string) {
     return `Fila ${rowNumber}: ${message}`;
+}
+
+function normalizeConfigurationSummary(value: string | null | undefined) {
+    const normalizedValue = value?.trim();
+    return normalizedValue ? normalizedValue : undefined;
 }
 
 export class ProductService {
@@ -175,7 +181,15 @@ export class ProductService {
         this.ensureBusinessCanBeManaged(business);
         await this.ensureFeaturedRulesForCreate(business, input.isFeatured);
 
-        const product = await this.repository.create(input);
+        this.assertValidProductShape(input.type, input.configurationSummary, input.price);
+
+        const product = await this.repository.create({
+            ...input,
+            configurationSummary: input.type === 'configurable'
+                ? normalizeConfigurationSummary(input.configurationSummary)
+                : undefined,
+            price: input.type === 'configurable' ? undefined : input.price,
+        });
         return mapProduct(product);
     }
 
@@ -186,11 +200,25 @@ export class ProductService {
         const nextIsFeatured = input.isFeatured ?? product.isFeatured;
         await this.ensureFeaturedRulesForUpdate(product, nextIsFeatured);
 
+        const nextType = input.type ?? product.type;
+        const nextConfigurationSummary = input.configurationSummary === undefined
+            ? product.configurationSummary ?? undefined
+            : normalizeConfigurationSummary(input.configurationSummary);
+        const nextPrice = input.price === undefined
+            ? product.price ?? undefined
+            : input.price ?? undefined;
+
+        this.assertValidProductShape(nextType, nextConfigurationSummary, nextPrice);
+
         const updatedProduct = await this.repository.update(input.productId, {
             name: input.name,
             description: input.description,
             images: input.images,
-            price: input.price,
+            type: nextType,
+            configurationSummary: nextType === 'configurable'
+                ? nextConfigurationSummary ?? null
+                : null,
+            price: nextType === 'configurable' ? null : nextPrice ?? null,
             isFeatured: input.isFeatured,
         });
 
@@ -284,7 +312,26 @@ export class ProductService {
             isFeatured: product.isFeatured,
             name: product.name,
             price: product.price,
+            type: 'simple',
         };
+    }
+
+    private assertValidProductShape(type: ProductType, configurationSummary: string | undefined, price: number | undefined) {
+        if (type === 'configurable') {
+            if (!configurationSummary) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Los productos configurables requieren un resumen breve visible en catálogo.',
+                });
+            }
+
+            if (price !== undefined) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Los productos configurables no usan un precio fijo todavía.',
+                });
+            }
+        }
     }
 
     private async requireProductWithAccess(productId: string) {
