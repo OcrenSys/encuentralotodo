@@ -22,6 +22,26 @@ interface FirebaseStorageProviderOptions {
     }) => Promise<UploadFileResult>;
 }
 
+function normalizeFirebaseStorageUploadError(error: unknown) {
+    if (!(error instanceof Error)) {
+        return new Error('No fue posible subir la imagen a Firebase Storage.');
+    }
+
+    const message = error.message.toLowerCase();
+
+    if (
+        message.includes('failed to fetch') ||
+        message.includes('network request failed') ||
+        message.includes('cors')
+    ) {
+        return new Error(
+            'Firebase Storage rechazo la subida desde este origen. Configura CORS en el bucket para permitir http://localhost:3000 y el dominio web desplegado.',
+        );
+    }
+
+    return error;
+}
+
 function getFirebaseStorageApp() {
     if (!hasFirebaseStoragePublicConfig()) {
         throw new Error(
@@ -93,25 +113,29 @@ export class FirebaseStorageProvider implements FileStorageProvider {
                 : Math.random().toString(36).slice(2, 10));
         const storageKey = buildStorageKey(input, now, randomId);
 
-        if (this.options.uploadFileImpl) {
-            return this.options.uploadFileImpl({
-                file: input.file,
-                storageKey,
+        try {
+            if (this.options.uploadFileImpl) {
+                return await this.options.uploadFileImpl({
+                    file: input.file,
+                    storageKey,
+                });
+            }
+
+            const storage = getStorage(getFirebaseStorageApp());
+            const storageRef = ref(storage, storageKey);
+            await uploadBytes(storageRef, input.file, {
+                contentType: input.file.type || undefined,
             });
+            const url = await getDownloadURL(storageRef);
+
+            return {
+                url,
+                storageKey,
+                contentType: input.file.type || 'application/octet-stream',
+                size: input.file.size,
+            };
+        } catch (error) {
+            throw normalizeFirebaseStorageUploadError(error);
         }
-
-        const storage = getStorage(getFirebaseStorageApp());
-        const storageRef = ref(storage, storageKey);
-        await uploadBytes(storageRef, input.file, {
-            contentType: input.file.type || undefined,
-        });
-        const url = await getDownloadURL(storageRef);
-
-        return {
-            url,
-            storageKey,
-            contentType: input.file.type || 'application/octet-stream',
-            size: input.file.size,
-        };
     }
 }

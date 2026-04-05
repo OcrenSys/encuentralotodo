@@ -1,11 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
   Building2,
+  CheckCircle2,
   Crown,
   MapPinned,
   ShieldCheck,
@@ -99,15 +101,67 @@ const subscriptionOptions = [
   },
 ] as const;
 
+const generalStepSchema = createBusinessInputSchema.pick({
+  name: true,
+  description: true,
+  category: true,
+  subscriptionType: true,
+});
+
+const locationOwnershipStepSchema = createBusinessInputSchema.pick({
+  location: true,
+  whatsappNumber: true,
+  ownerId: true,
+});
+
+const mediaManagementStepSchema = createBusinessInputSchema.pick({
+  images: true,
+  managers: true,
+});
+
+const formSteps = [
+  {
+    id: 'general',
+    title: 'Información general',
+    description: 'Nombre, descripción, categoría y plan inicial.',
+    fields: ['name', 'description', 'category', 'subscriptionType'] as const,
+    schema: generalStepSchema,
+  },
+  {
+    id: 'location-owner',
+    title: 'Ubicación, contacto y Owner',
+    description: 'Dirección pública, WhatsApp y responsable principal.',
+    fields: [
+      'location.zone',
+      'location.address',
+      'location.lat',
+      'location.lng',
+      'whatsappNumber',
+      'ownerId',
+    ] as const,
+    schema: locationOwnershipStepSchema,
+  },
+  {
+    id: 'media-management',
+    title: 'Media y Management',
+    description: 'Assets visibles y managers opcionales del negocio.',
+    fields: ['images.profile', 'images.banner', 'managers'] as const,
+    schema: mediaManagementStepSchema,
+  },
+] as const;
+
 export function SubmitBusinessForm() {
   const router = useRouter();
   const utils = trpc.useUtils();
   const { currentUser, isLoading: isCurrentUserLoading } = useCurrentUserRole();
   const canAssignUsers = hasPlatformRole(currentUser?.role, platformAdminRoles);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [isStepThreeConfirmed, setIsStepThreeConfirmed] = useState(false);
   const form = useForm<CreateBusinessFormValues>({
     resolver: zodResolver(createBusinessInputSchema),
     defaultValues,
   });
+  const watchedValues = useWatch({ control: form.control });
 
   const createBusiness = trpc.business.create.useMutation({
     onSuccess: async () => {
@@ -127,6 +181,41 @@ export function SubmitBusinessForm() {
   });
 
   const selectedOwnerId = form.watch('ownerId');
+  const stepValidity = formSteps.map(
+    (step) => step.schema.safeParse(watchedValues).success,
+  );
+  const currentStep = formSteps[currentStepIndex];
+  const isCurrentStepValid = stepValidity[currentStepIndex] ?? false;
+
+  function isStepAccessible(stepIndex: number) {
+    if (stepIndex <= currentStepIndex) {
+      return true;
+    }
+
+    return stepValidity.slice(0, stepIndex).every(Boolean);
+  }
+
+  async function handleNextStep() {
+    const isValid = await form.trigger([...currentStep.fields], {
+      shouldFocus: true,
+    });
+
+    if (!isValid || currentStepIndex >= formSteps.length - 1) {
+      return;
+    }
+
+    setIsStepThreeConfirmed(false);
+    setCurrentStepIndex((value) => value + 1);
+  }
+
+  function handleStepSelect(stepIndex: number) {
+    if (!isStepAccessible(stepIndex)) {
+      return;
+    }
+
+    setIsStepThreeConfirmed(false);
+    setCurrentStepIndex(stepIndex);
+  }
 
   return (
     <main className="mx-auto max-w-7xl space-y-8 px-4 pb-36 pt-6 sm:px-6 lg:px-8">
@@ -238,322 +327,447 @@ export function SubmitBusinessForm() {
           className="grid gap-6 p-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
           onSubmit={onSubmit}
         >
-          <FormSection
-            className="lg:col-span-2"
-            description="Datos base del negocio para identificarlo, categorizarlo y definir el plan inicial."
-            title="Información principal"
-          >
-            <div className="grid gap-5 md:grid-cols-2">
-              <FormField
-                className="md:col-span-2"
-                error={form.formState.errors.name?.message}
-                hint="Usa el nombre comercial que verá el usuario final."
-                label="Nombre del negocio"
-              >
-                <Input
-                  placeholder="Ej. Casa Norte Market"
-                  {...form.register('name')}
-                />
-              </FormField>
-              <FormField
-                className="md:col-span-2"
-                error={form.formState.errors.description?.message}
-                hint="Resume propuesta de valor, cobertura y tipo de operación en 2 o 3 frases."
-                label="Descripción"
-              >
-                <Textarea
-                  placeholder="Describe el tipo de negocio, lo que ofrece y el contexto que necesita el equipo para aprobarlo."
-                  {...form.register('description')}
-                />
-              </FormField>
-              <FormField
-                error={form.formState.errors.category?.message}
-                hint="Escoge la categoría predominante para discovery y reporting."
-                label="Categoría"
-              >
-                <Controller
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <ShadSelect
-                      onValueChange={field.onChange}
-                      value={field.value}
+          <div className="lg:col-span-2 space-y-4 px-4 pt-4 sm:px-5">
+            <div className="grid gap-3 md:grid-cols-3">
+              {formSteps.map((step, index) => {
+                const isActive = index === currentStepIndex;
+                const isComplete = stepValidity[index];
+                const isAccessible = isStepAccessible(index);
+
+                return (
+                  <button
+                    aria-current={isActive ? 'step' : undefined}
+                    className={[
+                      'surface-soft flex w-full items-start gap-3 p-4 text-left',
+                      isActive ? 'border-primary/20 bg-primary/5' : '',
+                      !isAccessible
+                        ? 'cursor-not-allowed opacity-60'
+                        : 'hover:border-primary/20 hover:bg-white/80',
+                    ].join(' ')}
+                    disabled={!isAccessible}
+                    key={step.id}
+                    onClick={() => handleStepSelect(index)}
+                    type="button"
+                  >
+                    <span
+                      className={[
+                        'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold',
+                        isComplete
+                          ? 'border-primary/20 bg-primary text-white'
+                          : isActive
+                            ? 'border-primary/20 bg-primary/10 text-text-secondary'
+                            : 'border-border-subtle bg-white/80 text-text-muted',
+                      ].join(' ')}
                     >
-                      <ShadSelectTrigger>
-                        <ShadSelectValue placeholder="Selecciona una categoría" />
-                      </ShadSelectTrigger>
-                      <ShadSelectContent>
-                        {categoryOptions.map((option) => (
-                          <ShadSelectItem
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </ShadSelectItem>
-                        ))}
-                      </ShadSelectContent>
-                    </ShadSelect>
-                  )}
-                />
-              </FormField>
-              <FormField
-                error={form.formState.errors.subscriptionType?.message}
-                hint="El plan inicial determina capacidad y features desde el alta."
-                label="Suscripción"
-              >
-                <Controller
-                  control={form.control}
-                  name="subscriptionType"
-                  render={({ field }) => (
-                    <ShadSelect
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <ShadSelectTrigger>
-                        <ShadSelectValue placeholder="Selecciona un plan" />
-                      </ShadSelectTrigger>
-                      <ShadSelectContent>
-                        {subscriptionOptions.map((option) => (
-                          <ShadSelectItem
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </ShadSelectItem>
-                        ))}
-                      </ShadSelectContent>
-                    </ShadSelect>
-                  )}
-                />
-              </FormField>
-              <div className="md:col-span-2 grid gap-3 rounded-[var(--radius-lg)] border border-border-subtle bg-white/50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-muted">
-                  Referencia rápida
-                </p>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div className="rounded-2xl border border-border-subtle bg-white/70 px-4 py-3">
-                    <p className="text-sm font-semibold text-text-secondary">
-                      Categoría actual
-                    </p>
-                    <p className="text-xs leading-5 text-text-muted">
-                      {
-                        categoryOptions.find(
-                          (option) => option.value === form.watch('category'),
-                        )?.description
-                      }
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-border-subtle bg-white/70 px-4 py-3">
-                    <p className="text-sm font-semibold text-text-secondary">
-                      Plan seleccionado
-                    </p>
-                    <p className="text-xs leading-5 text-text-muted">
-                      {
-                        subscriptionOptions.find(
-                          (option) =>
-                            option.value === form.watch('subscriptionType'),
-                        )?.description
-                      }
-                    </p>
+                      {isComplete ? (
+                        <CheckCircle2 className="size-4" />
+                      ) : (
+                        index + 1
+                      )}
+                    </span>
+                    <span className="space-y-1">
+                      <span className="block text-sm font-semibold text-text-secondary">
+                        {step.title}
+                      </span>
+                      <span className="block text-xs leading-5 text-text-muted">
+                        {step.description}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="rounded-[var(--radius-lg)] border border-border-subtle bg-white/60 px-4 py-3 text-sm text-text-muted">
+              Paso {currentStepIndex + 1} de {formSteps.length}:{' '}
+              {currentStep.title}
+            </div>
+          </div>
+
+          {currentStepIndex === 0 ? (
+            <FormSection
+              className="lg:col-span-2"
+              description="Datos base del negocio para identificarlo, categorizarlo y definir el plan inicial."
+              title="Información principal"
+            >
+              <div className="grid gap-5 md:grid-cols-2">
+                <FormField
+                  className="md:col-span-2"
+                  error={form.formState.errors.name?.message}
+                  hint="Usa el nombre comercial que verá el usuario final."
+                  label="Nombre del negocio"
+                >
+                  <Input
+                    placeholder="Ej. Casa Norte Market"
+                    {...form.register('name')}
+                  />
+                </FormField>
+                <FormField
+                  className="md:col-span-2"
+                  error={form.formState.errors.description?.message}
+                  hint="Resume propuesta de valor, cobertura y tipo de operación en 2 o 3 frases."
+                  label="Descripción"
+                >
+                  <Textarea
+                    placeholder="Describe el tipo de negocio, lo que ofrece y el contexto que necesita el equipo para aprobarlo."
+                    {...form.register('description')}
+                  />
+                </FormField>
+                <FormField
+                  error={form.formState.errors.category?.message}
+                  hint="Escoge la categoría predominante para discovery y reporting."
+                  label="Categoría"
+                >
+                  <Controller
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <ShadSelect
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <ShadSelectTrigger>
+                          <ShadSelectValue placeholder="Selecciona una categoría" />
+                        </ShadSelectTrigger>
+                        <ShadSelectContent>
+                          {categoryOptions.map((option) => (
+                            <ShadSelectItem
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </ShadSelectItem>
+                          ))}
+                        </ShadSelectContent>
+                      </ShadSelect>
+                    )}
+                  />
+                </FormField>
+                <FormField
+                  error={form.formState.errors.subscriptionType?.message}
+                  hint="El plan inicial determina capacidad y features desde el alta."
+                  label="Suscripción"
+                >
+                  <Controller
+                    control={form.control}
+                    name="subscriptionType"
+                    render={({ field }) => (
+                      <ShadSelect
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <ShadSelectTrigger>
+                          <ShadSelectValue placeholder="Selecciona un plan" />
+                        </ShadSelectTrigger>
+                        <ShadSelectContent>
+                          {subscriptionOptions.map((option) => (
+                            <ShadSelectItem
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </ShadSelectItem>
+                          ))}
+                        </ShadSelectContent>
+                      </ShadSelect>
+                    )}
+                  />
+                </FormField>
+                <div className="md:col-span-2 grid gap-3 rounded-[var(--radius-lg)] border border-border-subtle bg-secondary/5 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-muted">
+                    Referencia rápida
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-border-subtle bg-white/70 px-4 py-3">
+                      <p className="text-sm font-semibold text-text-secondary">
+                        Categoría actual
+                      </p>
+                      <p className="text-xs leading-5 text-text-muted">
+                        {
+                          categoryOptions.find(
+                            (option) => option.value === form.watch('category'),
+                          )?.description
+                        }
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-border-subtle bg-white/70 px-4 py-3">
+                      <p className="text-sm font-semibold text-text-secondary">
+                        Plan seleccionado
+                      </p>
+                      <p className="text-xs leading-5 text-text-muted">
+                        {
+                          subscriptionOptions.find(
+                            (option) =>
+                              option.value === form.watch('subscriptionType'),
+                          )?.description
+                        }
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </FormSection>
+            </FormSection>
+          ) : null}
 
-          <FormSection
-            className="lg:col-span-2"
-            description="Ubicación pública, canal principal de contacto y propietario responsable del perfil."
-            title="Ubicación, contacto y ownership"
-          >
-            <div className="grid gap-5 md:grid-cols-2">
-              <FormField
-                error={form.formState.errors.location?.zone?.message}
-                hint="Barrio, sector o referencia corta para filtrar operaciones."
-                label="Zona"
-              >
-                <Input
-                  placeholder="Ej. Piantini"
-                  {...form.register('location.zone')}
-                />
-              </FormField>
-              <FormField
-                error={form.formState.errors.whatsappNumber?.message}
-                hint="Número con prefijo país para leads y conversiones por WhatsApp."
-                label="WhatsApp"
-              >
-                <Input
-                  placeholder="18095550110"
-                  {...form.register('whatsappNumber')}
-                />
-              </FormField>
-              <FormField
-                className="md:col-span-2"
-                error={form.formState.errors.location?.address?.message}
-                hint="Dirección visible para discovery y la ficha pública."
-                label="Dirección"
-              >
-                <Input
-                  placeholder="Av. Abraham Lincoln 1012, Santo Domingo"
-                  {...form.register('location.address')}
-                />
-              </FormField>
-              <FormField
-                error={form.formState.errors.location?.lat?.message}
-                hint="Úsalo para ubicar el negocio con precisión en mapas y cercanía."
-                label="Latitud"
-              >
-                <Input
-                  step="0.0001"
-                  type="number"
-                  {...form.register('location.lat', { valueAsNumber: true })}
-                />
-              </FormField>
-              <FormField
-                error={form.formState.errors.location?.lng?.message}
-                hint="Completa junto a la latitud para soportar distancia y geoubicación."
-                label="Longitud"
-              >
-                <Input
-                  step="0.0001"
-                  type="number"
-                  {...form.register('location.lng', { valueAsNumber: true })}
-                />
-              </FormField>
-              <FormField
-                className="md:col-span-2"
-                error={form.formState.errors.ownerId?.message}
-                hint={
-                  canAssignUsers
-                    ? 'Búsqueda remota con debounce. Se consultan hasta 10 usuarios por intento.'
-                    : 'Necesitas un rol admin activo para buscar propietarios reales.'
-                }
-                label="Responsable principal"
-              >
-                <BusinessOwnerSelect
-                  canSearchOwners={canAssignUsers}
-                  disabled={isCurrentUserLoading || !canAssignUsers}
-                  onSelect={(user) => {
-                    form.setValue('ownerId', user.id, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
-                    form.setValue(
-                      'managers',
-                      (form.getValues('managers') ?? []).filter(
-                        (managerId) => managerId !== user.id,
-                      ),
-                      {
+          {currentStepIndex === 1 ? (
+            <FormSection
+              className="lg:col-span-2"
+              description="Ubicación pública, canal principal de contacto y propietario responsable del perfil."
+              title="Ubicación, contacto y ownership"
+            >
+              <div className="grid gap-5 md:grid-cols-2">
+                <FormField
+                  error={form.formState.errors.location?.zone?.message}
+                  hint="Barrio, sector o referencia corta para filtrar operaciones."
+                  label="Zona"
+                >
+                  <Input
+                    placeholder="Ej. Piantini"
+                    {...form.register('location.zone')}
+                  />
+                </FormField>
+                <FormField
+                  error={form.formState.errors.whatsappNumber?.message}
+                  hint="Número con prefijo país para leads y conversiones por WhatsApp."
+                  label="WhatsApp"
+                >
+                  <Input
+                    placeholder="18095550110"
+                    {...form.register('whatsappNumber')}
+                  />
+                </FormField>
+                <FormField
+                  className="md:col-span-2"
+                  error={form.formState.errors.location?.address?.message}
+                  hint="Dirección visible para discovery y la ficha pública."
+                  label="Dirección"
+                >
+                  <Input
+                    placeholder="Av. Abraham Lincoln 1012, Santo Domingo"
+                    {...form.register('location.address')}
+                  />
+                </FormField>
+                <FormField
+                  error={form.formState.errors.location?.lat?.message}
+                  hint="Úsalo para ubicar el negocio con precisión en mapas y cercanía."
+                  label="Latitud"
+                >
+                  <Input
+                    step="0.0001"
+                    type="number"
+                    {...form.register('location.lat', { valueAsNumber: true })}
+                  />
+                </FormField>
+                <FormField
+                  error={form.formState.errors.location?.lng?.message}
+                  hint="Completa junto a la latitud para soportar distancia y geoubicación."
+                  label="Longitud"
+                >
+                  <Input
+                    step="0.0001"
+                    type="number"
+                    {...form.register('location.lng', { valueAsNumber: true })}
+                  />
+                </FormField>
+                <FormField
+                  className="md:col-span-2"
+                  error={form.formState.errors.ownerId?.message}
+                  hint={
+                    canAssignUsers
+                      ? 'Búsqueda remota con debounce. Se consultan hasta 10 usuarios por intento.'
+                      : 'Necesitas un rol admin activo para buscar propietarios reales.'
+                  }
+                  label="Responsable principal"
+                >
+                  <BusinessOwnerSelect
+                    canSearchOwners={canAssignUsers}
+                    disabled={isCurrentUserLoading || !canAssignUsers}
+                    onSelect={(user) => {
+                      form.setValue('ownerId', user.id, {
                         shouldDirty: true,
                         shouldValidate: true,
-                      },
-                    );
-                  }}
-                  value={selectedOwnerId}
-                />
-              </FormField>
-            </div>
-          </FormSection>
+                      });
+                      form.setValue(
+                        'managers',
+                        (form.getValues('managers') ?? []).filter(
+                          (managerId) => managerId !== user.id,
+                        ),
+                        {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        },
+                      );
+                    }}
+                    value={selectedOwnerId}
+                  />
+                </FormField>
+              </div>
+            </FormSection>
+          ) : null}
 
-          <FormSection
-            className="lg:col-span-2"
-            description="Assets visibles del perfil y lista preliminar de managers si ya la tienes disponible."
-            title="Media y encargados"
-          >
-            <div className="grid gap-5 md:grid-cols-2">
-              <FormField
-                error={form.formState.errors.images?.profile?.message}
-                hint="Ideal para avatar o imagen principal del perfil público."
-                label="Imagen perfil"
-              >
-                <Controller
-                  control={form.control}
-                  name="images.profile"
-                  render={({ field }) => (
-                    <ImageDropzone
-                      disabled={createBusiness.isPending}
-                      maxFileCount={1}
-                      maxFileSizeBytes={5 * 1024 * 1024}
-                      onChange={(nextImages) => {
-                        field.onChange(nextImages[0] ?? '');
-                      }}
-                      uploadContext={{
-                        module: 'business-branding',
-                        slot: 'profile',
-                      }}
-                      value={field.value ? [field.value] : []}
-                    />
-                  )}
-                />
-              </FormField>
-              <FormField
-                error={form.formState.errors.images?.banner?.message}
-                hint="Usa un banner horizontal para discovery y portada del negocio."
-                label="Imagen banner"
-              >
-                <Controller
-                  control={form.control}
-                  name="images.banner"
-                  render={({ field }) => (
-                    <ImageDropzone
-                      disabled={createBusiness.isPending}
-                      maxFileCount={1}
-                      maxFileSizeBytes={8 * 1024 * 1024}
-                      onChange={(nextImages) => {
-                        field.onChange(nextImages[0] ?? '');
-                      }}
-                      uploadContext={{
-                        module: 'business-branding',
-                        slot: 'banner',
-                      }}
-                      value={field.value ? [field.value] : []}
-                    />
-                  )}
-                />
-              </FormField>
-              <FormField
-                className="md:col-span-2"
-                error={form.formState.errors.managers?.message}
-                hint={
-                  canAssignUsers
-                    ? 'Opcional. Agrega managers reales con búsqueda remota. El owner seleccionado no se puede repetir aquí.'
-                    : 'Necesitas un rol admin activo para asignar managers reales.'
-                }
-                label="Encargados"
-              >
-                <BusinessManagersSelect
-                  canSearchManagers={canAssignUsers}
-                  disabled={isCurrentUserLoading || !canAssignUsers}
-                  onChange={(managerIds) => {
-                    form.setValue('managers', managerIds, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
-                  }}
-                  ownerId={selectedOwnerId}
-                  value={form.watch('managers') ?? []}
-                />
-              </FormField>
-            </div>
-          </FormSection>
+          {currentStepIndex === 2 ? (
+            <FormSection
+              className="lg:col-span-2"
+              description="Assets visibles del perfil y lista preliminar de managers si ya la tienes disponible."
+              title="Media y encargados"
+            >
+              <div className="grid gap-5 md:grid-cols-2">
+                <FormField
+                  error={form.formState.errors.images?.profile?.message}
+                  hint="Ideal para avatar o imagen principal del perfil público."
+                  label="Imagen perfil"
+                >
+                  <Controller
+                    control={form.control}
+                    name="images.profile"
+                    render={({ field }) => (
+                      <ImageDropzone
+                        disabled={createBusiness.isPending}
+                        maxFileCount={1}
+                        maxFileSizeBytes={5 * 1024 * 1024}
+                        onChange={(nextImages) => {
+                          field.onChange(nextImages[0] ?? '');
+                        }}
+                        uploadContext={{
+                          module: 'business-branding',
+                          slot: 'profile',
+                        }}
+                        value={field.value ? [field.value] : []}
+                      />
+                    )}
+                  />
+                </FormField>
+                <FormField
+                  error={form.formState.errors.images?.banner?.message}
+                  hint="Usa un banner horizontal para discovery y portada del negocio."
+                  label="Imagen banner"
+                >
+                  <Controller
+                    control={form.control}
+                    name="images.banner"
+                    render={({ field }) => (
+                      <ImageDropzone
+                        disabled={createBusiness.isPending}
+                        maxFileCount={1}
+                        maxFileSizeBytes={8 * 1024 * 1024}
+                        onChange={(nextImages) => {
+                          field.onChange(nextImages[0] ?? '');
+                        }}
+                        uploadContext={{
+                          module: 'business-branding',
+                          slot: 'banner',
+                        }}
+                        value={field.value ? [field.value] : []}
+                      />
+                    )}
+                  />
+                </FormField>
+                <FormField
+                  className="md:col-span-2"
+                  error={form.formState.errors.managers?.message}
+                  hint={
+                    canAssignUsers
+                      ? 'Opcional. Agrega managers reales con búsqueda remota. El owner seleccionado no se puede repetir aquí.'
+                      : 'Necesitas un rol admin activo para asignar managers reales.'
+                  }
+                  label="Encargados"
+                >
+                  <BusinessManagersSelect
+                    canSearchManagers={canAssignUsers}
+                    disabled={isCurrentUserLoading || !canAssignUsers}
+                    onChange={(managerIds) => {
+                      form.setValue('managers', managerIds, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                    }}
+                    ownerId={selectedOwnerId}
+                    value={form.watch('managers') ?? []}
+                  />
+                </FormField>
+              </div>
+            </FormSection>
+          ) : null}
 
           <div className="flex flex-col gap-3 px-5 pb-5 lg:col-span-2 lg:flex-row lg:items-center lg:justify-between">
             <p className="text-sm leading-6 text-text-muted">
               El payload final incluye `ownerId` real, categoría, suscripción,
               media y ubicación completa.
             </p>
-            <Button
-              disabled={
-                createBusiness.isPending ||
-                isCurrentUserLoading ||
-                !canAssignUsers
-              }
-              type="submit"
-            >
-              {createBusiness.isPending
-                ? 'Enviando alta...'
-                : 'Enviar para aprobación'}
-            </Button>
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+              {currentStepIndex > 0 ? (
+                <Button
+                  disabled={createBusiness.isPending}
+                  onClick={() => {
+                    setIsStepThreeConfirmed(false);
+                    setCurrentStepIndex((value) => value - 1);
+                  }}
+                  type="button"
+                  variant="ghost"
+                >
+                  Volver
+                </Button>
+              ) : null}
+
+              {currentStepIndex < formSteps.length - 1 ? (
+                <Button
+                  disabled={
+                    createBusiness.isPending ||
+                    isCurrentUserLoading ||
+                    !canAssignUsers ||
+                    !isCurrentStepValid
+                  }
+                  onClick={() => {
+                    void handleNextStep();
+                  }}
+                  type="button"
+                >
+                  Continuar
+                </Button>
+              ) : (
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+                  {!isStepThreeConfirmed ? (
+                    <Button
+                      disabled={
+                        createBusiness.isPending ||
+                        isCurrentUserLoading ||
+                        !canAssignUsers ||
+                        !stepValidity
+                          .slice(0, formSteps.length - 1)
+                          .every(Boolean)
+                      }
+                      key="confirm-step-three"
+                      onClick={() => setIsStepThreeConfirmed(true)}
+                      type="button"
+                    >
+                      Confirmar guardado
+                    </Button>
+                  ) : (
+                    <>
+                      <p className="text-sm leading-6 text-text-muted sm:text-right">
+                        Revisa los assets y managers del paso 3 antes de
+                        guardar.
+                      </p>
+                      <Button
+                        disabled={
+                          createBusiness.isPending ||
+                          isCurrentUserLoading ||
+                          !canAssignUsers ||
+                          !isCurrentStepValid ||
+                          !stepValidity.every(Boolean)
+                        }
+                        key="submit-step-three"
+                        type="submit"
+                      >
+                        {createBusiness.isPending
+                          ? 'Enviando alta...'
+                          : 'Enviar para aprobación'}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </form>
       </Card>

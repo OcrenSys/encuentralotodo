@@ -221,9 +221,12 @@ export function ImageDropzone({
       <div
         aria-disabled={disabled || isBusy}
         className={cn(
-          'rounded-[var(--radius-lg)] border border-dashed border-border-subtle bg-white/70 p-5 transition-colors',
-          isDragging && 'border-secondary bg-secondary/5',
-          disabled && 'opacity-60',
+          'flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-border-subtle bg-[var(--color-background-muted)]/30 px-6 py-6 text-center transition-colors md:min-h-[140px]',
+          isDragging && 'border-primary bg-primary/5',
+          !disabled &&
+            !isBusy &&
+            'hover:border-primary/50 hover:bg-[var(--color-background-muted)]/40',
+          disabled && 'cursor-not-allowed opacity-60',
         )}
         onDragEnter={(event) => {
           event.preventDefault();
@@ -256,13 +259,13 @@ export function ImageDropzone({
         role="button"
         tabIndex={disabled ? -1 : 0}
       >
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-3">
+        <div className="flex w-full flex-col items-center justify-center gap-2 text-center">
+          <div className="flex flex-col items-center justify-center gap-2 text-center">
             <span className="icon-tile size-11 rounded-2xl">
               <UploadCloud className="size-5" />
             </span>
             <div className="space-y-1">
-              <p className="font-semibold text-text-secondary">
+              <p className="font-medium text-text-secondary">
                 Arrastra imágenes aquí o selecciónalas manualmente
               </p>
               <p className="text-sm text-text-muted">

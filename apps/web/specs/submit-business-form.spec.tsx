@@ -4,6 +4,7 @@ import { SubmitBusinessForm } from '../src/components/submit-business-form';
 
 const pushMock = jest.fn();
 const invalidateMock = jest.fn(async () => undefined);
+const mutateMock = jest.fn();
 
 const mockOwnerResults = [
   {
@@ -146,6 +147,7 @@ describe('SubmitBusinessForm', () => {
   beforeEach(() => {
     pushMock.mockReset();
     invalidateMock.mockClear();
+    mutateMock.mockReset();
 
     Object.defineProperty(window, 'URL', {
       configurable: true,
@@ -172,32 +174,141 @@ describe('SubmitBusinessForm', () => {
     });
 
     trpc.business.create.useMutation.mockReturnValue({
-      mutate: jest.fn(),
+      mutate: mutateMock,
       isPending: false,
     });
+  });
+
+  async function advanceToStepTwo() {
+    fireEvent.change(screen.getByPlaceholderText('Ej. Casa Norte Market'), {
+      target: { value: 'Casa Norte Market' },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText(/describe el tipo de negocio/i),
+      {
+        target: {
+          value:
+            'Supermercado de proximidad con delivery y catálogo básico para discovery.',
+        },
+      },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+
+  async function advanceToStepThree() {
+    await advanceToStepTwo();
+
+    fireEvent.change(screen.getByPlaceholderText('Ej. Piantini'), {
+      target: { value: 'Piantini' },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText('Av. Abraham Lincoln 1012, Santo Domingo'),
+      {
+        target: { value: 'Av. Abraham Lincoln 1012, Santo Domingo' },
+      },
+    );
+    fireEvent.click(
+      screen.getAllByText('Responsable principal')[1] as HTMLElement,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+
+  it('requires explicit confirmation before submitting on step 3', async () => {
+    render(<SubmitBusinessForm />);
+
+    await advanceToStepThree();
+
+    expect(mutateMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: 'Confirmar guardado' }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Enviar para aprobación' }),
+    ).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar guardado' }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Enviar para aprobación' }),
+    ).toBeTruthy();
+    expect(mutateMock).not.toHaveBeenCalled();
   });
 
   it('syncs ownerId and managers through the selector controls', async () => {
     render(<SubmitBusinessForm />);
 
+    expect(
+      (screen.getByRole('button', { name: 'Continuar' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+
+    await advanceToStepTwo();
+
     expect(screen.getByText('Owner actual: sin owner')).toBeTruthy();
-    expect(screen.getByText('Managers actuales: sin managers')).toBeTruthy();
+
+    fireEvent.change(screen.getByPlaceholderText('Ej. Piantini'), {
+      target: { value: 'Piantini' },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText('Av. Abraham Lincoln 1012, Santo Domingo'),
+      {
+        target: { value: 'Av. Abraham Lincoln 1012, Santo Domingo' },
+      },
+    );
 
     fireEvent.click(
       screen.getAllByText('Responsable principal')[1] as HTMLElement,
     );
-    fireEvent.click(screen.getAllByText('Encargados')[1] as HTMLElement);
 
     await act(async () => {
       await Promise.resolve();
     });
 
     expect(screen.getByText('Owner actual: user-ana')).toBeTruthy();
+    expect(
+      (screen.getByRole('button', { name: 'Continuar' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('Managers actuales: sin managers')).toBeTruthy();
+
+    fireEvent.click(screen.getAllByText('Encargados')[1] as HTMLElement);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
     expect(screen.getByText('Managers actuales: user-carlos')).toBeTruthy();
   });
 
   it('hydrates and updates the business profile image URL through the dropzone', async () => {
     render(<SubmitBusinessForm />);
+
+    await advanceToStepThree();
 
     expect(
       screen.getByText(

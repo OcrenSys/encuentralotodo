@@ -59,4 +59,27 @@ describe('file storage factory and firebase provider', () => {
             size: file.size,
         });
     });
+
+    it('maps CORS-like upload failures to an actionable Firebase Storage message', async () => {
+        const provider = new FirebaseStorageProvider({
+            uploadFileImpl: jest.fn(async () => {
+                throw new TypeError('Failed to fetch');
+            }),
+        });
+
+        await expect(
+            provider.uploadFile({
+                file: new File(['image-bytes'], 'profile.png', {
+                    type: 'image/png',
+                }),
+                context: {
+                    module: 'business-branding',
+                    businessId: 'business-1',
+                    slot: 'profile',
+                },
+            }),
+        ).rejects.toThrow(
+            'Firebase Storage rechazo la subida desde este origen. Configura CORS en el bucket para permitir http://localhost:3000 y el dominio web desplegado.',
+        );
+    });
 });

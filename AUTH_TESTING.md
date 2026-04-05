@@ -91,6 +91,77 @@ Opcion B:
 - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 
+## Firebase Storage CORS para uploads directos desde web
+
+Si subes archivos directo desde el navegador con Firebase Storage, el bucket debe aceptar el origen web en CORS. Si no, verás errores como:
+
+- `Response to preflight request doesn't pass access control check`
+- `TypeError: Failed to fetch`
+
+Ejemplo de `cors.json` para desarrollo y producción:
+
+Archivo recomendado en este repo:
+
+`tools/firebase/storage.cors.json`
+
+```json
+[
+  {
+    "origin": ["http://localhost:3000", "https://tu-dominio-web.com"],
+    "method": ["GET", "HEAD", "POST", "PUT", "OPTIONS"],
+    "responseHeader": ["Content-Type", "Authorization", "x-goog-resumable"],
+    "maxAgeSeconds": 3600
+  }
+]
+```
+
+Aplicalo al bucket configurado en `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` con una de estas opciones:
+
+```bash
+gsutil cors set cors.json gs://TU_BUCKET
+```
+
+o con Google Cloud CLI:
+
+```bash
+gcloud storage buckets update gs://TU_BUCKET --cors-file=cors.json
+```
+
+Luego verifica que el bucket correcto sea el mismo que usa la web y reinicia el frontend si cambiaste variables de entorno.
+
+## Firebase Storage Rules para uploads web
+
+Archivo recomendado en este repo:
+
+`tools/firebase/storage.rules`
+
+Estas reglas permiten:
+
+- lectura publica de imagenes ya publicadas
+- escritura solo para usuarios autenticados en Firebase
+- branding temporal en `general/business-branding/*` para el flujo de creacion de negocio
+- uploads asociados a negocio en `businesses/*`
+
+Publicalas con Firebase CLI desde la raiz del repo:
+
+```bash
+firebase deploy --only storage --project ims-app-468aa
+```
+
+Si primero quieres seleccionar el proyecto:
+
+```bash
+firebase use ims-app-468aa
+firebase deploy --only storage
+```
+
+Si ya corregiste CORS, puedes dejar ambos cambios aplicados con:
+
+```bash
+gcloud storage buckets update gs://ims-app-468aa.firebasestorage.app --cors-file=tools/firebase/storage.cors.json
+firebase deploy --only storage --project ims-app-468aa
+```
+
 ### No necesarias para probar auth
 
 - `RESEND_API_KEY`
