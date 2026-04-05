@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import type { Product, ProductType } from 'types';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ import {
   Textarea,
 } from 'ui';
 
+import { ImageDropzone } from '../../components/image-dropzone';
 import { trpc } from '../../lib/trpc';
 
 const productFormSchema = z
@@ -32,15 +33,10 @@ const productFormSchema = z
       .max(300),
     type: z.enum(['simple', 'configurable']),
     configurationSummary: z.string().trim().max(160).optional(),
-    imagePrimary: z.string().url('Ingresa una URL válida.'),
-    imageSecondary: z.union([
-      z.literal(''),
-      z.string().url('Ingresa una URL válida.'),
-    ]),
-    imageTertiary: z.union([
-      z.literal(''),
-      z.string().url('Ingresa una URL válida.'),
-    ]),
+    images: z
+      .array(z.string().url('Ingresa una URL válida.'))
+      .min(1, 'Agrega al menos una imagen.')
+      .max(3),
     price: z.string().optional(),
     isFeatured: z.boolean(),
   })
@@ -72,9 +68,7 @@ const emptyValues: ProductFormValues = {
   description: '',
   type: 'simple',
   configurationSummary: '',
-  imagePrimary: '',
-  imageSecondary: '',
-  imageTertiary: '',
+  images: [],
   price: '',
   isFeatured: false,
 };
@@ -99,9 +93,7 @@ function getInitialValues({
       productType === 'configurable'
         ? (product?.configurationSummary ?? '')
         : '',
-    imagePrimary: product?.images[0] ?? '',
-    imageSecondary: product?.images[1] ?? '',
-    imageTertiary: product?.images[2] ?? '',
+    images: product?.images ?? [],
     price:
       productType === 'simple' && typeof product?.price === 'number'
         ? String(product.price)
@@ -177,11 +169,7 @@ export function ProductUpsertDialog({
         : undefined;
     const payload = {
       description: values.description,
-      images: [
-        values.imagePrimary,
-        values.imageSecondary,
-        values.imageTertiary,
-      ].filter(Boolean),
+      images: values.images,
       isFeatured: values.isFeatured,
       name: values.name,
       type: normalizedType,
@@ -336,38 +324,32 @@ export function ProductUpsertDialog({
             />
           </FormField>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <FormField
-              error={form.formState.errors.imagePrimary?.message}
-              hint="Imagen principal obligatoria."
-              label="Imagen 1"
-            >
-              <Input
-                placeholder="https://..."
-                {...form.register('imagePrimary')}
-              />
-            </FormField>
-            <FormField
-              error={form.formState.errors.imageSecondary?.message}
-              hint="Opcional."
-              label="Imagen 2"
-            >
-              <Input
-                placeholder="https://..."
-                {...form.register('imageSecondary')}
-              />
-            </FormField>
-            <FormField
-              error={form.formState.errors.imageTertiary?.message}
-              hint="Opcional."
-              label="Imagen 3"
-            >
-              <Input
-                placeholder="https://..."
-                {...form.register('imageTertiary')}
-              />
-            </FormField>
-          </div>
+          <FormField
+            error={form.formState.errors.images?.message}
+            hint="Sube entre 1 y 3 imágenes. El formulario seguirá enviando URLs finales al backend, sin cambiar el contrato actual."
+            label="Imágenes del producto"
+          >
+            <Controller
+              control={form.control}
+              name="images"
+              render={({ field }) => (
+                <ImageDropzone
+                  disabled={!selectedBusinessId || isPending}
+                  maxFileCount={3}
+                  maxFileSizeBytes={5 * 1024 * 1024}
+                  onChange={(nextImages) => {
+                    field.onChange(nextImages);
+                  }}
+                  uploadContext={{
+                    module: 'product-images',
+                    businessId: selectedBusinessId || undefined,
+                    entityId: product?.id,
+                  }}
+                  value={field.value ?? []}
+                />
+              )}
+            />
+          </FormField>
 
           <DialogFooter>
             <Button

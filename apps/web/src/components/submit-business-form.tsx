@@ -34,6 +34,7 @@ import {
 
 import { BusinessManagersSelect } from './business-managers-select';
 import { BusinessOwnerSelect } from './business-owner-select';
+import { ImageDropzone } from './image-dropzone';
 import { useCurrentUserRole } from '../lib/platform-authorization';
 import { hasPlatformRole, platformAdminRoles } from '../lib/platform-roles';
 import { trpc } from '../lib/trpc';
@@ -465,9 +466,24 @@ export function SubmitBusinessForm() {
                 hint="Ideal para avatar o imagen principal del perfil público."
                 label="Imagen perfil"
               >
-                <Input
-                  placeholder="https://..."
-                  {...form.register('images.profile')}
+                <Controller
+                  control={form.control}
+                  name="images.profile"
+                  render={({ field }) => (
+                    <ImageDropzone
+                      disabled={createBusiness.isPending}
+                      maxFileCount={1}
+                      maxFileSizeBytes={5 * 1024 * 1024}
+                      onChange={(nextImages) => {
+                        field.onChange(nextImages[0] ?? '');
+                      }}
+                      uploadContext={{
+                        module: 'business-branding',
+                        slot: 'profile',
+                      }}
+                      value={field.value ? [field.value] : []}
+                    />
+                  )}
                 />
               </FormField>
               <FormField
@@ -475,9 +491,24 @@ export function SubmitBusinessForm() {
                 hint="Usa un banner horizontal para discovery y portada del negocio."
                 label="Imagen banner"
               >
-                <Input
-                  placeholder="https://..."
-                  {...form.register('images.banner')}
+                <Controller
+                  control={form.control}
+                  name="images.banner"
+                  render={({ field }) => (
+                    <ImageDropzone
+                      disabled={createBusiness.isPending}
+                      maxFileCount={1}
+                      maxFileSizeBytes={8 * 1024 * 1024}
+                      onChange={(nextImages) => {
+                        field.onChange(nextImages[0] ?? '');
+                      }}
+                      uploadContext={{
+                        module: 'business-branding',
+                        slot: 'banner',
+                      }}
+                      value={field.value ? [field.value] : []}
+                    />
+                  )}
                 />
               </FormField>
               <FormField
