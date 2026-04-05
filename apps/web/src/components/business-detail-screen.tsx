@@ -14,19 +14,29 @@ import {
   WhatsAppCTA,
 } from 'ui';
 import { buildWhatsAppLink, formatDateLabel } from 'utils';
-import type { BusinessDetails } from 'types';
+import type { BusinessDetails, UserProfile } from 'types';
 
 import {
   formatBusinessCategoryLabel,
   formatStatusLabel,
   formatSubscriptionLabel,
 } from '../lib/display-labels';
+import { useCurrentUserRole } from '../lib/platform-authorization';
+import { isSuperAdminRole } from '../lib/platform-roles';
 import { trpc } from '../lib/trpc';
 import { BusinessMapCard } from './business-map-card';
 
+function getUserBadgeLabel(
+  user: Pick<UserProfile, 'fullName' | 'email' | 'id'>,
+) {
+  return user.fullName || user.email || user.id;
+}
+
 export function BusinessDetailScreen({ businessId }: { businessId: string }) {
+  const { role } = useCurrentUserRole();
   const businessQuery = trpc.business.byId.useQuery({ businessId });
   const business = businessQuery.data as BusinessDetails | undefined;
+  const canViewRelationships = isSuperAdminRole(role);
 
   if (businessQuery.isLoading) {
     return (
@@ -120,6 +130,64 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
           </div>
         </Card>
       </section>
+
+      {canViewRelationships ? (
+        <section className="space-y-5">
+          <SectionHeading
+            eyebrow="Relaciones"
+            title="Usuarios vinculados al comercio"
+            description="Vista administrativa inicial de ownership y managers. Por ahora solo aparece para SuperAdmin, pero queda lista para extenderse a owners más adelante."
+          />
+          <Card className="space-y-5 lg:grid lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.2fr)] lg:gap-6 lg:space-y-0">
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
+                Owner actual
+              </p>
+              {business.owner ? (
+                <div className="surface-inset rounded-[22px] p-4">
+                  <p className="font-semibold text-[var(--color-primary)]">
+                    {getUserBadgeLabel(business.owner)}
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                    {business.owner.email}
+                  </p>
+                </div>
+              ) : (
+                <div className="surface-inset rounded-[22px] p-4 text-sm text-[var(--color-text-muted)]">
+                  No hay owner resuelto para este negocio.
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
+                Managers asociados
+              </p>
+              {business.managersDetailed.length ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {business.managersDetailed.map((manager) => (
+                    <div
+                      className="surface-inset rounded-[22px] p-4"
+                      key={manager.id}
+                    >
+                      <p className="font-semibold text-[var(--color-primary)]">
+                        {getUserBadgeLabel(manager)}
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                        {manager.email}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="surface-inset rounded-[22px] p-4 text-sm text-[var(--color-text-muted)]">
+                  Este negocio no tiene managers vinculados todavía.
+                </div>
+              )}
+            </div>
+          </Card>
+        </section>
+      ) : null}
 
       <section className="space-y-5">
         <SectionHeading

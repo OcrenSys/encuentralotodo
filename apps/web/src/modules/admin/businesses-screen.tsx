@@ -1,7 +1,8 @@
 'use client';
 
 import { useDeferredValue, useEffect, useState } from 'react';
-import { Card, EmptyState, LoadingSkeleton } from 'ui';
+import Link from 'next/link';
+import { Button, Card, EmptyState, LoadingSkeleton } from 'ui';
 
 import { ManagementListToolbar } from '../../components/management/management-list-toolbar';
 import { ManagementPagination } from '../../components/management/management-pagination';
@@ -13,6 +14,23 @@ import {
   formatSubscriptionLabel,
 } from '../../lib/display-labels';
 import { trpc } from '../../lib/trpc';
+
+function getResponsibleLabel(business: {
+  owner?: { fullName?: string; email?: string };
+  ownerId: string;
+}) {
+  return business.owner?.fullName || business.owner?.email || business.ownerId;
+}
+
+function getResponsibleSubLabel(business: {
+  owner?: { fullName?: string; email?: string };
+}) {
+  if (business.owner?.fullName && business.owner?.email) {
+    return business.owner.email;
+  }
+
+  return null;
+}
 
 export function AdminBusinessesScreen() {
   const [search, setSearch] = useState('');
@@ -94,17 +112,27 @@ export function AdminBusinessesScreen() {
 
       <div className="hidden lg:block">
         <SurfaceTable
-          columns={['Negocio', 'Zona', 'Plan', 'Responsable', 'Estado']}
+          columns={[
+            'Negocio',
+            'Zona',
+            'Plan',
+            'Responsable',
+            'Estado',
+            'Acciones',
+          ]}
         >
           {businesses.map((business) => (
             <div
-              className="grid grid-cols-5 gap-4 border-b border-border-default px-5 py-4 last:border-b-0 hover:bg-white/70"
+              className="grid grid-cols-6 gap-4 border-b border-border-default px-5 py-4 last:border-b-0 hover:bg-white/70"
               key={business.id}
             >
               <div className="min-w-0">
-                <p className="truncate font-semibold text-text-secondary">
+                <Link
+                  className="truncate font-semibold text-text-secondary transition hover:text-secondary"
+                  href={`/business/${business.id}`}
+                >
                   {business.name}
-                </p>
+                </Link>
                 <p className="mt-1 text-sm text-text-muted">
                   {formatBusinessCategoryLabel(business.category)}
                 </p>
@@ -116,13 +144,22 @@ export function AdminBusinessesScreen() {
                 {formatSubscriptionLabel(business.subscriptionType)}
               </div>
               <div className="self-center text-sm text-text-muted">
-                {business.ownerId
-                  .replace('owner-', '')
-                  .replace('user-', '')
-                  .replace('-', ' ')}
+                <p className="font-medium text-text-secondary">
+                  {getResponsibleLabel(business)}
+                </p>
+                {getResponsibleSubLabel(business) ? (
+                  <p className="mt-1 text-xs text-text-muted">
+                    {getResponsibleSubLabel(business)}
+                  </p>
+                ) : null}
               </div>
               <div className="self-center">
                 <StatusBadge status={business.status} />
+              </div>
+              <div className="self-center">
+                <Button asChild type="button" variant="ghost">
+                  <Link href={`/business/${business.id}`}>Ver detalle</Link>
+                </Button>
               </div>
             </div>
           ))}
@@ -147,6 +184,12 @@ export function AdminBusinessesScreen() {
             <p className="text-sm text-text-muted">
               Plan: {formatSubscriptionLabel(business.subscriptionType)}
             </p>
+            <p className="text-sm text-text-muted">
+              Responsable: {getResponsibleLabel(business)}
+            </p>
+            <Button asChild type="button" variant="ghost">
+              <Link href={`/business/${business.id}`}>Ver detalle</Link>
+            </Button>
           </Card>
         ))}
       </div>
