@@ -22,6 +22,7 @@ import { useDebouncedValue } from '../lib/use-debounced-value';
 
 const roleLabels: Record<UserRole, string> = {
   UNASSIGNED: 'Sin permisos',
+  NO_ACCESS: 'Sin acceso base',
   USER: 'Usuario',
   ADMIN: 'Admin',
   SUPERADMIN: 'SuperAdmin',

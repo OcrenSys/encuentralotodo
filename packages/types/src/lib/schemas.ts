@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
 import {
+    auditActions,
     analyticsPeriods,
+    baseUserRoles,
+    businessAssignmentRoles,
     businessCategories,
     businessStatuses,
     leadSources,
@@ -14,6 +17,9 @@ import {
 } from './domain';
 
 export const userRoleSchema = z.enum(userRoles);
+export const baseUserRoleSchema = z.enum(baseUserRoles);
+export const businessAssignmentRoleSchema = z.enum(businessAssignmentRoles);
+export const auditActionSchema = z.enum(auditActions);
 export const subscriptionTypeSchema = z.enum(subscriptionTypes);
 export const businessStatusSchema = z.enum(businessStatuses);
 export const businessCategorySchema = z.enum(businessCategories);
@@ -238,6 +244,45 @@ export const setPlatformUserActiveInputSchema = z.object({
     isActive: z.boolean(),
 });
 
+export const getUserByIdInputSchema = z.object({
+    userId: z.string().min(2),
+});
+
+export const selfProfileUpdateInputSchema = z.object({
+    fullName: z.string().trim().min(2).max(120),
+    phone: z.string().trim().min(7).max(20).optional().or(z.literal('')),
+});
+
+export const adminUserProfileUpdateInputSchema = z.object({
+    userId: z.string().min(2),
+    fullName: z.string().trim().min(2).max(120),
+    phone: z.string().trim().min(7).max(20).optional().or(z.literal('')),
+});
+
+export const updateBaseUserRoleInputSchema = z.object({
+    userId: z.string().min(2),
+    role: baseUserRoleSchema,
+});
+
+export const assignUserBusinessRoleInputSchema = z.object({
+    userId: z.string().min(2),
+    businessId: z.string().min(2),
+    role: businessAssignmentRoleSchema,
+});
+
+export const removeUserBusinessRoleInputSchema = z.object({
+    userId: z.string().min(2),
+    businessId: z.string().min(2),
+    role: businessAssignmentRoleSchema,
+});
+
+export const transferBusinessOwnershipInputSchema = z.object({
+    businessId: z.string().min(2),
+    fromUserId: z.string().min(2),
+    toUserId: z.string().min(2),
+    reason: z.string().trim().max(240).optional(),
+});
+
 export const listManagedBusinessesInputSchema = managementPaginationInputSchema.extend({
     category: businessCategorySchema.or(z.literal('ALL')).optional().default('ALL'),
     status: businessStatusSchema.or(z.literal('ALL')).optional().default('ALL'),
@@ -277,6 +322,13 @@ export type CreateReviewInput = z.infer<typeof createReviewInputSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;
 export type UpdatePlatformUserRoleInput = z.infer<typeof updatePlatformUserRoleInputSchema>;
 export type SetPlatformUserActiveInput = z.infer<typeof setPlatformUserActiveInputSchema>;
+export type GetUserByIdInput = z.infer<typeof getUserByIdInputSchema>;
+export type SelfProfileUpdateInput = z.infer<typeof selfProfileUpdateInputSchema>;
+export type AdminUserProfileUpdateInput = z.infer<typeof adminUserProfileUpdateInputSchema>;
+export type UpdateBaseUserRoleInput = z.infer<typeof updateBaseUserRoleInputSchema>;
+export type AssignUserBusinessRoleInput = z.infer<typeof assignUserBusinessRoleInputSchema>;
+export type RemoveUserBusinessRoleInput = z.infer<typeof removeUserBusinessRoleInputSchema>;
+export type TransferBusinessOwnershipInput = z.infer<typeof transferBusinessOwnershipInputSchema>;
 export type ListManagedBusinessesInput = z.infer<typeof listManagedBusinessesInputSchema>;
 export type ListPlatformUsersInput = z.infer<typeof listPlatformUsersInputSchema>;
 export type SearchPlatformUsersInput = z.infer<typeof searchPlatformUsersInputSchema>;

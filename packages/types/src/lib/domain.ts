@@ -1,5 +1,22 @@
-export const userRoles = ['UNASSIGNED', 'USER', 'ADMIN', 'SUPERADMIN', 'GLOBALADMIN'] as const;
+export const userRoles = ['UNASSIGNED', 'USER', 'NO_ACCESS', 'ADMIN', 'SUPERADMIN', 'GLOBALADMIN'] as const;
 export type UserRole = (typeof userRoles)[number];
+
+export const baseUserRoles = ['USER', 'NO_ACCESS'] as const;
+export type BaseUserRole = (typeof baseUserRoles)[number];
+
+export const businessAssignmentRoles = ['OWNER', 'MANAGER'] as const;
+export type BusinessAssignmentRole = (typeof businessAssignmentRoles)[number];
+
+export const auditActions = [
+    'USER_PROFILE_UPDATED',
+    'USER_BASE_ROLE_UPDATED',
+    'USER_PLATFORM_ROLE_UPDATED',
+    'USER_STATUS_UPDATED',
+    'USER_BUSINESS_ROLE_ASSIGNED',
+    'USER_BUSINESS_ROLE_REMOVED',
+    'BUSINESS_OWNERSHIP_TRANSFERRED',
+] as const;
+export type AuditAction = (typeof auditActions)[number];
 
 export const subscriptionTypes = ['FREE_TRIAL', 'PREMIUM', 'PREMIUM_PLUS'] as const;
 export type SubscriptionType = (typeof subscriptionTypes)[number];
@@ -37,8 +54,10 @@ export interface UserProfile {
     fullName: string;
     email: string;
     role: UserRole;
+    phone?: string;
     avatarUrl?: string;
     isActive?: boolean;
+    lastAccessAt?: string;
 }
 
 export interface BusinessLocation {
@@ -176,7 +195,9 @@ export interface PlatformUser {
     email: string;
     role: UserRole;
     avatarUrl?: string;
+    phone?: string;
     isActive: boolean;
+    lastAccessAt?: string;
     createdAt: string;
     updatedAt: string;
     identities: PlatformUserIdentity[];
@@ -189,6 +210,56 @@ export interface PlatformUserSearchResult {
     role: UserRole;
     avatarUrl?: string;
     isActive: boolean;
+}
+
+export interface UserBusinessAssignment {
+    id: string;
+    userId: string;
+    businessId: string;
+    role: BusinessAssignmentRole;
+    createdAt: string;
+    updatedAt: string;
+    businessName?: string;
+    businessStatus?: BusinessStatus;
+    user?: UserProfile;
+}
+
+export interface AuditLogEntry {
+    id: string;
+    actorUserId: string;
+    targetUserId?: string;
+    businessId?: string;
+    action: AuditAction;
+    metadata?: Record<string, unknown>;
+    createdAt: string;
+    actor?: UserProfile;
+    targetUser?: UserProfile;
+}
+
+export interface SelfProfile {
+    user: PlatformUser;
+    authProviders: PlatformUserIdentity[];
+    businessAssignments: UserBusinessAssignment[];
+    auditLogs: AuditLogEntry[];
+    verificationState: {
+        hasVerifiedIdentity: boolean;
+    };
+}
+
+export interface AdminUserDetail {
+    user: PlatformUser;
+    authProviders: PlatformUserIdentity[];
+    businessAssignments: UserBusinessAssignment[];
+    availableBusinesses: Array<{
+        id: string;
+        name: string;
+        status: BusinessStatus;
+        ownerId: string;
+    }>;
+    auditLogs: AuditLogEntry[];
+    verificationState: {
+        hasVerifiedIdentity: boolean;
+    };
 }
 
 export interface ManagementListResult<TItem> {

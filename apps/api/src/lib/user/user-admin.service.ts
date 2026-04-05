@@ -1,13 +1,24 @@
 import { TRPCError } from '@trpc/server';
 import type { CurrentUser } from 'auth';
 import type {
+    AdminUserDetail,
+    AdminUserProfileUpdateInput,
+    AssignUserBusinessRoleInput,
+    AuditLogEntry,
+    BaseUserRole,
     ListPlatformUsersInput,
     ManagementListResult,
     PlatformUserSearchResult,
     PlatformUser,
+    RemoveUserBusinessRoleInput,
     SearchPlatformUsersInput,
     SetPlatformUserActiveInput,
+    SelfProfile,
+    SelfProfileUpdateInput,
+    TransferBusinessOwnershipInput,
+    UpdateBaseUserRoleInput,
     UpdatePlatformUserRoleInput,
+    UserBusinessAssignment,
 } from 'types';
 
 import {
@@ -17,8 +28,11 @@ import {
     requireSuperAdmin,
 } from '../auth/authorization';
 import type {
+    RepositoryAuditLogRecord,
+    RepositoryBusinessOptionRecord,
     RepositoryPlatformUserSearchRecord,
     RepositoryPlatformUserRecord,
+    RepositoryUserBusinessRoleRecord,
     UserAdminRepositoryPort,
 } from './user-admin.repository';
 
@@ -38,7 +52,9 @@ function mapPlatformUser(record: RepositoryPlatformUserRecord): PlatformUser {
         email: record.email,
         role: record.role,
         avatarUrl: record.avatarUrl ?? undefined,
+        phone: record.phone ?? undefined,
         isActive: record.isActive,
+        lastAccessAt: record.lastAccessAt?.toISOString(),
         createdAt: record.createdAt.toISOString(),
         updatedAt: record.updatedAt.toISOString(),
         identities: record.identities.map((identity) => ({
@@ -48,6 +64,45 @@ function mapPlatformUser(record: RepositoryPlatformUserRecord): PlatformUser {
             emailVerified: identity.emailVerified,
         })),
     };
+}
+
+function mapUserBusinessAssignment(record: RepositoryUserBusinessRoleRecord): UserBusinessAssignment {
+    return {
+        id: record.id,
+        userId: record.userId,
+        businessId: record.businessId,
+        role: record.role,
+        createdAt: record.createdAt.toISOString(),
+        updatedAt: record.updatedAt.toISOString(),
+        businessName: record.business?.name,
+        businessStatus: record.business?.status,
+    };
+}
+
+function mapAuditLogEntry(record: RepositoryAuditLogRecord): AuditLogEntry {
+    return {
+        id: record.id,
+        actorUserId: record.actorUserId,
+        targetUserId: record.targetUserId ?? undefined,
+        businessId: record.businessId ?? undefined,
+        action: record.action,
+        metadata: record.metadata ?? undefined,
+        createdAt: record.createdAt.toISOString(),
+        actor: record.actorUser ? mapPlatformUser(record.actorUser) : undefined,
+        targetUser: record.targetUser ? mapPlatformUser(record.targetUser) : undefined,
+    };
+}
+
+function isBaseRole(role: string): role is BaseUserRole {
+    return role === 'USER' || role === 'NO_ACCESS';
+}
+
+function supportsDirectUserFieldEditing(currentUser: RepositoryPlatformUserRecord | null) {
+    if (!currentUser) {
+        return false;
+    }
+
+    return currentUser.identities.every((identity) => identity.provider === 'mock');
 }
 
 function mapPlatformUserSearchResult(
@@ -96,6 +151,150 @@ export class UserAdminService {
         return users.map(mapPlatformUserSearchResult);
     }
 
+    async getSelfProfile(): Promise<SelfProfile> {
+        const currentUser = this.assertAuthenticatedSelf();
+        const user = await this.getExistingUser(currentUser.id);
+        const [assignments, auditLogs] = await Promise.all([
+            this.dependencies.repository.listUserBusinessRoles(user.id),
+            this.dependencies.repository.listAuditLogsForUser(user.id),
+        ]);
+
+        return {
+            user: mapPlatformUser(user),
+            authProviders: mapPlatformUser(user).identities,
+            businessAssignments: assignments.map(mapUserBusinessAssignment),
+            verificationState: {
+                hasVerifiedIdentity: user.identities.some((identity) => identity.emailVerified),
+            },
+            auditLogs: auditLogs.map(mapAuditLogEntry),
+        };
+    }
+
+    async updateSelfProfile(input: SelfProfileUpdateInput): Promise<SelfProfile> {
+        const currentUser = this.assertAuthenticatedSelf();
+        const existingUser = await this.getExistingUser(currentUser.id);
+
+        if (!supportsDirectUserFieldEditing(existingUser)) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'This account profile is managed by the active auth provider and cannot be edited here yet.',
+            });
+        }
+
+        const updatedUser = await this.dependencies.repository.updateUserProfile(currentUser.id, {
+            fullName: input.fullName,
+            phone: input.phone?.trim() || null,
+        });
+
+        if (!updatedUser) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found.' });
+        }
+
+        await this.dependencies.repository.createAuditLog({
+            actorUserId: currentUser.id,
+            targetUserId: currentUser.id,
+            action: 'USER_PROFILE_UPDATED',
+            metadata: {
+                scope: 'self',
+            },
+        });
+
+        return this.getSelfProfile();
+    }
+
+    async getUserDetail(userId: string): Promise<AdminUserDetail> {
+        this.assertSuperAdmin();
+        const user = await this.getExistingUser(userId);
+        const [assignments, availableBusinesses, auditLogs] = await Promise.all([
+            this.dependencies.repository.listUserBusinessRoles(userId),
+            this.dependencies.repository.listBusinessesForAssignment(),
+            this.dependencies.repository.listAuditLogsForUser(userId),
+        ]);
+
+        return {
+            user: mapPlatformUser(user),
+            authProviders: mapPlatformUser(user).identities,
+            businessAssignments: assignments.map(mapUserBusinessAssignment),
+            availableBusinesses: availableBusinesses.map((business) => ({
+                id: business.id,
+                name: business.name,
+                status: business.status,
+                ownerId: business.ownerId,
+            })),
+            auditLogs: auditLogs.map(mapAuditLogEntry),
+            verificationState: {
+                hasVerifiedIdentity: user.identities.some((identity) => identity.emailVerified),
+            },
+        };
+    }
+
+    async updateUserProfile(input: AdminUserProfileUpdateInput): Promise<AdminUserDetail> {
+        const actor = this.assertSuperAdmin();
+        const existingUser = await this.getExistingUser(input.userId);
+
+        if (!supportsDirectUserFieldEditing(existingUser)) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'This account profile is managed by the active auth provider and only supports read-only details for now.',
+            });
+        }
+
+        const updatedUser = await this.dependencies.repository.updateUserProfile(input.userId, {
+            fullName: input.fullName,
+            phone: input.phone?.trim() || null,
+        });
+
+        if (!updatedUser) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found.' });
+        }
+
+        await this.dependencies.repository.createAuditLog({
+            actorUserId: actor.id,
+            targetUserId: input.userId,
+            action: 'USER_PROFILE_UPDATED',
+            metadata: {
+                scope: 'admin',
+            },
+        });
+
+        return this.getUserDetail(input.userId);
+    }
+
+    async updateBaseUserRole(input: UpdateBaseUserRoleInput): Promise<AdminUserDetail> {
+        const actor = this.assertSuperAdmin();
+        const targetUser = await this.getExistingUser(input.userId);
+
+        if (actor.id === targetUser.id && input.role === 'NO_ACCESS') {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'You cannot remove your own base access.',
+            });
+        }
+
+        if (!isBaseRole(targetUser.role) && input.role === 'NO_ACCESS') {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Platform admins must first be downgraded from their platform role before setting NO_ACCESS.',
+            });
+        }
+
+        const updatedUser = await this.dependencies.repository.updateBaseUserRole(input.userId, input.role);
+        if (!updatedUser) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found.' });
+        }
+
+        await this.dependencies.repository.createAuditLog({
+            actorUserId: actor.id,
+            targetUserId: input.userId,
+            action: 'USER_BASE_ROLE_UPDATED',
+            metadata: {
+                role: input.role,
+            },
+        });
+
+        return this.getUserDetail(input.userId);
+    }
+
     async updateUserRole(input: UpdatePlatformUserRoleInput): Promise<PlatformUser> {
         const actor = this.assertSuperAdmin();
         const targetUser = await this.getExistingUser(input.userId);
@@ -117,7 +316,108 @@ export class UserAdminService {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found.' });
         }
 
+        await this.dependencies.repository.createAuditLog({
+            actorUserId: actor.id,
+            targetUserId: input.userId,
+            action: 'USER_PLATFORM_ROLE_UPDATED',
+            metadata: {
+                role: input.role,
+            },
+        });
+
         return mapPlatformUser(updatedUser);
+    }
+
+    async assignUserBusinessRole(input: AssignUserBusinessRoleInput): Promise<AdminUserDetail> {
+        const actor = this.assertSuperAdmin();
+        await Promise.all([
+            this.getExistingUser(input.userId),
+            this.assertBusinessExists(input.businessId),
+        ]);
+
+        await this.dependencies.repository.assignUserBusinessRole(input);
+
+        if (input.role === 'OWNER') {
+            await this.syncCompatibilityOwner(input.businessId, input.userId);
+        }
+
+        await this.dependencies.repository.createAuditLog({
+            actorUserId: actor.id,
+            targetUserId: input.userId,
+            businessId: input.businessId,
+            action: 'USER_BUSINESS_ROLE_ASSIGNED',
+            metadata: {
+                role: input.role,
+            },
+        });
+
+        return this.getUserDetail(input.userId);
+    }
+
+    async removeUserBusinessRole(input: RemoveUserBusinessRoleInput): Promise<AdminUserDetail> {
+        const actor = this.assertSuperAdmin();
+        await this.getExistingUser(input.userId);
+
+        if (input.role === 'OWNER') {
+            const ownerCount = await this.dependencies.repository.countBusinessOwners(input.businessId);
+            if (ownerCount <= 1) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'A business must retain at least one owner.',
+                });
+            }
+        }
+
+        await this.dependencies.repository.removeUserBusinessRole(input);
+
+        await this.dependencies.repository.createAuditLog({
+            actorUserId: actor.id,
+            targetUserId: input.userId,
+            businessId: input.businessId,
+            action: 'USER_BUSINESS_ROLE_REMOVED',
+            metadata: {
+                role: input.role,
+            },
+        });
+
+        return this.getUserDetail(input.userId);
+    }
+
+    async transferBusinessOwnership(input: TransferBusinessOwnershipInput): Promise<AdminUserDetail> {
+        const actor = this.assertSuperAdmin();
+        await Promise.all([
+            this.getExistingUser(input.fromUserId),
+            this.getExistingUser(input.toUserId),
+            this.assertBusinessExists(input.businessId),
+        ]);
+
+        const ownerCount = await this.dependencies.repository.countBusinessOwners(input.businessId);
+        if (ownerCount <= 1 && input.fromUserId === input.toUserId) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Ownership transfer requires a different target owner.',
+            });
+        }
+
+        await this.dependencies.repository.transferBusinessOwnership({
+            businessId: input.businessId,
+            fromUserId: input.fromUserId,
+            toUserId: input.toUserId,
+        });
+
+        await this.dependencies.repository.createAuditLog({
+            actorUserId: actor.id,
+            targetUserId: input.toUserId,
+            businessId: input.businessId,
+            action: 'BUSINESS_OWNERSHIP_TRANSFERRED',
+            metadata: {
+                fromUserId: input.fromUserId,
+                toUserId: input.toUserId,
+                reason: input.reason,
+            },
+        });
+
+        return this.getUserDetail(input.toUserId);
     }
 
     async setUserActive(input: SetPlatformUserActiveInput): Promise<PlatformUser> {
@@ -141,11 +441,29 @@ export class UserAdminService {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found.' });
         }
 
+        await this.dependencies.repository.createAuditLog({
+            actorUserId: actor.id,
+            targetUserId: input.userId,
+            action: 'USER_STATUS_UPDATED',
+            metadata: {
+                isActive: input.isActive,
+            },
+        });
+
         return mapPlatformUser(updatedUser);
     }
 
     private assertSuperAdmin(): CurrentUser {
         return requireSuperAdmin(this.dependencies.currentUser);
+    }
+
+    private assertAuthenticatedSelf(): CurrentUser {
+        const currentUser = this.dependencies.currentUser;
+        if (!currentUser) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
+        }
+
+        return currentUser;
     }
 
     private assertPlatformAdmin(): CurrentUser {
@@ -164,6 +482,32 @@ export class UserAdminService {
         }
 
         return user;
+    }
+
+    private async assertBusinessExists(businessId: string): Promise<RepositoryBusinessOptionRecord> {
+        const businesses = await this.dependencies.repository.listBusinessesForAssignment();
+        const business = businesses.find((candidate) => candidate.id === businessId);
+
+        if (!business) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
+        }
+
+        return business;
+    }
+
+    private async syncCompatibilityOwner(businessId: string, userId: string) {
+        const businesses = await this.dependencies.repository.listBusinessesForAssignment();
+        const business = businesses.find((candidate) => candidate.id === businessId);
+
+        if (!business || business.ownerId === userId) {
+            return;
+        }
+
+        await this.dependencies.repository.transferBusinessOwnership({
+            businessId,
+            fromUserId: business.ownerId,
+            toUserId: userId,
+        });
     }
 
     private async assertAnotherActiveSuperAdminExists() {

@@ -23,11 +23,11 @@ import { assignedPlatformRoles, platformAdminRoles, superAdminRoles } from './pl
 export type NavigationAccessContext =
     | { mode: 'mock'; role: ManagementRole }
     | {
-          mode: 'real';
-          role: UserRole | null | undefined;
-          hasManagedBusinesses: boolean;
-          ownsManagedBusinesses: boolean;
-      };
+        mode: 'real';
+        role: UserRole | null | undefined;
+        hasManagedBusinesses: boolean;
+        ownsManagedBusinesses: boolean;
+    };
 
 export type NavigationItem = {
     key: string;
@@ -42,6 +42,16 @@ export type NavigationItem = {
 };
 
 export const navigationItems: NavigationItem[] = [
+    {
+        key: 'profile',
+        label: 'Perfil',
+        href: '/profile',
+        icon: Users,
+        description: 'Perfil personal, acceso y negocios asignados.',
+        demoRoles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        platformRoles: assignedPlatformRoles,
+        realBusinessAccess: 'managed',
+    },
     {
         key: 'dashboard',
         label: 'Panel principal',
@@ -214,11 +224,11 @@ export function getMobileNavigationForAccess(context: NavigationAccessContext) {
 }
 
 export function getNavigationItemByPath(pathname: string) {
-    return navigationItems.find((item) => pathname === item.href);
+    return navigationItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
 }
 
 export function isPathAllowedForAccess(pathname: string, context: NavigationAccessContext) {
-    return navigationItems.some((item) => item.href === pathname && isItemVisibleForContext(item, context));
+    return navigationItems.some((item) => (pathname === item.href || pathname.startsWith(`${item.href}/`)) && isItemVisibleForContext(item, context));
 }
 
 export function getDefaultPathForAccess(context: NavigationAccessContext) {
@@ -227,6 +237,7 @@ export function getDefaultPathForAccess(context: NavigationAccessContext) {
 
 export const routeSearchLabels: Partial<Record<string, string>> = {
     '/dashboard': 'Buscar ideas o acciones rápidas',
+    '/profile': 'Buscar datos personales o negocios asignados',
     '/business': 'Buscar secciones del negocio',
     '/products': 'Buscar productos o SKU',
     '/promotions': 'Buscar promociones activas o expiradas',
@@ -244,6 +255,7 @@ export const routeSearchLabels: Partial<Record<string, string>> = {
 
 export const routeEyebrows: Partial<Record<string, string>> = {
     '/dashboard': 'Resumen general',
+    '/profile': 'Cuenta y acceso',
     '/business': 'Operación del negocio',
     '/products': 'Gestión de catálogo',
     '/promotions': 'Gestión de campañas',
@@ -268,4 +280,4 @@ export const quickLinks = [
 
 export const adminPrefixes = ['/admin/approvals', '/admin/businesses', '/admin/users', '/admin/categories', '/admin/plans', '/admin/reports'];
 
-export const managementPrefixes = ['/dashboard', '/business', '/products', '/promotions', '/leads', '/team', '/analytics', '/settings', ...adminPrefixes];
+export const managementPrefixes = ['/profile', '/dashboard', '/business', '/products', '/promotions', '/leads', '/team', '/analytics', '/settings', ...adminPrefixes];

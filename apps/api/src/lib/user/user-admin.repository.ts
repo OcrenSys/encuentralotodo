@@ -1,4 +1,9 @@
-import type { ListPlatformUsersInput, UserRole } from 'types';
+import type {
+    BaseUserRole,
+    BusinessAssignmentRole,
+    ListPlatformUsersInput,
+    UserRole,
+} from 'types';
 
 import type { getPrismaClient } from '../prisma';
 
@@ -15,7 +20,9 @@ export interface RepositoryPlatformUserRecord {
     email: string;
     role: UserRole;
     avatarUrl: string | null;
+    phone: string | null;
     isActive: boolean;
+    lastAccessAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
     identities: RepositoryPlatformUserIdentityRecord[];
@@ -30,6 +37,47 @@ export interface RepositoryPlatformUserSearchRecord {
     isActive: boolean;
 }
 
+export interface RepositoryUserBusinessRoleRecord {
+    id: string;
+    userId: string;
+    businessId: string;
+    role: BusinessAssignmentRole;
+    createdAt: Date;
+    updatedAt: Date;
+    business?: {
+        id: string;
+        name: string;
+        status: 'PENDING' | 'APPROVED';
+        ownerId: string;
+    };
+}
+
+export interface RepositoryAuditLogRecord {
+    id: string;
+    actorUserId: string;
+    targetUserId: string | null;
+    businessId: string | null;
+    action:
+    | 'USER_PROFILE_UPDATED'
+    | 'USER_BASE_ROLE_UPDATED'
+    | 'USER_PLATFORM_ROLE_UPDATED'
+    | 'USER_STATUS_UPDATED'
+    | 'USER_BUSINESS_ROLE_ASSIGNED'
+    | 'USER_BUSINESS_ROLE_REMOVED'
+    | 'BUSINESS_OWNERSHIP_TRANSFERRED';
+    metadata: Record<string, unknown> | null;
+    createdAt: Date;
+    actorUser?: RepositoryPlatformUserRecord | null;
+    targetUser?: RepositoryPlatformUserRecord | null;
+}
+
+export interface RepositoryBusinessOptionRecord {
+    id: string;
+    name: string;
+    status: 'PENDING' | 'APPROVED';
+    ownerId: string;
+}
+
 export interface RepositoryPlatformUserListResult {
     items: RepositoryPlatformUserRecord[];
     total: number;
@@ -40,9 +88,25 @@ export interface UserAdminRepositoryPort {
     listUsersPage(input: ListPlatformUsersInput): Promise<RepositoryPlatformUserListResult>;
     searchUsers(input: { search: string; limit: number }): Promise<RepositoryPlatformUserSearchRecord[]>;
     findUserById(userId: string): Promise<RepositoryPlatformUserRecord | null>;
+    listUserBusinessRoles(userId: string): Promise<RepositoryUserBusinessRoleRecord[]>;
+    listBusinessesForAssignment(): Promise<RepositoryBusinessOptionRecord[]>;
+    updateUserProfile(userId: string, input: { fullName: string; phone?: string | null }): Promise<RepositoryPlatformUserRecord | null>;
+    updateBaseUserRole(userId: string, role: BaseUserRole): Promise<RepositoryPlatformUserRecord | null>;
     updateUserRole(userId: string, role: UserRole): Promise<RepositoryPlatformUserRecord | null>;
     setUserActive(userId: string, isActive: boolean): Promise<RepositoryPlatformUserRecord | null>;
     countUsersByRole(role: UserRole, isActive?: boolean): Promise<number>;
+    assignUserBusinessRole(input: { userId: string; businessId: string; role: BusinessAssignmentRole }): Promise<RepositoryUserBusinessRoleRecord>;
+    removeUserBusinessRole(input: { userId: string; businessId: string; role: BusinessAssignmentRole }): Promise<void>;
+    countBusinessOwners(businessId: string): Promise<number>;
+    transferBusinessOwnership(input: { businessId: string; fromUserId: string; toUserId: string }): Promise<void>;
+    createAuditLog(input: {
+        actorUserId: string;
+        targetUserId?: string;
+        businessId?: string;
+        action: RepositoryAuditLogRecord['action'];
+        metadata?: Record<string, unknown>;
+    }): Promise<RepositoryAuditLogRecord>;
+    listAuditLogsForUser(userId: string): Promise<RepositoryAuditLogRecord[]>;
 }
 
 const userSelect = {
@@ -51,7 +115,9 @@ const userSelect = {
     email: true,
     role: true,
     avatarUrl: true,
+    phone: true,
     isActive: true,
+    lastAccessAt: true,
     createdAt: true,
     updatedAt: true,
     identities: {
@@ -86,7 +152,9 @@ function mapPlatformUserRecord(record: any): RepositoryPlatformUserRecord {
         email: record.email,
         role: record.role,
         avatarUrl: record.avatarUrl,
+        phone: record.phone ?? null,
         isActive: Boolean(record.isActive),
+        lastAccessAt: record.lastAccessAt ?? null,
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
         identities: (record.identities ?? []).map((identity: any) => ({
@@ -106,6 +174,39 @@ function mapPlatformUserSearchRecord(record: any): RepositoryPlatformUserSearchR
         role: record.role,
         avatarUrl: record.avatarUrl,
         isActive: Boolean(record.isActive),
+    };
+}
+
+function mapUserBusinessRoleRecord(record: any): RepositoryUserBusinessRoleRecord {
+    return {
+        id: record.id,
+        userId: record.userId,
+        businessId: record.businessId,
+        role: record.role,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        business: record.business
+            ? {
+                id: record.business.id,
+                name: record.business.name,
+                status: record.business.status,
+                ownerId: record.business.ownerId,
+            }
+            : undefined,
+    };
+}
+
+function mapAuditLogRecord(record: any): RepositoryAuditLogRecord {
+    return {
+        id: record.id,
+        actorUserId: record.actorUserId,
+        targetUserId: record.targetUserId,
+        businessId: record.businessId,
+        action: record.action,
+        metadata: record.metadata ?? null,
+        createdAt: record.createdAt,
+        actorUser: record.actorUser ? mapPlatformUserRecord(record.actorUser) : null,
+        targetUser: record.targetUser ? mapPlatformUserRecord(record.targetUser) : null,
     };
 }
 
@@ -230,6 +331,81 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
         return user ? mapPlatformUserRecord(user) : null;
     }
 
+    async listUserBusinessRoles(userId: string) {
+        const roles = await this.prisma.userBusinessRole.findMany({
+            where: { userId },
+            orderBy: [
+                { role: 'asc' },
+                { createdAt: 'asc' },
+            ],
+            include: {
+                business: {
+                    select: {
+                        id: true,
+                        name: true,
+                        status: true,
+                        ownerId: true,
+                    },
+                },
+            },
+        });
+
+        return roles.map(mapUserBusinessRoleRecord);
+    }
+
+    async listBusinessesForAssignment() {
+        return this.prisma.business.findMany({
+            orderBy: [{ name: 'asc' }],
+            select: {
+                id: true,
+                name: true,
+                status: true,
+                ownerId: true,
+            },
+        });
+    }
+
+    async updateUserProfile(userId: string, input: { fullName: string; phone?: string | null }) {
+        const user = await this.prisma.user.update({
+            where: {
+                id: userId,
+            },
+            data: {
+                fullName: input.fullName,
+                phone: input.phone ?? null,
+            },
+            select: userSelect,
+        }).catch((error: { code?: string }) => {
+            if (error.code === 'P2025') {
+                return null;
+            }
+
+            throw error;
+        });
+
+        return user ? mapPlatformUserRecord(user) : null;
+    }
+
+    async updateBaseUserRole(userId: string, role: BaseUserRole) {
+        const user = await this.prisma.user.update({
+            where: {
+                id: userId,
+            },
+            data: {
+                role,
+            },
+            select: userSelect,
+        }).catch((error: { code?: string }) => {
+            if (error.code === 'P2025') {
+                return null;
+            }
+
+            throw error;
+        });
+
+        return user ? mapPlatformUserRecord(user) : null;
+    }
+
     async updateUserRole(userId: string, role: UserRole) {
         const user = await this.prisma.user.update({
             where: {
@@ -277,5 +453,132 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
                 ...(typeof isActive === 'boolean' ? { isActive } : {}),
             },
         });
+    }
+
+    async assignUserBusinessRole(input: { userId: string; businessId: string; role: BusinessAssignmentRole }) {
+        const record = await this.prisma.userBusinessRole.upsert({
+            where: {
+                userId_businessId_role: {
+                    userId: input.userId,
+                    businessId: input.businessId,
+                    role: input.role,
+                },
+            },
+            update: {},
+            create: input,
+            include: {
+                business: {
+                    select: {
+                        id: true,
+                        name: true,
+                        status: true,
+                        ownerId: true,
+                    },
+                },
+            },
+        });
+
+        return mapUserBusinessRoleRecord(record);
+    }
+
+    async removeUserBusinessRole(input: { userId: string; businessId: string; role: BusinessAssignmentRole }) {
+        await this.prisma.userBusinessRole.deleteMany({
+            where: input,
+        });
+    }
+
+    async countBusinessOwners(businessId: string) {
+        return this.prisma.userBusinessRole.count({
+            where: {
+                businessId,
+                role: 'OWNER',
+            },
+        });
+    }
+
+    async transferBusinessOwnership(input: { businessId: string; fromUserId: string; toUserId: string }) {
+        await this.prisma.$transaction([
+            this.prisma.userBusinessRole.deleteMany({
+                where: {
+                    businessId: input.businessId,
+                    userId: input.fromUserId,
+                    role: 'OWNER',
+                },
+            }),
+            this.prisma.userBusinessRole.upsert({
+                where: {
+                    userId_businessId_role: {
+                        userId: input.toUserId,
+                        businessId: input.businessId,
+                        role: 'OWNER',
+                    },
+                },
+                update: {},
+                create: {
+                    userId: input.toUserId,
+                    businessId: input.businessId,
+                    role: 'OWNER',
+                },
+            }),
+            this.prisma.business.update({
+                where: {
+                    id: input.businessId,
+                },
+                data: {
+                    ownerId: input.toUserId,
+                },
+            }),
+        ]);
+    }
+
+    async createAuditLog(input: {
+        actorUserId: string;
+        targetUserId?: string;
+        businessId?: string;
+        action: RepositoryAuditLogRecord['action'];
+        metadata?: Record<string, unknown>;
+    }) {
+        const record = await this.prisma.auditLog.create({
+            data: {
+                actorUserId: input.actorUserId,
+                targetUserId: input.targetUserId,
+                businessId: input.businessId,
+                action: input.action,
+                metadata: input.metadata,
+            },
+            include: {
+                actorUser: {
+                    select: userSelect,
+                },
+                targetUser: {
+                    select: userSelect,
+                },
+            },
+        });
+
+        return mapAuditLogRecord(record);
+    }
+
+    async listAuditLogsForUser(userId: string) {
+        const logs = await this.prisma.auditLog.findMany({
+            where: {
+                OR: [
+                    { targetUserId: userId },
+                    { actorUserId: userId },
+                ],
+            },
+            orderBy: [{ createdAt: 'desc' }],
+            take: 25,
+            include: {
+                actorUser: {
+                    select: userSelect,
+                },
+                targetUser: {
+                    select: userSelect,
+                },
+            },
+        });
+
+        return logs.map(mapAuditLogRecord);
     }
 }

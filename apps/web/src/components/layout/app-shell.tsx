@@ -20,7 +20,7 @@ import {
 } from '../../lib/management-navigation';
 import { useCurrentAuthUser } from '../../lib/auth-context';
 import { useCurrentPlatformUser } from '../../lib/platform-authorization';
-import { isSuperAdminRole } from '../../lib/platform-roles';
+import { hasConsoleAccess, isSuperAdminRole } from '../../lib/platform-roles';
 import { useRoleView } from '../../lib/role-view';
 import { trpc } from '../../lib/trpc';
 import { ActiveSimulationFloating } from './active-simulation-floating';
@@ -29,7 +29,7 @@ import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
 
 function isRoleAssignmentPending(role: string | undefined) {
-  return role === 'UNASSIGNED';
+  return role === 'UNASSIGNED' || role === 'NO_ACCESS';
 }
 
 export function AppShell({
@@ -51,14 +51,14 @@ export function AppShell({
   } = useCurrentAuthUser();
   const { currentUser: backendUser, isLoading: isSessionLoading } =
     useCurrentPlatformUser();
-    
+
   const requiresAuth = provider !== 'mock';
   const shouldResolveManagedBusinesses =
     requiresAuth &&
     isAuthenticated &&
     Boolean(backendUser) &&
     backendUser?.isActive !== false &&
-    backendUser?.role !== 'UNASSIGNED';
+    hasConsoleAccess(backendUser?.role);
 
   const managedBusinessesQuery = trpc.business.managed.useQuery(undefined, {
     enabled: shouldResolveManagedBusinesses,
@@ -97,7 +97,8 @@ export function AppShell({
   const isAccountDisabled = backendUser?.isActive === false;
   const isPendingRoleAssignment = isRoleAssignmentPending(backendUser?.role);
   const requiresPlatformUserManagementAccess =
-    resolvedActivePath === '/admin/users';
+    resolvedActivePath === '/admin/users' ||
+    resolvedActivePath.startsWith('/admin/users/');
   const hasPlatformUserAccess = isSuperAdminRole(backendUser?.role);
   const accessDeniedDescription =
     provider === 'mock'
@@ -204,7 +205,7 @@ export function AppShell({
             ) : isPendingRoleAssignment ? (
               <EmptyState
                 title="Tu cuenta aún no tiene permisos asignados"
-                description="Tu acceso ya fue autenticado, pero un administrador todavía debe asignarte un rol desde la gestión global de usuarios antes de usar la consola."
+                description="Tu acceso ya fue autenticado, pero un administrador todavía debe asignarte acceso base antes de usar la consola."
               />
             ) : isAllowed &&
               (!requiresPlatformUserManagementAccess ||

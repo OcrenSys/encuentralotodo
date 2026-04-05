@@ -1,13 +1,17 @@
 import { TRPCError } from '@trpc/server';
-import { signInInputSchema } from 'types';
+import { selfProfileUpdateInputSchema, signInInputSchema } from 'types';
 
-import { publicProcedure, router } from '../trpc';
+import { protectedProcedure, publicProcedure, router } from '../trpc';
 
 export const authRouter = router({
   me: publicProcedure.query(({ ctx }) => ({
     provider: ctx.authProvider.name,
     user: ctx.currentUser,
   })),
+  profile: protectedProcedure.query(({ ctx }) => ctx.userAdminService.getSelfProfile()),
+  updateProfile: protectedProcedure.input(selfProfileUpdateInputSchema).mutation(({ ctx, input }) => {
+    return ctx.userAdminService.updateSelfProfile(input);
+  }),
   signIn: publicProcedure.input(signInInputSchema).mutation(({ ctx, input }) => {
     if (ctx.env.AUTH_PROVIDER !== 'mock') {
       throw new TRPCError({

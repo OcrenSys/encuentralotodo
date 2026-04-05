@@ -1,6 +1,7 @@
 'use client';
 
 import { useDeferredValue, useEffect, useState } from 'react';
+import Link from 'next/link';
 import type { PlatformUser, UserRole } from 'types';
 import { toast } from 'sonner';
 import { Badge, Button, Card, EmptyState, LoadingSkeleton, Select } from 'ui';
@@ -13,6 +14,7 @@ import { trpc } from '../../lib/trpc';
 
 const roleLabels: Record<UserRole, string> = {
   UNASSIGNED: 'Sin permisos',
+  NO_ACCESS: 'Sin acceso base',
   USER: 'Usuario',
   ADMIN: 'Admin',
   SUPERADMIN: 'SuperAdmin',
@@ -302,6 +304,14 @@ export function UsersScreen() {
 
                 <div className="self-center space-y-2">
                   <Button
+                    asChild
+                    className="w-full"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Link href={`/admin/users/${user.id}`}>Ver detalle</Link>
+                  </Button>
+                  <Button
                     className="w-full"
                     disabled={
                       isSelf || selectedRole === user.role || isRolePending
@@ -406,6 +416,9 @@ export function UsersScreen() {
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">
+                <Button asChild type="button" variant="ghost">
+                  <Link href={`/admin/users/${user.id}`}>Ver detalle</Link>
+                </Button>
                 <Button
                   disabled={
                     isSelf || selectedRole === user.role || isRolePending

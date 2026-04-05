@@ -276,6 +276,36 @@ describe('AppShell', () => {
     expect(view.getByText('Private content')).toBeTruthy();
   });
 
+  it('allows the dynamic admin user detail route for backend superadmins', () => {
+    useRoleView.mockReturnValue({
+      roleView: 'OWNER',
+      isReady: true,
+    });
+    useCurrentAuthUser.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      provider: 'firebase',
+    });
+    trpc.auth.me.useQuery.mockReturnValue({
+      data: {
+        user: {
+          id: 'superadmin-1',
+          role: 'SUPERADMIN',
+          isActive: true,
+        },
+      },
+      isLoading: false,
+    });
+
+    const view = render(
+      <AppShell activePath="/admin/users/user-ana">
+        <div>Private content</div>
+      </AppShell>,
+    );
+
+    expect(view.getByText('Private content')).toBeTruthy();
+  });
+
   it('allows real business routes when the authenticated user manages businesses', () => {
     useCurrentAuthUser.mockReturnValue({
       isAuthenticated: true,
