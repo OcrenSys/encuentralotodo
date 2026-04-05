@@ -1,9 +1,11 @@
 import { AdminUserDetailScreen } from '../../../../modules/admin/user-detail-screen';
 
-export default function AdminUserDetailPage({
+export default async function AdminUserDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  return <AdminUserDetailScreen userId={params.id} />;
+  const { id } = await params;
+
+  return <AdminUserDetailScreen userId={id} />;
 }
