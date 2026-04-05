@@ -79,6 +79,40 @@ function mapUserBusinessAssignment(record: RepositoryUserBusinessRoleRecord): Us
     };
 }
 
+function mergeBusinessAssignments(
+    userId: string,
+    assignments: RepositoryUserBusinessRoleRecord[],
+    compatibilityOwnedBusinesses: RepositoryBusinessOptionRecord[],
+): UserBusinessAssignment[] {
+    const mappedAssignments = assignments.map(mapUserBusinessAssignment);
+    const seenOwnerBusinessIds = new Set(
+        assignments
+            .filter((assignment) => assignment.role === 'OWNER')
+            .map((assignment) => assignment.businessId),
+    );
+
+    const compatibilityAssignments = compatibilityOwnedBusinesses
+        .filter((business) => !seenOwnerBusinessIds.has(business.id))
+        .map((business) => ({
+            id: `compat-owner:${userId}:${business.id}`,
+            userId,
+            businessId: business.id,
+            role: 'OWNER' as const,
+            createdAt: business.createdAt.toISOString(),
+            updatedAt: business.lastUpdated.toISOString(),
+            businessName: business.name,
+            businessStatus: business.status,
+        }));
+
+    return [...mappedAssignments, ...compatibilityAssignments].sort((left, right) => {
+        if (left.role !== right.role) {
+            return left.role.localeCompare(right.role);
+        }
+
+        return left.businessName?.localeCompare(right.businessName ?? '') ?? 0;
+    });
+}
+
 function mapAuditLogEntry(record: RepositoryAuditLogRecord): AuditLogEntry {
     return {
         id: record.id,
@@ -154,15 +188,20 @@ export class UserAdminService {
     async getSelfProfile(): Promise<SelfProfile> {
         const currentUser = this.assertAuthenticatedSelf();
         const user = await this.getExistingUser(currentUser.id);
-        const [assignments, auditLogs] = await Promise.all([
+        const [assignments, compatibilityOwnedBusinesses, auditLogs] = await Promise.all([
             this.dependencies.repository.listUserBusinessRoles(user.id),
+            this.dependencies.repository.listBusinessesOwnedByUser(user.id),
             this.dependencies.repository.listAuditLogsForUser(user.id),
         ]);
 
         return {
             user: mapPlatformUser(user),
             authProviders: mapPlatformUser(user).identities,
-            businessAssignments: assignments.map(mapUserBusinessAssignment),
+            businessAssignments: mergeBusinessAssignments(
+                user.id,
+                assignments,
+                compatibilityOwnedBusinesses,
+            ),
             verificationState: {
                 hasVerifiedIdentity: user.identities.some((identity) => identity.emailVerified),
             },
@@ -205,8 +244,9 @@ export class UserAdminService {
     async getUserDetail(userId: string): Promise<AdminUserDetail> {
         this.assertSuperAdmin();
         const user = await this.getExistingUser(userId);
-        const [assignments, availableBusinesses, auditLogs] = await Promise.all([
+        const [assignments, compatibilityOwnedBusinesses, availableBusinesses, auditLogs] = await Promise.all([
             this.dependencies.repository.listUserBusinessRoles(userId),
+            this.dependencies.repository.listBusinessesOwnedByUser(userId),
             this.dependencies.repository.listBusinessesForAssignment(),
             this.dependencies.repository.listAuditLogsForUser(userId),
         ]);
@@ -214,7 +254,11 @@ export class UserAdminService {
         return {
             user: mapPlatformUser(user),
             authProviders: mapPlatformUser(user).identities,
-            businessAssignments: assignments.map(mapUserBusinessAssignment),
+            businessAssignments: mergeBusinessAssignments(
+                userId,
+                assignments,
+                compatibilityOwnedBusinesses,
+            ),
             availableBusinesses: availableBusinesses.map((business) => ({
                 id: business.id,
                 name: business.name,

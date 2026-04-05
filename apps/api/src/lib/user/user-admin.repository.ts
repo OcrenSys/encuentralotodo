@@ -76,6 +76,8 @@ export interface RepositoryBusinessOptionRecord {
     name: string;
     status: 'PENDING' | 'APPROVED';
     ownerId: string;
+    createdAt: Date;
+    lastUpdated: Date;
 }
 
 export interface RepositoryPlatformUserListResult {
@@ -90,6 +92,7 @@ export interface UserAdminRepositoryPort {
     findUserById(userId: string): Promise<RepositoryPlatformUserRecord | null>;
     listUserBusinessRoles(userId: string): Promise<RepositoryUserBusinessRoleRecord[]>;
     listBusinessesForAssignment(): Promise<RepositoryBusinessOptionRecord[]>;
+    listBusinessesOwnedByUser(userId: string): Promise<RepositoryBusinessOptionRecord[]>;
     updateUserProfile(userId: string, input: { fullName: string; phone?: string | null }): Promise<RepositoryPlatformUserRecord | null>;
     updateBaseUserRole(userId: string, role: BaseUserRole): Promise<RepositoryPlatformUserRecord | null>;
     updateUserRole(userId: string, role: UserRole): Promise<RepositoryPlatformUserRecord | null>;
@@ -361,6 +364,25 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
                 name: true,
                 status: true,
                 ownerId: true,
+                createdAt: true,
+                lastUpdated: true,
+            },
+        });
+    }
+
+    async listBusinessesOwnedByUser(userId: string) {
+        return this.prisma.business.findMany({
+            where: {
+                ownerId: userId,
+            },
+            orderBy: [{ name: 'asc' }],
+            select: {
+                id: true,
+                name: true,
+                status: true,
+                ownerId: true,
+                createdAt: true,
+                lastUpdated: true,
             },
         });
     }
