@@ -163,7 +163,7 @@ describe('UsersScreen', () => {
     fireEvent.change(view.getByLabelText('Rol para Ana Mercado'), {
       target: { value: 'ADMIN' },
     });
-    fireEvent.click(view.getAllByRole('button', { name: 'Guardar rol' })[0]);
+    fireEvent.click(view.getAllByRole('button', { name: 'Guardar' })[0]);
 
     await waitFor(() => {
       expect(updateRoleMutateMock).toHaveBeenCalledWith({
@@ -176,7 +176,15 @@ describe('UsersScreen', () => {
   it('submits an active toggle', async () => {
     const view = render(<UsersScreen />);
 
-    fireEvent.click(view.getAllByRole('button', { name: 'Deshabilitar' })[0]);
+    fireEvent.click(view.getAllByRole('button', { name: 'Desactivar' })[0]);
+
+    await waitFor(() => {
+      expect(
+        view.getByRole('heading', { name: '¿Desactivar usuario?' }),
+      ).toBeTruthy();
+    });
+
+    fireEvent.click(view.getByRole('button', { name: 'Desactivar' }));
 
     await waitFor(() => {
       expect(setUserActiveMutateMock).toHaveBeenCalledWith({

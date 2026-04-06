@@ -1,15 +1,25 @@
 'use client';
 
 import { useDeferredValue, useEffect, useState } from 'react';
+import { Eye, RotateCcw, ShieldCheck, UserX } from 'lucide-react';
 import Link from 'next/link';
 import type { PlatformUser, UserRole } from 'types';
 import { toast } from 'sonner';
-import { Badge, Button, Card, EmptyState, LoadingSkeleton, Select } from 'ui';
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  LoadingSkeleton,
+  Select,
+} from 'ui';
 
 import { ManagementListToolbar } from '../../components/management/management-list-toolbar';
 import { ManagementPagination } from '../../components/management/management-pagination';
 import { ModuleHeader } from '../../components/management/module-header';
 import { SurfaceTable } from '../../components/management/surface-table';
+import { sanitizeDisplayText } from '../../lib/formatting';
 import { trpc } from '../../lib/trpc';
 
 const roleLabels: Record<UserRole, string> = {
@@ -54,7 +64,7 @@ function getInitials(user: PlatformUser) {
 
 function UserAccessSummary({ user }: { user: PlatformUser }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <div className="flex flex-wrap gap-2">
         {user.identities.length ? (
           user.identities.map((identity) => (
@@ -101,6 +111,9 @@ export function UsersScreen() {
     { placeholderData: (previousData) => previousData, retry: false },
   );
   const [draftRoles, setDraftRoles] = useState<Record<string, UserRole>>({});
+  const [statusDialogUser, setStatusDialogUser] = useState<PlatformUser | null>(
+    null,
+  );
 
   useEffect(() => {
     setPage(1);
@@ -235,32 +248,35 @@ export function UsersScreen() {
 
             return (
               <div
-                className="grid grid-cols-5 gap-4 border-b border-border-default px-5 py-4 last:border-b-0 hover:bg-white/70"
+                className="grid grid-cols-5 gap-4 border-b border-border-default px-4 py-3 last:border-b-0 hover:bg-white/70"
                 key={user.id}
               >
                 <div className="min-w-0">
                   <div className="flex items-start gap-3">
                     {user.avatarUrl ? (
                       <img
-                        alt={user.fullName}
-                        className="size-12 rounded-full border border-border-subtle object-cover"
+                        alt={sanitizeDisplayText(user.fullName, 'Usuario')}
+                        className="size-10 rounded-full border border-border-subtle object-cover"
                         src={user.avatarUrl}
                       />
                     ) : (
-                      <div className="icon-tile size-12 rounded-full text-sm font-semibold">
+                      <div className="icon-tile size-10 rounded-full text-sm font-semibold">
                         {getInitials(user)}
                       </div>
                     )}
-                    <div className="min-w-0 space-y-1">
+                    <div className="min-w-0 space-y-0.5">
                       <p className="truncate font-semibold text-text-secondary">
-                        {user.fullName}
+                        {sanitizeDisplayText(
+                          user.fullName,
+                          'Usuario sin nombre',
+                        )}
                       </p>
                       <p className="truncate text-sm text-text-muted">
-                        {user.email}
+                        {sanitizeDisplayText(user.email)}
                       </p>
                       <p className="text-xs text-text-muted">
                         Creado{' '}
-                        {new Date(user.createdAt).toLocaleDateString('es-DO')}
+                        {new Date(user.createdAt).toLocaleDateString('es-NI')}
                       </p>
                     </div>
                   </div>
@@ -270,7 +286,7 @@ export function UsersScreen() {
                   <UserAccessSummary user={user} />
                 </div>
 
-                <div className="self-center space-y-2">
+                <div className="self-center space-y-1.5">
                   <Select
                     aria-label={`Rol para ${user.fullName}`}
                     disabled={isSelf || isRolePending}
@@ -302,46 +318,50 @@ export function UsersScreen() {
                   </Badge>
                 </div>
 
-                <div className="self-center space-y-2">
-                  <Button
-                    asChild
-                    className="w-full"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Link href={`/admin/users/${user.id}`}>Ver detalle</Link>
-                  </Button>
-                  <Button
-                    className="w-full"
-                    disabled={
-                      isSelf || selectedRole === user.role || isRolePending
-                    }
-                    onClick={() =>
-                      updateRole.mutate({ role: selectedRole, userId: user.id })
-                    }
-                    type="button"
-                    variant="secondary"
-                  >
-                    {isRolePending ? 'Guardando...' : 'Guardar rol'}
-                  </Button>
-                  <Button
-                    className="w-full"
-                    disabled={isSelf || isStatusPending}
-                    onClick={() =>
-                      setUserActive.mutate({
-                        isActive: !user.isActive,
-                        userId: user.id,
-                      })
-                    }
-                    type="button"
-                    variant={user.isActive ? 'ghost' : 'primary'}
-                  >
-                    {isStatusPending
-                      ? 'Actualizando...'
-                      : user.isActive
-                        ? 'Deshabilitar'
-                        : 'Reactivar'}
-                  </Button>
+                <div className="self-center">
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild size="sm" type="button" variant="ghost">
+                      <Link href={`/admin/users/${user.id}`}>
+                        <Eye className="size-4" />
+                        Detalle
+                      </Link>
+                    </Button>
+                    <Button
+                      disabled={
+                        isSelf || selectedRole === user.role || isRolePending
+                      }
+                      onClick={() =>
+                        updateRole.mutate({
+                          role: selectedRole,
+                          userId: user.id,
+                        })
+                      }
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      <ShieldCheck className="size-4" />
+                      {isRolePending ? 'Guardando...' : 'Guardar'}
+                    </Button>
+                    <Button
+                      disabled={isSelf || isStatusPending}
+                      onClick={() => setStatusDialogUser(user)}
+                      size="sm"
+                      type="button"
+                      variant={user.isActive ? 'destructive' : 'primary'}
+                    >
+                      {user.isActive ? (
+                        <UserX className="size-4" />
+                      ) : (
+                        <RotateCcw className="size-4" />
+                      )}
+                      {isStatusPending
+                        ? 'Actualizando...'
+                        : user.isActive
+                          ? 'Desactivar'
+                          : 'Reactivar'}
+                    </Button>
+                  </div>
                 </div>
               </div>
             );
@@ -361,7 +381,7 @@ export function UsersScreen() {
 
           return (
             <Card
-              className="space-y-4"
+              className="space-y-3"
               interactive={false}
               key={user.id}
               variant="soft"
@@ -369,21 +389,21 @@ export function UsersScreen() {
               <div className="flex items-start gap-3">
                 {user.avatarUrl ? (
                   <img
-                    alt={user.fullName}
-                    className="size-12 rounded-full border border-border-subtle object-cover"
+                    alt={sanitizeDisplayText(user.fullName, 'Usuario')}
+                    className="size-10 rounded-full border border-border-subtle object-cover"
                     src={user.avatarUrl}
                   />
                 ) : (
-                  <div className="icon-tile size-12 rounded-full text-sm font-semibold">
+                  <div className="icon-tile size-10 rounded-full text-sm font-semibold">
                     {getInitials(user)}
                   </div>
                 )}
                 <div className="min-w-0 flex-1 space-y-1">
                   <h3 className="truncate font-display text-xl font-semibold text-text-secondary">
-                    {user.fullName}
+                    {sanitizeDisplayText(user.fullName, 'Usuario sin nombre')}
                   </h3>
                   <p className="truncate text-sm text-text-muted">
-                    {user.email}
+                    {sanitizeDisplayText(user.email)}
                   </p>
                 </div>
                 <Badge variant={user.isActive ? 'success' : 'error'}>
@@ -416,8 +436,11 @@ export function UsersScreen() {
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">
-                <Button asChild type="button" variant="ghost">
-                  <Link href={`/admin/users/${user.id}`}>Ver detalle</Link>
+                <Button asChild size="sm" type="button" variant="ghost">
+                  <Link href={`/admin/users/${user.id}`}>
+                    <Eye className="size-4" />
+                    Detalle
+                  </Link>
                 </Button>
                 <Button
                   disabled={
@@ -426,26 +449,29 @@ export function UsersScreen() {
                   onClick={() =>
                     updateRole.mutate({ role: selectedRole, userId: user.id })
                   }
+                  size="sm"
                   type="button"
                   variant="secondary"
                 >
-                  {isRolePending ? 'Guardando...' : 'Guardar rol'}
+                  <ShieldCheck className="size-4" />
+                  {isRolePending ? 'Guardando...' : 'Guardar'}
                 </Button>
                 <Button
                   disabled={isSelf || isStatusPending}
-                  onClick={() =>
-                    setUserActive.mutate({
-                      isActive: !user.isActive,
-                      userId: user.id,
-                    })
-                  }
+                  onClick={() => setStatusDialogUser(user)}
+                  size="sm"
                   type="button"
-                  variant={user.isActive ? 'ghost' : 'primary'}
+                  variant={user.isActive ? 'destructive' : 'primary'}
                 >
+                  {user.isActive ? (
+                    <UserX className="size-4" />
+                  ) : (
+                    <RotateCcw className="size-4" />
+                  )}
                   {isStatusPending
                     ? 'Actualizando...'
                     : user.isActive
-                      ? 'Deshabilitar'
+                      ? 'Desactivar'
                       : 'Reactivar'}
                 </Button>
               </div>
@@ -464,6 +490,45 @@ export function UsersScreen() {
         pageSize={usersQuery.data?.pageSize ?? pageSize}
         total={usersQuery.data?.total ?? 0}
         totalPages={usersQuery.data?.totalPages ?? 1}
+      />
+
+      <ConfirmDialog
+        confirmLabel={
+          setUserActive.isPending
+            ? 'Actualizando...'
+            : statusDialogUser?.isActive
+              ? 'Desactivar'
+              : 'Reactivar'
+        }
+        confirmVariant={statusDialogUser?.isActive ? 'destructive' : 'primary'}
+        description={
+          statusDialogUser?.isActive
+            ? 'La cuenta perderá acceso operativo inmediato hasta que un SuperAdmin la reactive de nuevo.'
+            : 'La cuenta volverá a tener acceso operativo con el rol que ya tiene asignado.'
+        }
+        isPending={setUserActive.isPending}
+        onConfirm={() => {
+          if (!statusDialogUser) {
+            return;
+          }
+
+          setUserActive.mutate({
+            isActive: !statusDialogUser.isActive,
+            userId: statusDialogUser.id,
+          });
+          setStatusDialogUser(null);
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setStatusDialogUser(null);
+          }
+        }}
+        open={Boolean(statusDialogUser)}
+        title={
+          statusDialogUser?.isActive
+            ? '¿Desactivar usuario?'
+            : '¿Reactivar usuario?'
+        }
       />
     </div>
   );

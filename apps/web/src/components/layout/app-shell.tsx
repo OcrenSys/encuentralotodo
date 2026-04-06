@@ -170,7 +170,7 @@ export function AppShell({
               </div>
             </header>
 
-            <main className="flex-1 px-4 py-4 sm:px-6 lg:min-h-0 lg:px-8 lg:py-5 xl:px-10">
+            <main className="flex-1 px-4 py-4 pb-10 sm:px-6 sm:pb-12 lg:min-h-0 lg:px-8 lg:py-5 lg:pb-12 xl:px-10">
               <div className="surface-soft space-y-6 rounded-xl p-1 sm:p-1.5">
                 <div className="p-4 sm:p-5 lg:p-6">
                   <ContentSectionLoadingShell variant="table" />
@@ -201,7 +201,7 @@ export function AppShell({
             title={route?.label ?? 'Gestión'}
           />
 
-          <main className="flex-1 px-4 py-4 sm:px-6 lg:min-h-0 lg:px-8 lg:py-5 xl:px-10">
+          <main className="flex-1 px-4 py-4 pb-10 sm:px-6 sm:pb-12 lg:min-h-0 lg:px-8 lg:py-5 lg:pb-12 xl:px-10">
             {isAccountDisabled ? (
               <EmptyState
                 title="Tu cuenta está deshabilitada"

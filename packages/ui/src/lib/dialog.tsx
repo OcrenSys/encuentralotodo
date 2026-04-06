@@ -1,11 +1,13 @@
 'use client';
 
-import type { ComponentPropsWithoutRef, ElementRef } from 'react';
+import type { ComponentPropsWithoutRef, ElementRef, ReactNode } from 'react';
 import { forwardRef } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 
 import { cn } from 'utils';
+
+import { Button } from './primitives';
 
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
@@ -98,3 +100,51 @@ export const DialogDescription = forwardRef<
     />
   );
 });
+
+export function ConfirmDialog({
+  cancelLabel = 'Cancelar',
+  confirmLabel = 'Confirmar',
+  confirmVariant = 'destructive',
+  description,
+  isPending = false,
+  onConfirm,
+  onOpenChange,
+  open,
+  title,
+}: {
+  cancelLabel?: string;
+  confirmLabel?: string;
+  confirmVariant?: 'destructive' | 'primary' | 'secondary';
+  description: ReactNode;
+  isPending?: boolean;
+  onConfirm: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  title: ReactNode;
+}) {
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="pt-2">
+          <DialogClose asChild>
+            <Button autoFocus type="button" variant="secondary">
+              {cancelLabel}
+            </Button>
+          </DialogClose>
+          <Button
+            disabled={isPending}
+            onClick={onConfirm}
+            type="button"
+            variant={confirmVariant}
+          >
+            {confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

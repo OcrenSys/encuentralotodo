@@ -2,30 +2,27 @@
 
 import type { ManagedProductListItem } from 'types';
 import { useDeferredValue, useEffect, useState } from 'react';
-import { FileUp, Plus, Search } from 'lucide-react';
+import { FileUp, PencilLine, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button, Card, EmptyState, GhostButton, LoadingSkeleton } from 'ui';
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  LoadingSkeleton,
+} from 'ui';
 
 import { ManagementListToolbar } from '../../components/management/management-list-toolbar';
 import { ManagementPagination } from '../../components/management/management-pagination';
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
 import { formatStatusLabel } from '../../lib/display-labels';
+import { formatCurrencyNio, sanitizeDisplayText } from '../../lib/formatting';
+import { isSuperAdminRole } from '../../lib/platform-roles';
 import { trpc } from '../../lib/trpc';
 import { ProductCatalogCsvDialog } from './product-catalog-csv-dialog';
 import { ProductUpsertDialog } from './product-create-dialog';
-
-function formatPrice(price?: number) {
-  if (typeof price !== 'number') {
-    return 'Precio no definido';
-  }
-
-  return new Intl.NumberFormat('es-DO', {
-    currency: 'DOP',
-    maximumFractionDigits: 0,
-    style: 'currency',
-  }).format(price);
-}
 
 export function ProductsScreen() {
   const [search, setSearch] = useState('');
@@ -39,6 +36,8 @@ export function ProductsScreen() {
   const [editingProduct, setEditingProduct] =
     useState<ManagedProductListItem | null>(null);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [productPendingDelete, setProductPendingDelete] =
+    useState<ManagedProductListItem | null>(null);
   const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
@@ -62,7 +61,9 @@ export function ProductsScreen() {
       retry: false,
     },
   );
+  const sessionQuery = trpc.auth.me.useQuery(undefined, { retry: false });
   const utils = trpc.useUtils();
+  const isSuperAdmin = isSuperAdminRole(sessionQuery.data?.user?.role);
 
   const deleteProduct = trpc.product.delete.useMutation({
     onSuccess: async () => {
@@ -71,6 +72,7 @@ export function ProductsScreen() {
         utils.business.managed.invalidate(),
         utils.business.managedPage.invalidate(),
       ]);
+      setProductPendingDelete(null);
       toast.success('Producto eliminado correctamente.');
     },
     onError: (error) => {
@@ -114,28 +116,28 @@ export function ProductsScreen() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-2">
       <ModuleHeader
         title="Productos"
         description="Catálogo operativo con búsqueda, filtros y paginación real para crear y revisar productos por negocio."
         actions={
-          <div className="flex flex-row gap-2 w-full">
+          <div className="flex w-full flex-row gap-2 sm:w-auto">
             <Button
+              className="w-full sm:min-w-[9rem]"
               onClick={() => setIsCatalogCsvOpen(true)}
               type="button"
               variant="outline"
-              className="w-full"
             >
               <FileUp className="mr-2 size-4" />
               Catálogo CSV
             </Button>
             <Button
+              className="w-full sm:min-w-[8rem]"
               onClick={() => {
                 setEditingProduct(null);
                 setIsProductDialogOpen(true);
               }}
               type="button"
-              className="w-full"
             >
               <Plus className="mr-2 size-4" />
               Nuevo
@@ -147,7 +149,7 @@ export function ProductsScreen() {
       <ManagementListToolbar
         actions={
           productsQuery.isFetching ? (
-            <div className="flex items-center gap-2 rounded-full bg-white/70 px-3 py-2 text-sm text-text-muted">
+            <div className="surface-soft flex items-center gap-2 rounded-full px-3 py-2 text-sm text-text-muted">
               <Search className="size-4" />
               Actualizando resultados...
             </div>
@@ -200,17 +202,21 @@ export function ProductsScreen() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-display text-xl font-semibold text-text-secondary">
-                      {product.name}
-                    </h3>
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-display text-xl font-semibold text-text-secondary">
+                        {sanitizeDisplayText(product.name, 'Producto')}
+                      </h3>
+                      {isSuperAdmin ? (
+                        <Badge variant="neutral">
+                          {product.type === 'configurable'
+                            ? 'Configurable'
+                            : 'Simple'}
+                        </Badge>
+                      ) : null}
+                    </div>
                     <p className="mt-1 text-sm text-text-muted">
-                      {product.businessName}
-                    </p>
-                    <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                      {product.type === 'configurable'
-                        ? 'Configurable'
-                        : 'Simple'}
+                      {sanitizeDisplayText(product.businessName, 'Negocio')}
                     </p>
                   </div>
                   <StatusBadge
@@ -219,39 +225,56 @@ export function ProductsScreen() {
                 </div>
                 <p className="text-sm leading-6 text-text-muted">
                   {product.type === 'configurable'
-                    ? product.configurationSummary
-                    : product.description}
+                    ? sanitizeDisplayText(
+                        product.configurationSummary,
+                        'Configuración pendiente.',
+                      )
+                    : sanitizeDisplayText(product.description)}
                 </p>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-text-muted">
+                  <span className="font-semibold text-text-secondary">
                     {product.type === 'configurable'
                       ? 'Configurable por selección'
-                      : formatPrice(product.price)}
+                      : formatCurrencyNio(product.price)}
                   </span>
                   <div className="flex items-center gap-2">
-                    <GhostButton
+                    <Button
+                      size="sm"
+                      variant="secondary"
                       onClick={() => {
                         setEditingProduct(product);
                         setIsProductDialogOpen(true);
                       }}
                       type="button"
                     >
+                      <PencilLine className="size-4" />
                       Editar
-                    </GhostButton>
-                    <GhostButton
-                      disabled={deleteProduct.isPending}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
                       onClick={() => {
-                        deleteProduct.mutate({ productId: product.id });
+                        setProductPendingDelete(product);
                       }}
                       type="button"
                     >
+                      <Trash2 className="size-4" />
                       Eliminar
-                    </GhostButton>
+                    </Button>
                   </div>
                 </div>
-                
+                <div className="flex items-center justify-between gap-3 text-xs text-text-muted">
+                  <span>
+                    Estado del negocio:{' '}
+                    {formatStatusLabel(product.businessStatus)}
+                  </span>
+                  <span>
+                    Actualizado{' '}
+                    {new Date(product.lastUpdated).toLocaleDateString('es-NI')}
+                  </span>
+                </div>
               </div>
             </Card>
           ))}
@@ -292,6 +315,30 @@ export function ProductsScreen() {
         }}
         onOpenChange={setIsCatalogCsvOpen}
         open={isCatalogCsvOpen}
+      />
+
+      <ConfirmDialog
+        confirmLabel={deleteProduct.isPending ? 'Eliminando...' : 'Eliminar'}
+        description={
+          productPendingDelete
+            ? `Se eliminará ${sanitizeDisplayText(productPendingDelete.name, 'este producto')}. Esta acción no se puede deshacer.`
+            : 'Esta acción no se puede deshacer.'
+        }
+        isPending={deleteProduct.isPending}
+        onConfirm={() => {
+          if (!productPendingDelete) {
+            return;
+          }
+
+          deleteProduct.mutate({ productId: productPendingDelete.id });
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setProductPendingDelete(null);
+          }
+        }}
+        open={Boolean(productPendingDelete)}
+        title="¿Eliminar producto?"
       />
     </div>
   );

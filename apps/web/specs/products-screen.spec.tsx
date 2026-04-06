@@ -69,6 +69,11 @@ jest.mock('../src/lib/trpc', () => ({
         },
       },
     }),
+    auth: {
+      me: {
+        useQuery: jest.fn(),
+      },
+    },
     business: {
       managed: {
         useQuery: jest.fn(),
@@ -102,6 +107,11 @@ jest.mock('../src/lib/trpc', () => ({
 
 const { trpc } = jest.requireMock('../src/lib/trpc') as {
   trpc: {
+    auth: {
+      me: {
+        useQuery: jest.Mock;
+      };
+    };
     business: {
       managed: {
         useQuery: jest.Mock;
@@ -165,6 +175,15 @@ describe('ProductsScreen', () => {
       ],
       isLoading: false,
       error: null,
+    });
+
+    trpc.auth.me.useQuery.mockReturnValue({
+      data: {
+        user: {
+          id: 'superadmin-1',
+          role: 'SUPERADMIN',
+        },
+      },
     });
 
     trpc.product.managed.useQuery.mockReturnValue({
@@ -248,6 +267,7 @@ describe('ProductsScreen', () => {
       expect(
         screen.getByRole('button', { name: /crear producto/i }),
       ).toBeTruthy();
+      expect(screen.getAllByText('Simple').length).toBeGreaterThan(0);
     });
   });
 
@@ -390,6 +410,14 @@ describe('ProductsScreen', () => {
 
   it('deletes a product from the card actions', async () => {
     render(<ProductsScreen />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: '¿Eliminar producto?' }),
+      ).toBeTruthy();
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
 
