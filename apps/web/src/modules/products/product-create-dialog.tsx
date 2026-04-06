@@ -204,9 +204,7 @@ export function ProductUpsertDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Editar producto' : 'Nuevo producto'}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar' : 'Nuevo'}</DialogTitle>
           <DialogDescription>
             {isEditing
               ? 'Actualiza el producto usando el mismo contrato de creación para mantener simple y configurable alineados.'

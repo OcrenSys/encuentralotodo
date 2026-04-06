@@ -124,6 +124,11 @@ export function AppShell({
   useEffect(() => {
     const scrollContainer = contentScrollRef.current;
 
+    if (window.innerWidth < 1024) {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      return;
+    }
+
     if (scrollContainer) {
       scrollContainer.scrollTop = 0;
       return;
@@ -154,7 +159,7 @@ export function AppShell({
         </aside>
 
         <div className="min-w-0 lg:min-h-0">
-          <div className="flex min-h-[100dvh] flex-col overflow-y-auto overscroll-y-contain pb-24 lg:h-[100dvh] lg:min-h-0 lg:pb-0">
+          <div className="flex min-h-[100dvh] flex-col pb-24 lg:h-[100dvh] lg:min-h-0 lg:overflow-y-auto lg:overscroll-y-contain lg:pb-0">
             <header className="sticky top-0 z-30 border-b border-border-subtle bg-[rgba(244,248,252,0.74)] backdrop-blur-xl">
               <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
                 <PageHeaderSkeleton />
@@ -185,7 +190,7 @@ export function AppShell({
 
       <div className="min-w-0 lg:min-h-0">
         <div
-          className="flex min-h-[100dvh] flex-col overflow-y-auto overscroll-y-contain pb-24 lg:h-[100dvh] lg:min-h-0 lg:pb-0"
+          className="flex min-h-[100dvh] flex-col pb-24 lg:h-[100dvh] lg:min-h-0 lg:overflow-y-auto lg:overscroll-y-contain lg:pb-0"
           ref={contentScrollRef}
         >
           <Topbar

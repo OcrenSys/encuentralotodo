@@ -122,7 +122,7 @@ export function ProductsScreen() {
               className="w-full"
             >
               <Plus className="mr-2 size-4" />
-              Nuevo producto
+              Nuevo
             </Button>
           </div>
         }

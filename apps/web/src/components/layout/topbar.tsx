@@ -9,7 +9,19 @@ import { AuthUserPanel } from '../auth/auth-user-panel';
 import { RoleSwitcher } from './role-switcher';
 
 function readScrollOffset(scrollContainer: HTMLDivElement | null) {
+  if (window.innerWidth < 1024) {
+    return window.scrollY;
+  }
+
   return scrollContainer ? scrollContainer.scrollTop : window.scrollY;
+}
+
+function resolveScrollTarget(scrollContainer: HTMLDivElement | null) {
+  if (window.innerWidth < 1024 || !scrollContainer) {
+    return window;
+  }
+
+  return scrollContainer;
 }
 
 export function Topbar({
@@ -59,7 +71,7 @@ export function Topbar({
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef?.current ?? null;
-    const scrollTarget: HTMLDivElement | Window = scrollContainer ?? window;
+    const scrollTarget = resolveScrollTarget(scrollContainer);
 
     const handleScroll = () => {
       const currentScrollY = readScrollOffset(scrollContainer);
@@ -97,7 +109,7 @@ export function Topbar({
     }
 
     const scrollContainer = scrollContainerRef?.current ?? null;
-    const scrollTarget: HTMLDivElement | Window = scrollContainer ?? window;
+    const scrollTarget = resolveScrollTarget(scrollContainer);
 
     const handleScroll = () => {
       if (window.innerWidth >= 1024) {

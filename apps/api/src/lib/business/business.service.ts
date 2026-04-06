@@ -6,9 +6,10 @@ import type {
     ListManagedBusinessesInput,
     ManagementListResult,
     BusinessDetails,
+    UpdateBusinessInput,
 } from 'types';
 
-import { platformAdminRoles, requireActiveUser, requirePlatformRole } from '../auth/authorization';
+import { isSuperAdmin, platformAdminRoles, requireActiveUser, requirePlatformRole } from '../auth/authorization';
 import type { EmailService } from '../email';
 import { isAdminUser } from './business-access';
 import { mapBusiness, mapBusinessDetails, mapBusinessSummary } from './business.mappers';
@@ -97,6 +98,39 @@ export class BusinessService {
         });
 
         return mapBusinessSummary(business);
+    }
+
+    async updateBusiness(input: UpdateBusinessInput) {
+        const currentUser = requireActiveUser(this.currentUser);
+        const businessAccess = await this.repository.findBusinessAccessById(input.businessId);
+
+        if (!businessAccess) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
+        }
+
+        const isAllowedSuperAdmin = isSuperAdmin(currentUser);
+        if (!isAllowedSuperAdmin && currentUser.id !== businessAccess.ownerId) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can update this business.' });
+        }
+
+        if (!isAllowedSuperAdmin && input.subscriptionType && input.subscriptionType !== businessAccess.subscriptionType) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only a SuperAdmin can change the membership plan.' });
+        }
+
+        const managers = await this.resolveManagerIds(input.managers, businessAccess.ownerId);
+        const updatedBusiness = await this.repository.updateBusiness({
+            ...input,
+            managers,
+            subscriptionType: isAllowedSuperAdmin
+                ? (input.subscriptionType ?? businessAccess.subscriptionType)
+                : businessAccess.subscriptionType,
+        });
+
+        if (!updatedBusiness) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
+        }
+
+        return mapBusinessDetails(updatedBusiness);
     }
 
     async listPendingBusinesses() {
