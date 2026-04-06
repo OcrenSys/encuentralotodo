@@ -8,29 +8,14 @@ import { ManagementListToolbar } from '../../components/management/management-li
 import { ManagementPagination } from '../../components/management/management-pagination';
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
+import { SubscriptionBadge } from '../../components/management/subscription-badge';
 import { SurfaceTable } from '../../components/management/surface-table';
+import { formatBusinessCategoryLabel } from '../../lib/display-labels';
 import {
-  formatBusinessCategoryLabel,
-  formatSubscriptionLabel,
-} from '../../lib/display-labels';
+  getResponsibleLabel,
+  getResponsibleSubLabel,
+} from '../../lib/business-presentation';
 import { trpc } from '../../lib/trpc';
-
-function getResponsibleLabel(business: {
-  owner?: { fullName?: string; email?: string };
-  ownerId: string;
-}) {
-  return business.owner?.fullName || business.owner?.email || business.ownerId;
-}
-
-function getResponsibleSubLabel(business: {
-  owner?: { fullName?: string; email?: string };
-}) {
-  if (business.owner?.fullName && business.owner?.email) {
-    return business.owner.email;
-  }
-
-  return null;
-}
 
 export function AdminBusinessesScreen() {
   const [search, setSearch] = useState('');
@@ -140,8 +125,10 @@ export function AdminBusinessesScreen() {
               <div className="self-center text-sm text-text-muted">
                 {business.location.zone}
               </div>
-              <div className="self-center text-sm text-text-muted">
-                {formatSubscriptionLabel(business.subscriptionType)}
+              <div className="self-center">
+                <SubscriptionBadge
+                  subscriptionType={business.subscriptionType}
+                />
               </div>
               <div className="self-center text-sm text-text-muted">
                 <p className="font-medium text-text-secondary">
@@ -181,12 +168,15 @@ export function AdminBusinessesScreen() {
               <StatusBadge status={business.status} />
             </div>
             <p className="text-sm text-text-muted">{business.location.zone}</p>
-            <p className="text-sm text-text-muted">
-              Plan: {formatSubscriptionLabel(business.subscriptionType)}
-            </p>
+            <SubscriptionBadge subscriptionType={business.subscriptionType} />
             <p className="text-sm text-text-muted">
               Responsable: {getResponsibleLabel(business)}
             </p>
+            {getResponsibleSubLabel(business) ? (
+              <p className="text-xs text-text-muted">
+                {getResponsibleSubLabel(business)}
+              </p>
+            ) : null}
             <Button asChild type="button" variant="ghost">
               <Link href={`/business/${business.id}`}>Ver detalle</Link>
             </Button>

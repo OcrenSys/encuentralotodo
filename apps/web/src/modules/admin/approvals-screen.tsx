@@ -3,22 +3,17 @@
 import { toast } from 'sonner';
 import { Button, Card, EmptyState, LoadingSkeleton } from 'ui';
 
+import { SubscriptionBadge } from '../../components/management/subscription-badge';
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
 import { useCurrentPlatformUser } from '../../lib/platform-authorization';
-import { SurfaceTable } from '../../components/management/surface-table';
 import {
-  formatBusinessCategoryLabel,
-  formatSubscriptionLabel,
-} from '../../lib/display-labels';
+  getResponsibleLabel,
+  getResponsibleSubLabel,
+} from '../../lib/business-presentation';
+import { SurfaceTable } from '../../components/management/surface-table';
+import { formatBusinessCategoryLabel } from '../../lib/display-labels';
 import { trpc } from '../../lib/trpc';
-
-function formatOwnerLabel(ownerId: string) {
-  return ownerId
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
 
 export function ApprovalsScreen() {
   const utils = trpc.useUtils();
@@ -72,21 +67,29 @@ export function ApprovalsScreen() {
                         <p className="truncate font-semibold text-text-secondary">
                           {business.name}
                         </p>
-                        <p className="mt-1 text-sm text-text-muted">
-                          {formatBusinessCategoryLabel(business.category)} ·{' '}
-                          {business.location.zone}
+                        <p className="mt-1 line-clamp-1 text-sm font-semibold text-text-muted">
+                          {formatBusinessCategoryLabel(business.category)}
                         </p>
-                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-text-muted">
-                          {business.description}
+                        <p className="mt-2 line-clamp-1 text-sm leading-6 text-text-muted">
+                          {business.location.zone}
                         </p>
                       </div>
                     </div>
                   </div>
                   <div className="self-center text-sm text-text-muted">
-                    {formatOwnerLabel(business.ownerId)}
+                    <p className="font-medium text-text-secondary">
+                      {getResponsibleLabel(business)}
+                    </p>
+                    {getResponsibleSubLabel(business) ? (
+                      <p className="mt-1 text-xs text-text-muted">
+                        {getResponsibleSubLabel(business)}
+                      </p>
+                    ) : null}
                   </div>
-                  <div className="self-center text-sm text-text-muted">
-                    {formatSubscriptionLabel(business.subscriptionType)}
+                  <div className="self-center">
+                    <SubscriptionBadge
+                      subscriptionType={business.subscriptionType}
+                    />
                   </div>
                   <div className="self-center">
                     <StatusBadge status={business.status} />
@@ -132,12 +135,20 @@ export function ApprovalsScreen() {
                     {business.location.zone}
                   </p>
                   <p className="text-sm text-text-muted">
-                    Responsable: {formatOwnerLabel(business.ownerId)}
+                    Responsable: {getResponsibleLabel(business)}
                   </p>
+                  {getResponsibleSubLabel(business) ? (
+                    <p className="text-xs text-text-muted">
+                      {getResponsibleSubLabel(business)}
+                    </p>
+                  ) : null}
                   <p className="text-sm leading-6 text-text-muted">
                     {business.description}
                   </p>
                 </div>
+                <SubscriptionBadge
+                  subscriptionType={business.subscriptionType}
+                />
                 <Button
                   disabled={approveBusiness.isPending || !currentUser}
                   onClick={() =>

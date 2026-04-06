@@ -45,14 +45,12 @@ import {
 } from 'ui';
 
 import { BusinessManagersSelect } from '../../components/business-managers-select';
+import { SubscriptionBadge } from '../../components/management/subscription-badge';
 import { BusinessOwnerSelect } from '../../components/business-owner-select';
 import { ImageDropzone } from '../../components/image-dropzone';
 import { ModuleHeader } from '../../components/management/module-header';
 import { StatusBadge } from '../../components/management/status-badge';
-import {
-  formatBusinessCategoryLabel,
-  formatSubscriptionLabel,
-} from '../../lib/display-labels';
+import { formatBusinessCategoryLabel } from '../../lib/display-labels';
 import { useCurrentUserRole } from '../../lib/platform-authorization';
 import { isSuperAdminRole } from '../../lib/platform-roles';
 import { trpc } from '../../lib/trpc';
@@ -503,7 +501,7 @@ export function BusinessScreen() {
       />
 
       {!canEditBusiness ? (
-        <Card className="space-y-3" interactive={false} variant="soft">
+        <Card className="space-y-3" interactive={false} variant="default">
           <div className="icon-tile">
             <ShieldCheck className="size-5" />
           </div>
@@ -520,7 +518,7 @@ export function BusinessScreen() {
         <Card
           className="overflow-hidden p-0"
           interactive={false}
-          variant="soft"
+          variant="default"
         >
           <div className="relative h-52 bg-primary">
             <img
@@ -628,7 +626,7 @@ export function BusinessScreen() {
         </Card>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-          <Card className="space-y-3" interactive={false} variant="soft">
+          <Card className="space-y-3" interactive={false} variant="default">
             <div className="icon-tile">
               <PhoneCall className="size-5" />
             </div>
@@ -651,12 +649,14 @@ export function BusinessScreen() {
                 )}
               />
             </FormField>
-            <p className="text-sm leading-6 text-text-muted">
-              Plan actual:{' '}
-              {formatSubscriptionLabel(selectedBusiness.subscriptionType)}
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm leading-6 text-text-muted">Plan actual</p>
+              <SubscriptionBadge
+                subscriptionType={selectedBusiness.subscriptionType}
+              />
+            </div>
           </Card>
-          <Card className="space-y-3" interactive={false} variant="soft">
+          <Card className="space-y-3" interactive={false} variant="default">
             <div className="icon-tile">
               <Clock3 className="size-5" />
             </div>
@@ -771,7 +771,7 @@ export function BusinessScreen() {
             </FormField>
           </div>
         </FormSection>
-        <Card className="space-y-3" interactive={false} variant="soft">
+        <Card className="space-y-3" interactive={false} variant="default">
           <div className="icon-tile">
             <Store className="size-5" />
           </div>
@@ -788,7 +788,7 @@ export function BusinessScreen() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <Card className="space-y-3" interactive={false} variant="soft">
+        <Card className="space-y-3" interactive={false} variant="default">
           <div className="icon-tile">
             <Palette className="size-5" />
           </div>

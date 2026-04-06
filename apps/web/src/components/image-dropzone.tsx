@@ -221,11 +221,11 @@ export function ImageDropzone({
       <div
         aria-disabled={disabled || isBusy}
         className={cn(
-          'flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-border-subtle bg-[var(--color-background-muted)]/30 px-6 py-6 text-center transition-colors md:min-h-[140px]',
-          isDragging && 'border-primary bg-primary/5',
+          'field-panel flex min-h-[144px] cursor-pointer flex-col items-center justify-center rounded-[var(--radius-lg)] border-2 border-dashed border-border-strong px-6 py-7 text-center transition-all md:min-h-[168px] md:px-8 md:py-8',
+          isDragging && 'border-primary bg-primary/8 shadow-md',
           !disabled &&
             !isBusy &&
-            'hover:border-primary/50 hover:bg-[var(--color-background-muted)]/40',
+            'hover:border-primary/60 hover:bg-[var(--color-background-muted)]/55 hover:shadow-sm',
           disabled && 'cursor-not-allowed opacity-60',
         )}
         onDragEnter={(event) => {
@@ -259,13 +259,13 @@ export function ImageDropzone({
         role="button"
         tabIndex={disabled ? -1 : 0}
       >
-        <div className="flex w-full flex-col items-center justify-center gap-2 text-center">
-          <div className="flex flex-col items-center justify-center gap-2 text-center">
-            <span className="icon-tile size-11 rounded-2xl">
+        <div className="flex w-full flex-col items-center justify-center gap-3 text-center">
+          <div className="flex flex-col items-center justify-center gap-3 text-center">
+            <span className="icon-tile size-12 rounded-2xl border border-border-subtle bg-white/90 shadow-sm">
               <UploadCloud className="size-5" />
             </span>
             <div className="space-y-1">
-              <p className="font-medium text-text-secondary">
+              <p className="font-semibold text-text-secondary">
                 Arrastra imágenes aquí o selecciónalas manualmente
               </p>
               <p className="text-sm text-text-muted">

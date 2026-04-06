@@ -483,7 +483,7 @@ export class BusinessRepository implements BusinessRepositoryPort {
             where: {
                 status: 'PENDING',
             },
-            select: businessSummarySelect,
+            select: businessDetailSelect,
         });
 
         return records.map(mapBusinessRecord);

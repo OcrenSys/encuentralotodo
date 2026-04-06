@@ -282,7 +282,16 @@ describe('BusinessService', () => {
 
         const result = await service.listPendingBusinesses();
 
-        expect(result).toEqual([expect.objectContaining({ id: 'biz-pending', status: 'PENDING' })]);
+        expect(result).toEqual([
+            expect.objectContaining({
+                id: 'biz-pending',
+                owner: expect.objectContaining({
+                    email: 'sofia@encuentralotodo.app',
+                    fullName: 'Sofia Rivas',
+                }),
+                status: 'PENDING',
+            }),
+        ]);
     });
 
     it('allows the owner to update general business information', async () => {

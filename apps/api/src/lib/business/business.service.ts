@@ -137,7 +137,7 @@ export class BusinessService {
         this.ensureAdmin();
 
         const businesses = await this.repository.listPendingBusinesses();
-        return businesses.map(mapBusinessSummary).sort(sortBusinessSummaries);
+        return businesses.map(mapBusinessDetails).sort(sortBusinessLikeSummaries);
     }
 
     async approveBusiness(input: { businessId: string }) {

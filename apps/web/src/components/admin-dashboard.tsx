@@ -4,17 +4,15 @@ import { toast } from 'sonner';
 
 import { Button, Card, EmptyState, LoadingSkeleton, SectionHeading } from 'ui';
 
+import { SubscriptionBadge } from './management/subscription-badge';
 import { trpc } from '../lib/trpc';
 import { StatusBadge } from './management/status-badge';
 import { AppShell } from './layout/app-shell';
 import { KpiCards } from './admin/kpi-cards';
-
-function formatOwnerLabel(ownerId: string) {
-  return ownerId
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
+import {
+  getResponsibleLabel,
+  getResponsibleSubLabel,
+} from '../lib/business-presentation';
 
 export function AdminDashboard() {
   const utils = trpc.useUtils();
@@ -93,11 +91,18 @@ export function AdminDashboard() {
                         </div>
                         <div className="self-center">
                           <p className="font-medium text-text-secondary">
-                            {formatOwnerLabel(business.ownerId)}
+                            {getResponsibleLabel(business)}
                           </p>
-                          <p className="mt-1 text-sm text-text-muted">
-                            {business.subscriptionType.replace('_', ' ')}
-                          </p>
+                          {getResponsibleSubLabel(business) ? (
+                            <p className="mt-1 text-sm text-text-muted">
+                              {getResponsibleSubLabel(business)}
+                            </p>
+                          ) : null}
+                          <div className="mt-2">
+                            <SubscriptionBadge
+                              subscriptionType={business.subscriptionType}
+                            />
+                          </div>
                         </div>
                         <div className="self-center">
                           <StatusBadge status={business.status} />
@@ -146,16 +151,21 @@ export function AdminDashboard() {
                         {business.location.zone}
                       </p>
                       <p className="text-sm text-text-muted">
-                        Owner: {formatOwnerLabel(business.ownerId)}
+                        Owner: {getResponsibleLabel(business)}
                       </p>
+                      {getResponsibleSubLabel(business) ? (
+                        <p className="text-xs text-text-muted">
+                          {getResponsibleSubLabel(business)}
+                        </p>
+                      ) : null}
                       <p className="text-sm leading-6 text-text-muted">
                         {business.description}
                       </p>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <div className="badge-base badge-info normal-case tracking-normal">
-                        {business.subscriptionType.replace('_', ' ')}
-                      </div>
+                      <SubscriptionBadge
+                        subscriptionType={business.subscriptionType}
+                      />
                       <Button
                         disabled={approveBusiness.isPending}
                         onClick={() =>
