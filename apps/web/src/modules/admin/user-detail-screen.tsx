@@ -15,6 +15,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
   EmptyState,
   FormField,
   Input,
@@ -82,6 +83,9 @@ export function AdminUserDetailScreen({ userId }: { userId: string }) {
   const [transferTargets, setTransferTargets] = useState<
     Record<string, string>
   >({});
+  const [pendingTransferBusinessId, setPendingTransferBusinessId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (!detailQuery.data) {
@@ -165,6 +169,14 @@ export function AdminUserDetailScreen({ userId }: { userId: string }) {
         utils.admin.userById.invalidate({ userId: detail.user.id }),
         utils.admin.listUsersPage.invalidate(),
       ]);
+      if (pendingTransferBusinessId) {
+        setTransferTargets((current) => {
+          const next = { ...current };
+          delete next[pendingTransferBusinessId];
+          return next;
+        });
+      }
+      setPendingTransferBusinessId(null);
       toast.success('Ownership transferido correctamente.');
 
       if (detail.user.id !== userId) {
@@ -182,6 +194,14 @@ export function AdminUserDetailScreen({ userId }: { userId: string }) {
         (assignment) => assignment.role === 'OWNER',
       ) ?? [],
     [detailQuery.data?.businessAssignments],
+  );
+
+  const pendingTransferAssignment = useMemo(
+    () =>
+      ownedAssignments.find(
+        (assignment) => assignment.businessId === pendingTransferBusinessId,
+      ),
+    [ownedAssignments, pendingTransferBusinessId],
   );
 
   const managerCandidates = useMemo(() => {
@@ -576,13 +596,10 @@ export function AdminUserDetailScreen({ userId }: { userId: string }) {
                         transferOwnership.isPending
                       }
                       onClick={() =>
-                        transferOwnership.mutate({
-                          businessId: assignment.businessId,
-                          fromUserId: detail.user.id,
-                          toUserId: selectedTargetId,
-                        })
+                        setPendingTransferBusinessId(assignment.businessId)
                       }
                       type="button"
+                      variant="warning"
                     >
                       {transferOwnership.isPending
                         ? 'Transfiriendo...'
@@ -600,6 +617,56 @@ export function AdminUserDetailScreen({ userId }: { userId: string }) {
           )}
         </Card>
       </section>
+
+      <ConfirmDialog
+        cancelLabel="Seguir revisando"
+        confirmLabel={
+          transferOwnership.isPending
+            ? 'Transfiriendo...'
+            : 'Transferir propiedad'
+        }
+        confirmVariant="warning"
+        description={
+          pendingTransferAssignment ? (
+            <span>
+              Vas a transferir la propiedad principal de{' '}
+              <strong>
+                {pendingTransferAssignment.businessName ??
+                  pendingTransferAssignment.businessId}
+              </strong>{' '}
+              a otra cuenta.
+            </span>
+          ) : (
+            'Confirma la transferencia de propiedad del negocio seleccionado.'
+          )
+        }
+        isPending={transferOwnership.isPending}
+        onConfirm={() => {
+          if (!pendingTransferAssignment) {
+            return;
+          }
+
+          const selectedTargetId =
+            transferTargets[pendingTransferAssignment.businessId] ?? '';
+
+          if (!selectedTargetId || selectedTargetId === detail.user.id) {
+            return;
+          }
+
+          transferOwnership.mutate({
+            businessId: pendingTransferAssignment.businessId,
+            fromUserId: detail.user.id,
+            toUserId: selectedTargetId,
+          });
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingTransferBusinessId(null);
+          }
+        }}
+        open={Boolean(pendingTransferBusinessId)}
+        title="Confirmar transferencia de propiedad"
+      />
 
       <Card className="space-y-4" interactive={false} variant="soft">
         <div>

@@ -21,6 +21,7 @@ const surfacePadding = {
 const buttonVariants = {
   primary: 'action-primary',
   secondary: 'action-secondary',
+  warning: 'action-warning',
   destructive: 'action-destructive',
   ghost: 'action-secondary border-transparent bg-transparent shadow-none',
   outline: 'action-secondary border',
@@ -103,7 +104,7 @@ export function Panel(
 export function Button({
   asChild = false,
   className,
-  size = 'md',
+  size = 'sm',
   variant = 'primary',
   ...props
 }: ComponentPropsWithoutRef<'button'> & {

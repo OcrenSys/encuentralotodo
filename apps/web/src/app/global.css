@@ -321,6 +321,23 @@ textarea {
     box-shadow: var(--shadow-sm);
   }
 
+  .action-warning {
+    border: 1px solid rgb(var(--color-warning-rgb) / 0.24);
+    background: linear-gradient(
+      180deg,
+      rgb(232 200 122 / 0.98),
+      rgb(201 164 73 / 0.98)
+    );
+    box-shadow: 0 12px 28px rgb(var(--color-warning-rgb) / 0.2);
+    color: #503d11;
+  }
+
+  .action-warning:hover {
+    border-color: rgb(var(--color-warning-rgb) / 0.34);
+    box-shadow: 0 16px 32px rgb(var(--color-warning-rgb) / 0.24);
+    transform: translateY(-1px);
+  }
+
   .action-destructive {
     border: 1px solid rgb(var(--color-error-rgb) / 0.18);
     background: linear-gradient(
@@ -340,6 +357,7 @@ textarea {
 
   .action-primary svg,
   .action-secondary svg,
+  .action-warning svg,
   .action-destructive svg {
     flex-shrink: 0;
   }

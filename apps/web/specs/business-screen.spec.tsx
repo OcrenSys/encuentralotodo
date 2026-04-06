@@ -328,6 +328,10 @@ describe('BusinessScreen', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Elegir nuevo owner' }));
     fireEvent.click(screen.getByRole('button', { name: 'Transferir owner' }));
+    expect(
+      screen.getByRole('heading', { name: 'Confirmar transferencia de owner' }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Transferir owner' }));
 
     await act(async () => {
       await Promise.resolve();

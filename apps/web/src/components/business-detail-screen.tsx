@@ -9,6 +9,7 @@ import {
   BottomNavigation,
   Button,
   Card,
+  ConfirmDialog,
   EmptyState,
   LoadingSkeleton,
   ProductCard,
@@ -43,6 +44,7 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
   const business = businessQuery.data as BusinessDetails | undefined;
   const canViewRelationships = isSuperAdminRole(role);
   const [transferTargetId, setTransferTargetId] = useState('');
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
 
   const transferOwnership = trpc.admin.transferBusinessOwnership.useMutation({
     onSuccess: async (detail) => {
@@ -60,6 +62,7 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
 
       await Promise.all(invalidations);
       setTransferTargetId('');
+      setIsTransferDialogOpen(false);
       toast.success('Ownership transferido correctamente.');
     },
     onError: (error) => {
@@ -201,14 +204,9 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
                         transferTargetId === business.ownerId ||
                         transferOwnership.isPending
                       }
-                      onClick={() =>
-                        transferOwnership.mutate({
-                          businessId: business.id,
-                          fromUserId: business.ownerId,
-                          toUserId: transferTargetId,
-                        })
-                      }
+                      onClick={() => setIsTransferDialogOpen(true)}
                       type="button"
+                      variant="warning"
                     >
                       {transferOwnership.isPending
                         ? 'Transfiriendo...'
@@ -252,6 +250,40 @@ export function BusinessDetailScreen({ businessId }: { businessId: string }) {
           </Card>
         </section>
       ) : null}
+
+      <ConfirmDialog
+        cancelLabel="Seguir revisando"
+        confirmLabel={
+          transferOwnership.isPending ? 'Transfiriendo...' : 'Transferir owner'
+        }
+        confirmVariant="warning"
+        description={
+          business ? (
+            <span>
+              Vas a transferir la titularidad principal de{' '}
+              <strong>{business.name}</strong>. El nuevo owner asumirá el
+              control administrativo del comercio.
+            </span>
+          ) : (
+            'Confirma la transferencia del owner principal del comercio.'
+          )
+        }
+        isPending={transferOwnership.isPending}
+        onConfirm={() => {
+          if (!business || !transferTargetId) {
+            return;
+          }
+
+          transferOwnership.mutate({
+            businessId: business.id,
+            fromUserId: business.ownerId,
+            toUserId: transferTargetId,
+          });
+        }}
+        onOpenChange={setIsTransferDialogOpen}
+        open={isTransferDialogOpen}
+        title="Confirmar transferencia de owner"
+      />
 
       <section className="space-y-5">
         <SectionHeading

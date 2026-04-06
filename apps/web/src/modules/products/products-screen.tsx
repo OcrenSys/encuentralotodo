@@ -123,7 +123,7 @@ export function ProductsScreen() {
         actions={
           <div className="flex w-full flex-row gap-2 sm:w-auto">
             <Button
-              className="w-full sm:min-w-[9rem]"
+              className="w-full md:min-w-52 sm:min-w-[9rem]"
               onClick={() => setIsCatalogCsvOpen(true)}
               type="button"
               variant="outline"
@@ -132,7 +132,7 @@ export function ProductsScreen() {
               Catálogo CSV
             </Button>
             <Button
-              className="w-full sm:min-w-[8rem]"
+              className="w-full md:min-w-52 sm:min-w-[8rem]"
               onClick={() => {
                 setEditingProduct(null);
                 setIsProductDialogOpen(true);

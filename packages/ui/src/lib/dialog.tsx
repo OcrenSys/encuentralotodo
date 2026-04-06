@@ -114,7 +114,7 @@ export function ConfirmDialog({
 }: {
   cancelLabel?: string;
   confirmLabel?: string;
-  confirmVariant?: 'destructive' | 'primary' | 'secondary';
+  confirmVariant?: 'destructive' | 'primary' | 'secondary' | 'warning';
   description: ReactNode;
   isPending?: boolean;
   onConfirm: () => void;
