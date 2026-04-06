@@ -1,5 +1,5 @@
 import { createCurrentUser } from 'auth';
-import type { CreateBusinessInput } from 'types';
+import type { CreateBusinessInput, UpdateBusinessInput } from 'types';
 
 import type {
     BusinessRepositoryPort,
@@ -108,6 +108,7 @@ function createRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
         findBusinessAccessById: jest.fn(),
         listPendingBusinesses: jest.fn(),
         createBusiness: jest.fn(),
+        updateBusiness: jest.fn(),
         approveBusiness: jest.fn(),
         findUserById: jest.fn(),
         findUsersByIds: jest.fn(),
@@ -282,6 +283,187 @@ describe('BusinessService', () => {
         const result = await service.listPendingBusinesses();
 
         expect(result).toEqual([expect.objectContaining({ id: 'biz-pending', status: 'PENDING' })]);
+    });
+
+    it('allows the owner to update general business information', async () => {
+        const actor = createCurrentPlatformUser();
+        const { service, repository } = createService(actor);
+        const input: UpdateBusinessInput = {
+            businessId: 'biz-casa-norte',
+            name: 'Casa Norte Plus',
+            description: 'Descripción suficientemente larga para actualizar el negocio con datos revisados por el owner.',
+            category: 'GENERAL_STORE',
+            location: {
+                lat: 18.49,
+                lng: -69.93,
+                zone: 'Zona Norte',
+                address: 'Av. Charles Summer 55, Santo Domingo',
+            },
+            images: {
+                profile: 'https://example.com/profile-updated.jpg',
+                banner: 'https://example.com/banner-updated.jpg',
+            },
+            whatsappNumber: '18095550155',
+            managers: ['manager-carlos'],
+        };
+
+        repository.findBusinessAccessById.mockResolvedValue({
+            id: 'biz-casa-norte',
+            ownerId: 'owner-sofia',
+            managers: ['manager-carlos'],
+            subscriptionType: 'PREMIUM_PLUS',
+            status: 'APPROVED',
+        });
+        repository.findUsersByIds.mockResolvedValue([managerUser]);
+        repository.updateBusiness.mockResolvedValue(
+            createBusinessRecord({
+                name: input.name,
+                description: input.description,
+                zone: input.location.zone,
+                address: input.location.address,
+                whatsappNumber: input.whatsappNumber,
+                profileImage: input.images.profile,
+                bannerImage: input.images.banner,
+            }),
+        );
+
+        const result = await service.updateBusiness(input);
+
+        expect(repository.updateBusiness).toHaveBeenCalledWith(
+            expect.objectContaining({
+                businessId: 'biz-casa-norte',
+                name: 'Casa Norte Plus',
+                subscriptionType: 'PREMIUM_PLUS',
+                managers: ['manager-carlos'],
+            }),
+        );
+        expect(result).toMatchObject({ name: 'Casa Norte Plus', whatsappNumber: '18095550155' });
+    });
+
+    it('prevents an owner from changing the membership plan', async () => {
+        const actor = createCurrentPlatformUser();
+        const { service, repository } = createService(actor);
+        const input: UpdateBusinessInput = {
+            businessId: 'biz-casa-norte',
+            name: 'Casa Norte Market',
+            description: 'Descripción suficientemente larga para intentar cambiar el plan sin permisos válidos.',
+            category: 'GENERAL_STORE',
+            location: {
+                lat: 18.4861,
+                lng: -69.9312,
+                zone: 'Zona Norte',
+                address: 'Av. Charles Summer 42, Santo Domingo',
+            },
+            images: {
+                profile: 'https://example.com/profile.jpg',
+                banner: 'https://example.com/banner.jpg',
+            },
+            whatsappNumber: '18095550101',
+            managers: ['manager-carlos'],
+            subscriptionType: 'FREE_TRIAL',
+        };
+
+        repository.findBusinessAccessById.mockResolvedValue({
+            id: 'biz-casa-norte',
+            ownerId: 'owner-sofia',
+            managers: ['manager-carlos'],
+            subscriptionType: 'PREMIUM_PLUS',
+            status: 'APPROVED',
+        });
+
+        await expect(service.updateBusiness(input)).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            message: 'Only a SuperAdmin can change the membership plan.',
+        });
+        expect(repository.updateBusiness).not.toHaveBeenCalled();
+    });
+
+    it('allows a SuperAdmin to change the membership plan', async () => {
+        const actor = createCurrentPlatformUser({
+            id: 'superadmin-luis',
+            fullName: 'Luis SuperAdmin',
+            email: 'luis@encuentralotodo.app',
+            role: 'SUPERADMIN',
+            externalAuthId: 'firebase-superadmin-luis',
+        });
+        const { service, repository } = createService(actor);
+        const input: UpdateBusinessInput = {
+            businessId: 'biz-casa-norte',
+            name: 'Casa Norte Market',
+            description: 'Descripción suficientemente larga para actualizar el plan desde un SuperAdmin.',
+            category: 'GENERAL_STORE',
+            location: {
+                lat: 18.4861,
+                lng: -69.9312,
+                zone: 'Zona Norte',
+                address: 'Av. Charles Summer 42, Santo Domingo',
+            },
+            images: {
+                profile: 'https://example.com/profile.jpg',
+                banner: 'https://example.com/banner.jpg',
+            },
+            whatsappNumber: '18095550101',
+            managers: ['manager-carlos'],
+            subscriptionType: 'FREE_TRIAL',
+        };
+
+        repository.findBusinessAccessById.mockResolvedValue({
+            id: 'biz-casa-norte',
+            ownerId: 'owner-sofia',
+            managers: ['manager-carlos'],
+            subscriptionType: 'PREMIUM_PLUS',
+            status: 'APPROVED',
+        });
+        repository.findUsersByIds.mockResolvedValue([managerUser]);
+        repository.updateBusiness.mockResolvedValue(createBusinessRecord({ subscriptionType: 'FREE_TRIAL' }));
+
+        const result = await service.updateBusiness(input);
+
+        expect(repository.updateBusiness).toHaveBeenCalledWith(expect.objectContaining({ subscriptionType: 'FREE_TRIAL' }));
+        expect(result).toMatchObject({ subscriptionType: 'FREE_TRIAL' });
+    });
+
+    it('prevents managers from updating the business', async () => {
+        const actor = createCurrentPlatformUser({
+            id: 'manager-carlos',
+            fullName: 'Carlos Mena',
+            email: 'carlos@encuentralotodo.app',
+            role: 'USER',
+            externalAuthId: 'firebase-manager-carlos',
+        });
+        const { service, repository } = createService(actor);
+        const input: UpdateBusinessInput = {
+            businessId: 'biz-casa-norte',
+            name: 'Casa Norte Market',
+            description: 'Descripción suficientemente larga para un intento de edición desde manager.',
+            category: 'GENERAL_STORE',
+            location: {
+                lat: 18.4861,
+                lng: -69.9312,
+                zone: 'Zona Norte',
+                address: 'Av. Charles Summer 42, Santo Domingo',
+            },
+            images: {
+                profile: 'https://example.com/profile.jpg',
+                banner: 'https://example.com/banner.jpg',
+            },
+            whatsappNumber: '18095550101',
+            managers: ['manager-carlos'],
+        };
+
+        repository.findBusinessAccessById.mockResolvedValue({
+            id: 'biz-casa-norte',
+            ownerId: 'owner-sofia',
+            managers: ['manager-carlos'],
+            subscriptionType: 'PREMIUM_PLUS',
+            status: 'APPROVED',
+        });
+
+        await expect(service.updateBusiness(input)).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            message: 'Only the owner or a SuperAdmin can update this business.',
+        });
+        expect(repository.updateBusiness).not.toHaveBeenCalled();
     });
 
     it('approve updates business status correctly', async () => {

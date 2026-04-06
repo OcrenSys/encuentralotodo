@@ -60,6 +60,18 @@ export const createBusinessInputSchema = z.object({
     whatsappNumber: z.string().min(10).max(20),
 });
 
+export const updateBusinessInputSchema = z.object({
+    businessId: z.string().min(2),
+    name: z.string().min(2).max(80),
+    description: z.string().min(20).max(600),
+    category: businessCategorySchema,
+    location: businessLocationSchema,
+    images: businessImagesSchema,
+    subscriptionType: subscriptionTypeSchema.optional(),
+    managers: z.array(z.string()).default([]),
+    whatsappNumber: z.string().min(10).max(20),
+});
+
 export const listBusinessesInputSchema = z.object({
     category: businessCategorySchema.or(z.literal('ALL')).optional(),
     search: z.string().trim().optional(),
@@ -299,6 +311,7 @@ export const searchPlatformUsersInputSchema = z.object({
 });
 
 export type CreateBusinessInput = z.infer<typeof createBusinessInputSchema>;
+export type UpdateBusinessInput = z.infer<typeof updateBusinessInputSchema>;
 export type ListBusinessesInput = z.infer<typeof listBusinessesInputSchema>;
 export type GetBusinessByIdInput = z.infer<typeof getBusinessByIdInputSchema>;
 export type ApproveBusinessInput = z.infer<typeof approveBusinessInputSchema>;

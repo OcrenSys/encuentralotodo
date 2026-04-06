@@ -4,6 +4,7 @@ import type {
     CreateBusinessInput,
     ListManagedBusinessesInput,
     ProductType,
+    UpdateBusinessInput,
     UserRole,
 } from 'types';
 
@@ -104,6 +105,7 @@ export interface BusinessRepositoryPort {
     findBusinessAccessById(businessId: string): Promise<RepositoryBusinessAccessRecord | null>;
     listPendingBusinesses(): Promise<RepositoryBusinessRecord[]>;
     createBusiness(input: CreateBusinessInput & { ownerId: string; managers: string[]; status: BusinessStatus }): Promise<RepositoryBusinessRecord>;
+    updateBusiness(input: UpdateBusinessInput & { subscriptionType: RepositoryBusinessRecord['subscriptionType']; managers: string[] }): Promise<RepositoryBusinessRecord | null>;
     approveBusiness(businessId: string): Promise<RepositoryBusinessRecord | null>;
     findUserById(userId: string): Promise<RepositoryUserRecord | null>;
     findUsersByIds(userIds: string[]): Promise<RepositoryUserRecord[]>;
@@ -508,6 +510,41 @@ export class BusinessRepository implements BusinessRepositoryPort {
                 },
             },
             select: businessSummarySelect,
+        });
+
+        return mapBusinessRecord(record);
+    }
+
+    async updateBusiness(input: UpdateBusinessInput & { subscriptionType: RepositoryBusinessRecord['subscriptionType']; managers: string[] }) {
+        const existing = await this.prisma.business.findUnique({
+            where: { id: input.businessId },
+            select: { id: true },
+        });
+
+        if (!existing) {
+            return null;
+        }
+
+        const record = await this.prisma.business.update({
+            where: { id: input.businessId },
+            data: {
+                name: input.name,
+                description: input.description,
+                category: input.category,
+                lat: input.location.lat,
+                lng: input.location.lng,
+                zone: input.location.zone,
+                address: input.location.address,
+                profileImage: input.images.profile,
+                bannerImage: input.images.banner,
+                subscriptionType: input.subscriptionType,
+                whatsappNumber: input.whatsappNumber,
+                managers: {
+                    deleteMany: {},
+                    create: input.managers.map((userId) => ({ userId })),
+                },
+            },
+            select: businessDetailSelect,
         });
 
         return mapBusinessRecord(record);

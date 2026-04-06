@@ -3,6 +3,7 @@ import {
   getBusinessByIdInputSchema,
   listBusinessesInputSchema,
   listManagedBusinessesInputSchema,
+  updateBusinessInputSchema,
 } from 'types';
 
 import { protectedProcedure, publicProcedure, router } from '../trpc';
@@ -22,5 +23,8 @@ export const businessRouter = router({
   }),
   create: publicProcedure.input(createBusinessInputSchema).mutation(({ ctx, input }) => {
     return ctx.businessService.createBusiness(input);
+  }),
+  update: protectedProcedure.input(updateBusinessInputSchema).mutation(({ ctx, input }) => {
+    return ctx.businessService.updateBusiness(input);
   }),
 });
