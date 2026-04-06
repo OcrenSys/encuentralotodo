@@ -11,7 +11,7 @@ import type {
 
 import { isSuperAdmin, platformAdminRoles, requireActiveUser, requirePlatformRole } from '../auth/authorization';
 import type { EmailService } from '../email';
-import { isAdminUser } from './business-access';
+import { canEditBusiness, isAdminUser } from './business-access';
 import { mapBusiness, mapBusinessDetails, mapBusinessSummary } from './business.mappers';
 import type { BusinessRepositoryPort } from './business.repository';
 
@@ -30,6 +30,15 @@ function sortBusinessLikeSummaries(
     right: Pick<ReturnType<typeof mapBusinessSummary>, 'rating' | 'distanceKm'>,
 ) {
     return right.rating - left.rating || left.distanceKm - right.distanceKm;
+}
+
+function haveSameManagers(left: string[], right: string[]) {
+    if (left.length !== right.length) {
+        return false;
+    }
+
+    const leftSet = new Set(left);
+    return right.every((managerId) => leftSet.has(managerId));
 }
 
 export class BusinessService {
@@ -88,7 +97,14 @@ export class BusinessService {
     }
 
     async createBusiness(input: CreateBusinessInput) {
-        const ownerId = await this.resolveOwnerId(input.ownerId);
+        const currentUser = requireActiveUser(this.currentUser);
+        const owner = await this.repository.findUserById(currentUser.id);
+
+        if (!owner) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authenticated owner not found.' });
+        }
+
+        const ownerId = owner.id;
         const managers = await this.resolveManagerIds(input.managers, ownerId);
         const business = await this.repository.createBusiness({
             ...input,
@@ -109,7 +125,7 @@ export class BusinessService {
         }
 
         const isAllowedSuperAdmin = isSuperAdmin(currentUser);
-        if (!isAllowedSuperAdmin && currentUser.id !== businessAccess.ownerId) {
+        if (!canEditBusiness(currentUser, businessAccess)) {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can update this business.' });
         }
 
@@ -117,7 +133,13 @@ export class BusinessService {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'Only a SuperAdmin can change the membership plan.' });
         }
 
-        const managers = await this.resolveManagerIds(input.managers, businessAccess.ownerId);
+        if (!isAllowedSuperAdmin && !haveSameManagers(input.managers, businessAccess.managers)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only a SuperAdmin can change business managers.' });
+        }
+
+        const managers = isAllowedSuperAdmin
+            ? await this.resolveManagerIds(input.managers ?? businessAccess.managers, businessAccess.ownerId)
+            : businessAccess.managers;
         const updatedBusiness = await this.repository.updateBusiness({
             ...input,
             managers,
@@ -166,33 +188,6 @@ export class BusinessService {
 
     private ensureAdmin() {
         return requirePlatformRole(this.currentUser, platformAdminRoles, 'Admin access required.');
-    }
-
-    private async resolveOwnerId(requestedOwnerId: string) {
-        if (isAdminUser(this.currentUser)) {
-            const owner = await this.repository.findUserById(requestedOwnerId);
-            if (!owner) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Owner not found.' });
-            }
-
-            return owner.id;
-        }
-
-        if (this.currentUser) {
-            const owner = await this.repository.findUserById(this.currentUser.id);
-            if (!owner) {
-                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authenticated owner not found.' });
-            }
-
-            return owner.id;
-        }
-
-        const fallbackOwner = await this.repository.findUserById(requestedOwnerId);
-        if (!fallbackOwner) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Owner not found.' });
-        }
-
-        return fallbackOwner.id;
     }
 
     private async resolveManagerIds(managerIds: string[], ownerId: string) {

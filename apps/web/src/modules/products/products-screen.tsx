@@ -3,6 +3,7 @@
 import type { ManagedProductListItem } from 'types';
 import { useDeferredValue, useEffect, useState } from 'react';
 import { FileUp, Plus, Search } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button, Card, EmptyState, GhostButton, LoadingSkeleton } from 'ui';
 
 import { ManagementListToolbar } from '../../components/management/management-list-toolbar';
@@ -61,6 +62,21 @@ export function ProductsScreen() {
       retry: false,
     },
   );
+  const utils = trpc.useUtils();
+
+  const deleteProduct = trpc.product.delete.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.product.managed.invalidate(),
+        utils.business.managed.invalidate(),
+        utils.business.managedPage.invalidate(),
+      ]);
+      toast.success('Producto eliminado correctamente.');
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   const businessOptions = (managedBusinessesQuery.data ?? []).map(
     (business) => ({
@@ -214,20 +230,28 @@ export function ProductsScreen() {
                       ? 'Configurable por selección'
                       : formatPrice(product.price)}
                   </span>
-                  <GhostButton
-                    onClick={() => {
-                      setEditingProduct(product);
-                      setIsProductDialogOpen(true);
-                    }}
-                    type="button"
-                  >
-                    Editar
-                  </GhostButton>
+                  <div className="flex items-center gap-2">
+                    <GhostButton
+                      onClick={() => {
+                        setEditingProduct(product);
+                        setIsProductDialogOpen(true);
+                      }}
+                      type="button"
+                    >
+                      Editar
+                    </GhostButton>
+                    <GhostButton
+                      disabled={deleteProduct.isPending}
+                      onClick={() => {
+                        deleteProduct.mutate({ productId: product.id });
+                      }}
+                      type="button"
+                    >
+                      Eliminar
+                    </GhostButton>
+                  </div>
                 </div>
-                <span className="block text-text-muted">
-                  Estado del negocio:{' '}
-                  {formatStatusLabel(product.businessStatus)}
-                </span>
+                
               </div>
             </Card>
           ))}

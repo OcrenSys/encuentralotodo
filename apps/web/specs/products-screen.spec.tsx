@@ -6,6 +6,7 @@ import { getProductCatalogPrimaryActionLabel } from '../src/modules/products/pro
 const invalidateMock = jest.fn(async () => undefined);
 const createProductMutateMock = jest.fn();
 const updateProductMutateMock = jest.fn();
+const deleteProductMutateMock = jest.fn();
 const exportRefetchMock = jest.fn();
 const previewImportMutateAsyncMock = jest.fn();
 const importManagedMutateAsyncMock = jest.fn();
@@ -89,6 +90,9 @@ jest.mock('../src/lib/trpc', () => ({
       create: {
         useMutation: jest.fn(),
       },
+      delete: {
+        useMutation: jest.fn(),
+      },
       update: {
         useMutation: jest.fn(),
       },
@@ -119,6 +123,9 @@ const { trpc } = jest.requireMock('../src/lib/trpc') as {
       create: {
         useMutation: jest.Mock;
       };
+      delete: {
+        useMutation: jest.Mock;
+      };
       update: {
         useMutation: jest.Mock;
       };
@@ -134,6 +141,7 @@ describe('ProductsScreen', () => {
     invalidateMock.mockClear();
     createProductMutateMock.mockClear();
     updateProductMutateMock.mockClear();
+    deleteProductMutateMock.mockClear();
     exportRefetchMock.mockReset();
     previewImportMutateAsyncMock.mockReset();
     importManagedMutateAsyncMock.mockReset();
@@ -206,6 +214,11 @@ describe('ProductsScreen', () => {
       isPending: false,
     });
 
+    trpc.product.delete.useMutation.mockReturnValue({
+      mutate: deleteProductMutateMock,
+      isPending: false,
+    });
+
     trpc.product.update.useMutation.mockReturnValue({
       mutate: updateProductMutateMock,
       isPending: false,
@@ -228,12 +241,10 @@ describe('ProductsScreen', () => {
 
     expect(screen.getByText('Combo ejecutivo')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: /nuevo producto/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo' }));
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('heading', { name: 'Nuevo producto' }),
-      ).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Nuevo' })).toBeTruthy();
       expect(
         screen.getByRole('button', { name: /crear producto/i }),
       ).toBeTruthy();
@@ -372,12 +383,20 @@ describe('ProductsScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('heading', { name: 'Editar producto' }),
-      ).toBeTruthy();
-      expect(
-        screen.getByRole('button', { name: /guardar cambios/i }),
-      ).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Editar' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /guardar/i })).toBeTruthy();
+    });
+  });
+
+  it('deletes a product from the card actions', async () => {
+    render(<ProductsScreen />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+
+    await waitFor(() => {
+      expect(deleteProductMutateMock).toHaveBeenCalledWith({
+        productId: 'product-1',
+      });
     });
   });
 });

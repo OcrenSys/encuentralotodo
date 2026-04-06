@@ -88,6 +88,7 @@ function createBusinessRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
         findBusinessAccessById: jest.fn(),
         listPendingBusinesses: jest.fn(),
         createBusiness: jest.fn(),
+        updateBusiness: jest.fn(),
         approveBusiness: jest.fn(),
         findUserById: jest.fn(),
         findUsersByIds: jest.fn(),
@@ -168,6 +169,32 @@ describe('ProductService', () => {
         expect(result).toMatchObject({ id: 'prod-new', name: 'Nuevo producto', price: 200, isFeatured: false });
     });
 
+    it('allows business managers to create products for their assigned business', async () => {
+        const managerUser = {
+            id: 'manager-carlos',
+            fullName: 'Carlos Mena',
+            email: 'carlos@encuentralotodo.app',
+            role: 'USER',
+        } as UserProfile;
+        const { service, repository, businessRepository } = createService(managerUser);
+
+        businessRepository.findBusinessAccessById.mockResolvedValue(createBusinessAccess());
+        repository.create.mockResolvedValue(createProductRecord({ id: 'prod-manager' }));
+
+        const result = await service.create({
+            businessId: 'biz-casa-norte',
+            name: 'Producto manager',
+            description: 'Descripción suficientemente larga para creación por manager.',
+            images: ['https://example.com/manager-product.jpg'],
+            type: 'simple',
+            price: 180,
+            isFeatured: false,
+        });
+
+        expect(result).toMatchObject({ id: 'prod-manager' });
+        expect(repository.create).toHaveBeenCalled();
+    });
+
     it('create supports configurable products with a lightweight summary', async () => {
         const { service, repository, businessRepository } = createService(ownerUser);
         const input: CreateProductInput = {
@@ -230,6 +257,24 @@ describe('ProductService', () => {
         expect(result).toMatchObject({ id: 'prod-1', name: 'Pack familiar' });
     });
 
+    it('denies delete when the user lacks business access', async () => {
+        const outsider = {
+            id: 'user-ana',
+            fullName: 'Ana Mercado',
+            email: 'ana@encuentralotodo.app',
+            role: 'USER',
+        } as UserProfile;
+        const { service, repository } = createService(outsider);
+        repository.findByIdWithBusiness.mockResolvedValue(createProductWithBusinessRecord());
+
+        await expect(service.delete({ productId: 'prod-1' })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            message: 'Business access required.',
+        });
+
+        expect(repository.delete).not.toHaveBeenCalled();
+    });
+
     it('unauthorized users cannot create products for another business', async () => {
         const outsider = {
             id: 'user-ana',
@@ -267,6 +312,25 @@ describe('ProductService', () => {
         })).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'Business not found.' });
 
         await expect(service.update({ productId: 'missing-product', name: 'Nada' })).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'Product not found.' });
+    });
+
+    it('enforces FREE_TRIAL featured-product limits on create', async () => {
+        const { service, businessRepository, repository } = createService(ownerUser);
+        businessRepository.findBusinessAccessById.mockResolvedValue(createBusinessAccess({ subscriptionType: 'FREE_TRIAL' }));
+        repository.countFeaturedByBusiness.mockResolvedValue(5);
+
+        await expect(service.create({
+            businessId: 'biz-casa-norte',
+            name: 'Producto destacado',
+            description: 'Descripción suficientemente larga para el límite FREE_TRIAL.',
+            images: ['https://example.com/product.jpg'],
+            type: 'simple',
+            price: 100,
+            isFeatured: true,
+        })).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: 'FREE_TRIAL permite un máximo de 5 productos destacados.',
+        });
     });
 
     it('preserves the key contract shape for product responses', async () => {

@@ -21,7 +21,7 @@ export const businessRouter = router({
   byId: publicProcedure.input(getBusinessByIdInputSchema).query(({ ctx, input }) => {
     return ctx.businessService.getBusinessById(input.businessId);
   }),
-  create: publicProcedure.input(createBusinessInputSchema).mutation(({ ctx, input }) => {
+  create: protectedProcedure.input(createBusinessInputSchema).mutation(({ ctx, input }) => {
     return ctx.businessService.createBusiness(input);
   }),
   update: protectedProcedure.input(updateBusinessInputSchema).mutation(({ ctx, input }) => {

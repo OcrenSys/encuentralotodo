@@ -267,6 +267,32 @@ describe('BusinessService', () => {
         expect(result).toMatchObject({ id: 'biz-new', status: 'PENDING' });
     });
 
+    it('rejects create when no authenticated owner is available', async () => {
+        const { service, repository } = createService(null);
+
+        await expect(service.createBusiness({
+            name: 'Nuevo negocio',
+            description: 'Descripción suficientemente larga para pasar la validación.',
+            category: 'GENERAL_STORE',
+            location: {
+                lat: 18.47,
+                lng: -69.9,
+                zone: 'Naco',
+                address: 'Calle 1',
+            },
+            images: {
+                profile: 'https://example.com/profile.jpg',
+                banner: 'https://example.com/banner.jpg',
+            },
+            subscriptionType: 'FREE_TRIAL',
+            ownerId: 'user-ana',
+            managers: [],
+            whatsappNumber: '18095550199',
+        })).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+        expect(repository.createBusiness).not.toHaveBeenCalled();
+    });
+
     it('pending list only returns pending businesses', async () => {
         const admin = createCurrentPlatformUser({
             id: 'admin-luis',
@@ -347,6 +373,43 @@ describe('BusinessService', () => {
             }),
         );
         expect(result).toMatchObject({ name: 'Casa Norte Plus', whatsappNumber: '18095550155' });
+    });
+
+    it('prevents an owner from changing managers', async () => {
+        const actor = createCurrentPlatformUser();
+        const { service, repository } = createService(actor);
+
+        repository.findBusinessAccessById.mockResolvedValue({
+            id: 'biz-casa-norte',
+            ownerId: 'owner-sofia',
+            managers: ['manager-carlos'],
+            subscriptionType: 'PREMIUM_PLUS',
+            status: 'APPROVED',
+        });
+
+        await expect(service.updateBusiness({
+            businessId: 'biz-casa-norte',
+            name: 'Casa Norte Market',
+            description: 'Descripción suficientemente larga para intentar cambiar managers sin permisos válidos.',
+            category: 'GENERAL_STORE',
+            location: {
+                lat: 18.4861,
+                lng: -69.9312,
+                zone: 'Zona Norte',
+                address: 'Av. Charles Summer 42, Santo Domingo',
+            },
+            images: {
+                profile: 'https://example.com/profile.jpg',
+                banner: 'https://example.com/banner.jpg',
+            },
+            whatsappNumber: '18095550101',
+            managers: ['manager-carlos', 'manager-new'],
+        })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            message: 'Only a SuperAdmin can change business managers.',
+        });
+
+        expect(repository.updateBusiness).not.toHaveBeenCalled();
     });
 
     it('prevents an owner from changing the membership plan', async () => {
