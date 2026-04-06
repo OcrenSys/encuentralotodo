@@ -4,14 +4,26 @@ generator client {
 
 datasource db {
     provider = "postgresql"
-    url      = env("DATABASE_URL")
 }
 
 enum UserRole {
+    UNASSIGNED
     USER
+    NO_ACCESS
     ADMIN
     SUPERADMIN
     GLOBALADMIN
+}
+
+enum BusinessAssignmentRole {
+    OWNER
+    MANAGER
+}
+
+enum AuthProviderType {
+    MOCK
+    FIREBASE
+    COGNITO
 }
 
 enum SubscriptionType {
@@ -31,21 +43,70 @@ enum BusinessStatus {
     APPROVED
 }
 
+enum LeadSource {
+    WhatsApp
+    Promo
+    Perfil
+    Formulario
+}
+
+enum LeadStatus {
+    NEW
+    CONTACTED
+    QUALIFIED
+    CLOSED
+}
+
+enum AuditAction {
+    USER_PROFILE_UPDATED
+    USER_BASE_ROLE_UPDATED
+    USER_PLATFORM_ROLE_UPDATED
+    USER_STATUS_UPDATED
+    USER_BUSINESS_ROLE_ASSIGNED
+    USER_BUSINESS_ROLE_REMOVED
+    BUSINESS_OWNERSHIP_TRANSFERRED
+}
+
 model User {
-    id              String            @id @default(cuid())
-    fullName        String
-    email           String            @unique
-    role            UserRole          @default(USER)
-    avatarUrl       String?
-    ownedBusinesses Business[]        @relation("OwnedBusinesses")
-    managedLinks    BusinessManager[]
-    reviews         Review[]
-    createdAt       DateTime          @default(now())
-    updatedAt       DateTime          @updatedAt
+    id                String             @id @default(cuid())
+    fullName          String
+    email             String             @unique
+    role              UserRole           @default(NO_ACCESS)
+    phone             String?
+    avatarUrl         String?
+    isActive          Boolean            @default(true)
+    lastAccessAt      DateTime?
+    identities        UserIdentity[]
+    ownedBusinesses   Business[]         @relation("OwnedBusinesses")
+    managedLinks      BusinessManager[]
+    businessRoles     UserBusinessRole[]
+    auditLogsAuthored AuditLog[]         @relation("AuditActor")
+    auditLogsTargeted AuditLog[]         @relation("AuditTarget")
+    reviews           Review[]
+    createdAt         DateTime           @default(now())
+    updatedAt         DateTime           @updatedAt
+}
+
+model UserIdentity {
+    id             String           @id @default(cuid())
+    provider       AuthProviderType
+    externalUserId String
+    email          String?
+    emailVerified  Boolean          @default(false)
+    displayName    String?
+    avatarUrl      String?
+    userId         String
+    user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+    createdAt      DateTime         @default(now())
+    updatedAt      DateTime         @updatedAt
+
+    @@unique([provider, externalUserId])
+    @@index([userId])
+    @@index([email])
 }
 
 model Business {
-    id               String            @id @default(cuid())
+    id               String             @id @default(cuid())
     name             String
     description      String
     category         BusinessCategory
@@ -56,16 +117,19 @@ model Business {
     profileImage     String
     bannerImage      String
     subscriptionType SubscriptionType
-    status           BusinessStatus    @default(PENDING)
+    status           BusinessStatus     @default(PENDING)
     whatsappNumber   String
     ownerId          String
-    owner            User              @relation("OwnedBusinesses", fields: [ownerId], references: [id])
+    owner            User               @relation("OwnedBusinesses", fields: [ownerId], references: [id])
     managers         BusinessManager[]
+    userRoles        UserBusinessRole[]
+    auditLogs        AuditLog[]
     products         Product[]
     promotions       Promotion[]
+    leads            Lead[]
     reviews          Review[]
-    lastUpdated      DateTime          @updatedAt
-    createdAt        DateTime          @default(now())
+    lastUpdated      DateTime           @updatedAt
+    createdAt        DateTime           @default(now())
 }
 
 model BusinessManager {
@@ -77,17 +141,55 @@ model BusinessManager {
     @@id([businessId, userId])
 }
 
+model UserBusinessRole {
+    id         String                 @id @default(cuid())
+    userId     String
+    businessId String
+    role       BusinessAssignmentRole
+    user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    business   Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+    createdAt  DateTime               @default(now())
+    updatedAt  DateTime               @updatedAt
+
+    @@unique([userId, businessId, role])
+    @@index([userId])
+    @@index([businessId])
+    @@index([businessId, role])
+    @@index([userId, role])
+}
+
+model AuditLog {
+    id           String      @id @default(cuid())
+    actorUserId  String
+    targetUserId String?
+    businessId   String?
+    action       AuditAction
+    metadata     Json?
+    actorUser    User        @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+    targetUser   User?       @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+    business     Business?   @relation(fields: [businessId], references: [id], onDelete: SetNull)
+    createdAt    DateTime    @default(now())
+
+    @@index([actorUserId])
+    @@index([targetUserId])
+    @@index([businessId])
+    @@index([action])
+    @@index([createdAt])
+}
+
 model Product {
-    id          String   @id @default(cuid())
-    name        String
-    description String
-    images      String[]
-    price       Float?
-    isFeatured  Boolean  @default(false)
-    businessId  String
-    business    Business @relation(fields: [businessId], references: [id])
-    lastUpdated DateTime @updatedAt
-    createdAt   DateTime @default(now())
+    id                   String   @id @default(cuid())
+    name                 String
+    description          String
+    images               String[]
+    type                 String   @default("simple")
+    configurationSummary String?
+    price                Float?
+    isFeatured           Boolean  @default(false)
+    businessId           String
+    business             Business @relation(fields: [businessId], references: [id])
+    lastUpdated          DateTime @updatedAt
+    createdAt            DateTime @default(now())
 }
 
 model Promotion {
@@ -102,6 +204,18 @@ model Promotion {
     business      Business @relation(fields: [businessId], references: [id])
     lastUpdated   DateTime @updatedAt
     createdAt     DateTime @default(now())
+}
+
+model Lead {
+    id         String     @id @default(cuid())
+    name       String
+    source     LeadSource
+    status     LeadStatus @default(NEW)
+    summary    String
+    businessId String
+    business   Business   @relation(fields: [businessId], references: [id])
+    updatedAt  DateTime   @updatedAt
+    createdAt  DateTime   @default(now())
 }
 
 model Review {

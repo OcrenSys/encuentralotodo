@@ -1,51 +1,148 @@
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import { Slot } from '@radix-ui/react-slot';
 
 import { cn } from 'utils';
 
-export function Card({ className, ...props }: ComponentPropsWithoutRef<'div'>) {
+const surfaceVariants = {
+  default: 'surface-default',
+  soft: 'surface-soft',
+  elevated: 'surface-elevated',
+  brand: 'surface-brand',
+  inset: 'surface-inset',
+} as const;
+
+const surfacePadding = {
+  none: 'p-0',
+  sm: 'p-4',
+  md: 'p-5',
+  lg: 'p-6',
+} as const;
+
+const buttonVariants = {
+  primary: 'action-primary',
+  secondary: 'action-secondary',
+  ghost: 'action-secondary border-transparent bg-transparent shadow-none',
+  outline: 'action-secondary border',
+} as const;
+
+const badgeVariants = {
+  neutral: 'badge-neutral',
+  success: 'badge-success',
+  warning: 'badge-warning',
+  error: 'badge-error',
+  info: 'badge-info',
+} as const;
+
+type SurfaceVariant = keyof typeof surfaceVariants;
+type SurfacePadding = keyof typeof surfacePadding;
+
+export function Surface({
+  className,
+  variant = 'default',
+  padding = 'md',
+  interactive = false,
+  ...props
+}: ComponentPropsWithoutRef<'div'> & {
+  variant?: SurfaceVariant;
+  padding?: SurfacePadding;
+  interactive?: boolean;
+}) {
   return (
     <div
       className={cn(
-        'rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_12px_36px_rgba(17,39,60,0.08)] backdrop-blur-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_20px_48px_rgba(17,39,60,0.14)]',
-        className
+        surfaceVariants[variant],
+        surfacePadding[padding],
+        interactive && 'surface-interactive',
+        className,
       )}
       {...props}
     />
   );
 }
 
-export function Button({ className, ...props }: ComponentPropsWithoutRef<'button'>) {
+export function Card({
+  className,
+  variant = 'default',
+  interactive = true,
+  padding = 'md',
+  ...props
+}: ComponentPropsWithoutRef<'div'> & {
+  variant?: SurfaceVariant;
+  padding?: SurfacePadding;
+  interactive?: boolean;
+}) {
   return (
-    <button
+    <Surface
+      className={className}
+      interactive={interactive}
+      padding={padding}
+      variant={variant}
+      {...props}
+    />
+  );
+}
+
+export function Panel(
+  props: ComponentPropsWithoutRef<'div'> & {
+    variant?: SurfaceVariant;
+    padding?: SurfacePadding;
+    interactive?: boolean;
+  },
+) {
+  return <Surface {...props} />;
+}
+
+export function Button({
+  asChild = false,
+  className,
+  variant = 'primary',
+  ...props
+}: ComponentPropsWithoutRef<'button'> & {
+  asChild?: boolean;
+  variant?: keyof typeof buttonVariants;
+}) {
+  const Component = asChild ? Slot : 'button';
+
+  return (
+    <Component
       className={cn(
-        'inline-flex items-center justify-center rounded-full bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60',
-        className
+        'inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-normal disabled:cursor-not-allowed disabled:opacity-60',
+        buttonVariants[variant],
+        className,
       )}
       {...props}
     />
   );
 }
 
-export function GhostButton({ className, ...props }: ComponentPropsWithoutRef<'button'>) {
+export function GhostButton({
+  asChild = false,
+  className,
+  ...props
+}: ComponentPropsWithoutRef<'button'> & {
+  asChild?: boolean;
+}) {
   return (
-    <button
-      className={cn(
-        'inline-flex items-center justify-center rounded-full border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-primary)] transition-colors duration-150 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/5',
-        className
-      )}
+    <Button
+      asChild={asChild}
+      className={className}
+      variant="ghost"
       {...props}
     />
   );
 }
 
-export function Badge({ children, className }: { children: ReactNode; className?: string }) {
+export function Badge({
+  children,
+  className,
+  variant = 'warning',
+}: {
+  children: ReactNode;
+  className?: string;
+  variant?: keyof typeof badgeVariants;
+}) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full bg-[var(--color-accent)] px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)]',
-        className
-      )}
-    >
+    <span className={cn('badge-base', badgeVariants[variant], className)}>
       {children}
     </span>
   );
@@ -62,10 +159,16 @@ export function SectionHeading({
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-secondary)]">{eyebrow}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-secondary">
+        {eyebrow}
+      </p>
       <div className="space-y-1">
-        <h2 className="font-display text-2xl font-semibold text-[var(--color-primary)] sm:text-3xl">{title}</h2>
-        <p className="max-w-2xl text-sm leading-6 text-[var(--color-text-muted)]">{description}</p>
+        <h2 className="font-display text-2xl font-semibold text-text-secondary sm:text-3xl">
+          {title}
+        </h2>
+        <p className="max-w-2xl text-sm leading-6 text-text-muted">
+          {description}
+        </p>
       </div>
     </div>
   );

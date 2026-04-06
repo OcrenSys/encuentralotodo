@@ -7,6 +7,8 @@ import { marketplaceSeed } from '../packages/types/src/lib/mocks';
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.userIdentity.deleteMany();
+  await prisma.lead.deleteMany();
   await prisma.review.deleteMany();
   await prisma.promotion.deleteMany();
   await prisma.product.deleteMany();
@@ -22,6 +24,17 @@ async function main() {
         email: user.email,
         role: user.role,
         avatarUrl: user.avatarUrl,
+        isActive: user.isActive ?? true,
+        identities: {
+          create: {
+            provider: 'MOCK',
+            externalUserId: user.id,
+            email: user.email,
+            emailVerified: true,
+            displayName: user.fullName,
+            avatarUrl: user.avatarUrl,
+          },
+        },
       },
     });
   }
@@ -75,6 +88,20 @@ async function main() {
         originalPrice: promotion.originalPrice,
         validUntil: new Date(promotion.validUntil),
         image: promotion.image,
+      },
+    });
+  }
+
+  for (const lead of marketplaceSeed.leads) {
+    await prisma.lead.create({
+      data: {
+        id: lead.id,
+        name: lead.name,
+        source: lead.source,
+        status: lead.status,
+        summary: lead.summary,
+        businessId: lead.businessId,
+        updatedAt: new Date(lead.updatedAt),
       },
     });
   }
