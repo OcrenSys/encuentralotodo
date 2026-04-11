@@ -227,11 +227,8 @@ export function Topbar({
                   : '-translate-y-2 scale-[0.985] opacity-0 blur-[2px] delay-0'
               }`}
             >
-              <div className="surface-soft rounded-lg px-4 py-4">
-                <RoleSwitcher />
-              </div>
               <AuthUserPanel />
-              <div className="shell-chrome flex flex-col gap-3 rounded-lg px-4 py-3">
+              <div className="shell-chrome flex min-w-0 flex-col gap-3 rounded-lg px-4 py-3">
                 <div className="space-y-1">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
                     Vista actual
@@ -240,7 +237,7 @@ export function Topbar({
                     {activeSurface}
                   </p>
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-primary/5 px-3 py-2 text-xs font-semibold text-text-secondary">
+                <div className="flex items-start gap-2 rounded-2xl border border-primary/10 bg-primary/5 px-3 py-2 text-xs font-semibold leading-5 text-text-secondary">
                   <ShieldCheck className="size-4" />
                   Este cambio solo afecta la vista. Los permisos reales no
                   cambian.

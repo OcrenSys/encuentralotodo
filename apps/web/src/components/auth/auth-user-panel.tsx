@@ -43,17 +43,17 @@ export function AuthUserPanel() {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="surface-soft flex items-center gap-3 rounded-lg px-4 py-3">
+      <div className="surface-soft flex flex-col gap-3 rounded-lg px-4 py-3 sm:flex-row sm:items-center">
         <div className="icon-tile size-11 rounded-full bg-primary/10 text-text-secondary">
           <ShieldCheck className="size-5" />
         </div>
-        <div className="space-y-1">
+        <div className="min-w-0 flex-1 space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-muted">
             Sesión
           </p>
           <p className="text-sm font-semibold text-text-secondary">Invitado</p>
           <a
-            className="text-xs font-medium text-secondary hover:underline"
+            className="inline-flex text-xs font-medium text-secondary hover:underline"
             href="/login"
           >
             Iniciar sesión
@@ -86,32 +86,36 @@ export function AuthUserPanel() {
     : `${displayEmail} · ${formatProviderLabel(user.provider)}`;
 
   return (
-    <div className="surface-soft flex items-center gap-3 rounded-lg px-4 py-3">
-      {user.photoURL ? (
-        <img
-          alt={displayName}
-          className="size-11 rounded-full border border-border-subtle object-cover"
-          src={user.photoURL}
-        />
-      ) : (
-        <div className="icon-tile size-11 rounded-full text-sm font-semibold">
-          {getUserInitials(user.displayName, user.email)}
-        </div>
-      )}
+    <div className="surface-soft flex flex-col gap-3 rounded-lg px-4 py-3 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 items-center gap-3">
+        {user.photoURL ? (
+          <img
+            alt={displayName}
+            className="size-11 rounded-full border border-border-subtle object-cover"
+            src={user.photoURL}
+          />
+        ) : (
+          <div className="icon-tile size-11 rounded-full text-sm font-semibold">
+            {getUserInitials(user.displayName, user.email)}
+          </div>
+        )}
 
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-muted">
-          Cuenta autenticada
-        </p>
-        <p className="truncate text-sm font-semibold text-text-secondary">
-          {displayName}
-        </p>
-        <p className="truncate text-xs text-text-muted">{displayMeta}</p>
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-muted">
+            Cuenta autenticada
+          </p>
+          <p className="truncate text-sm font-semibold text-text-secondary">
+            {displayName}
+          </p>
+          <p className="break-words text-xs leading-5 text-text-muted sm:truncate sm:leading-normal">
+            {displayMeta}
+          </p>
+        </div>
       </div>
 
       <Button
         aria-label="Cerrar sesión"
-        className="gap-2 px-3 py-2 text-xs"
+        className="w-full justify-center gap-2 px-3 py-2 text-xs sm:w-auto"
         disabled={isSigningOut}
         onClick={() => void handleSignOut()}
         type="button"

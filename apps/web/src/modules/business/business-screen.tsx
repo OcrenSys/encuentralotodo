@@ -188,7 +188,7 @@ function SuperAdminBusinessLookup({
       <PopoverTrigger asChild>
         <Button
           aria-expanded={isOpen}
-          className="h-auto w-full justify-between rounded-2xl px-4 py-3 text-left sm:w-96"
+          className="h-auto w-full justify-between rounded-2xl px-4 py-3 text-left sm:max-w-96"
           type="button"
           variant="secondary"
         >
@@ -206,9 +206,10 @@ function SuperAdminBusinessLookup({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        align="end"
-        className="w-[min(calc(100vw-1rem),24rem)] max-h-[calc(100dvh-5rem)] overflow-hidden p-0"
-        sideOffset={12}
+        align="start"
+        className="w-[min(var(--radix-popover-trigger-width),calc(100vw-1rem))] max-h-[calc(100dvh-5rem)] max-w-[calc(100vw-1rem)] overflow-hidden p-0 sm:max-w-96"
+        side="bottom"
+        sideOffset={8}
       >
         <Command shouldFilter={false}>
           <CommandInput
@@ -477,7 +478,7 @@ export function BusinessScreen() {
       <ModuleHeader
         actions={
           isSuperAdmin ? (
-            <div className="flex w-full justify-end">
+            <div className="flex w-full justify-stretch sm:justify-end">
               <SuperAdminBusinessLookup
                 onSelect={setSelectedBusinessId}
                 selectedBusinessId={selectedBusinessId}
@@ -485,7 +486,7 @@ export function BusinessScreen() {
               />
             </div>
           ) : managedBusinesses.length > 1 ? (
-            <div className="flex w-full justify-end">
+            <div className="flex w-full justify-stretch sm:justify-end">
               <Select
                 onValueChange={setSelectedBusinessId}
                 options={managedBusinesses.map((business) => ({
@@ -494,7 +495,7 @@ export function BusinessScreen() {
                 }))}
                 placeholder="Selecciona un negocio"
                 value={selectedBusiness.id}
-                className="max-w-md"
+                className="w-full sm:max-w-md"
               />
             </div>
           ) : null
@@ -519,7 +520,7 @@ export function BusinessScreen() {
 
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <Card
-          className="overflow-hidden p-0"
+          className="min-w-0 overflow-hidden p-0"
           interactive={false}
           variant="default"
         >
@@ -550,7 +551,7 @@ export function BusinessScreen() {
                     render={({ field }) => (
                       <Input
                         {...field}
-                        className="h-11 w-full text-lg font-semibold sm:min-w-[18rem]"
+                        className="h-11 w-full text-lg font-semibold"
                         disabled={!canEditBusiness || updateBusiness.isPending}
                         placeholder="Nombre comercial"
                       />
@@ -628,8 +629,12 @@ export function BusinessScreen() {
           </div>
         </Card>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-          <Card className="space-y-3" interactive={false} variant="default">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-1">
+          <Card
+            className="min-w-0 space-y-3"
+            interactive={false}
+            variant="default"
+          >
             <div className="icon-tile">
               <PhoneCall className="size-5" />
             </div>
@@ -659,7 +664,11 @@ export function BusinessScreen() {
               />
             </div>
           </Card>
-          <Card className="space-y-3" interactive={false} variant="default">
+          <Card
+            className="min-w-0 space-y-3"
+            interactive={false}
+            variant="default"
+          >
             <div className="icon-tile">
               <Clock3 className="size-5" />
             </div>
@@ -675,7 +684,7 @@ export function BusinessScreen() {
 
       <section className="grid gap-4 lg:grid-cols-3">
         <FormSection
-          className="lg:col-span-2"
+          className="min-w-0 lg:col-span-2"
           description="Ajusta la categoría, la zona de cobertura y la dirección pública del comercio."
           title="Datos operativos"
         >
@@ -774,7 +783,11 @@ export function BusinessScreen() {
             </FormField>
           </div>
         </FormSection>
-        <Card className="space-y-3" interactive={false} variant="default">
+        <Card
+          className="min-w-0 space-y-3"
+          interactive={false}
+          variant="default"
+        >
           <div className="icon-tile">
             <Store className="size-5" />
           </div>
@@ -791,7 +804,11 @@ export function BusinessScreen() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <Card className="space-y-3" interactive={false} variant="default">
+        <Card
+          className="min-w-0 space-y-3"
+          interactive={false}
+          variant="default"
+        >
           <div className="icon-tile">
             <Palette className="size-5" />
           </div>
@@ -846,6 +863,7 @@ export function BusinessScreen() {
 
         {isSuperAdmin ? (
           <FormSection
+            className="min-w-0"
             description="Solo SuperAdmin puede cambiar la membresía comercial y transferir ownership."
             title="Controles administrativos"
           >

@@ -14,12 +14,12 @@ export function RoleSwitcher() {
   }
 
   return (
-    <label className="flex min-w-[180px] flex-col gap-2">
+    <label className="flex w-full min-w-0 flex-col gap-2 sm:min-w-[180px] sm:max-w-[220px]">
       <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
         Simulación de vista
       </span>
       <Select
-        className="min-w-[180px]"
+        className="w-full"
         onValueChange={(value) => setRoleView(value as typeof roleView)}
         options={[
           { label: 'Administrador general', value: 'SUPERADMIN' },

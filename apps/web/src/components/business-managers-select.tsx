@@ -135,12 +135,12 @@ export function BusinessManagersSelect({
         <PopoverTrigger asChild>
           <Button
             aria-expanded={isOpen}
-            className="et-combobox-trigger h-auto min-h-14 w-full justify-between rounded-2xl px-4 py-3 text-left"
+            className="et-combobox-trigger h-auto min-h-14 w-full max-w-full justify-between rounded-2xl px-4 py-3 text-left"
             disabled={disabled}
             type="button"
             variant="secondary"
           >
-            <span className="min-w-0">
+            <span className="min-w-0 flex-1">
               <span className="flex min-w-0 flex-col">
                 <span className="text-sm font-semibold text-text-secondary">
                   {activeManagers.length
@@ -156,8 +156,10 @@ export function BusinessManagersSelect({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="w-[min(460px,calc(100vw-2rem))] p-0"
-          sideOffset={12}
+          align="start"
+          className="w-[min(var(--radix-popover-trigger-width),calc(100vw-1rem))] max-w-[calc(100vw-1rem)] p-0 sm:max-w-[460px]"
+          side="bottom"
+          sideOffset={8}
         >
           <Command shouldFilter={false}>
             <CommandInput
