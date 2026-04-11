@@ -4,6 +4,7 @@ import { ProfileScreen } from '../src/modules/profile/profile-screen';
 
 const invalidateMock = jest.fn(async () => undefined);
 const updateProfileMutateMock = jest.fn();
+const removeOwnBusinessRoleMutateMock = jest.fn();
 
 jest.mock('sonner', () => ({
   toast: {
@@ -31,6 +32,9 @@ jest.mock('../src/lib/trpc', () => ({
       updateProfile: {
         useMutation: jest.fn(),
       },
+      removeOwnBusinessRole: {
+        useMutation: jest.fn(),
+      },
     },
   },
 }));
@@ -44,6 +48,9 @@ const { trpc } = jest.requireMock('../src/lib/trpc') as {
       updateProfile: {
         useMutation: jest.Mock;
       };
+      removeOwnBusinessRole: {
+        useMutation: jest.Mock;
+      };
     };
   };
 };
@@ -52,6 +59,7 @@ describe('ProfileScreen', () => {
   beforeEach(() => {
     invalidateMock.mockClear();
     updateProfileMutateMock.mockClear();
+    removeOwnBusinessRoleMutateMock.mockClear();
 
     trpc.auth.profile.useQuery.mockReturnValue({
       data: {
@@ -106,6 +114,10 @@ describe('ProfileScreen', () => {
       mutate: updateProfileMutateMock,
       isPending: false,
     });
+    trpc.auth.removeOwnBusinessRole.useMutation.mockReturnValue({
+      mutate: removeOwnBusinessRoleMutateMock,
+      isPending: false,
+    });
   });
 
   it('submits updated self profile fields', async () => {
@@ -132,5 +144,17 @@ describe('ProfileScreen', () => {
 
     expect(view.getByText('Casa Norte Market')).toBeTruthy();
     expect(view.getByText('Encargado')).toBeTruthy();
+  });
+
+  it('allows managers to remove their own business assignment', () => {
+    const view = render(<ProfileScreen />);
+
+    fireEvent.click(
+      view.getByRole('button', { name: 'Salir de este negocio' }),
+    );
+
+    expect(removeOwnBusinessRoleMutateMock).toHaveBeenCalledWith({
+      businessId: 'biz-1',
+    });
   });
 });

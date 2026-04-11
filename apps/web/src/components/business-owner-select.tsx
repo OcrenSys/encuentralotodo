@@ -43,6 +43,7 @@ interface BusinessOwnerSelectProps {
   onSelect: (user: PlatformUserSearchResult) => void;
   disabled?: boolean;
   canSearchOwners: boolean;
+  businessId?: string;
 }
 
 export function BusinessOwnerSelect({
@@ -50,6 +51,7 @@ export function BusinessOwnerSelect({
   onSelect,
   disabled = false,
   canSearchOwners,
+  businessId,
 }: BusinessOwnerSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,17 +59,34 @@ export function BusinessOwnerSelect({
     useState<PlatformUserSearchResult | null>(null);
   const debouncedSearch = useDebouncedValue(searchTerm, 280);
 
-  const ownerSearchQuery = trpc.admin.searchUsers.useQuery(
+  const adminOwnerSearchQuery = trpc.admin.searchUsers.useQuery(
     {
       search: debouncedSearch,
       limit: 10,
     },
     {
-      enabled: isOpen && canSearchOwners,
+      enabled: isOpen && canSearchOwners && !businessId,
       retry: false,
       staleTime: 30_000,
     },
   );
+
+  const businessOwnerSearchQuery = trpc.business.searchAssignableUsers.useQuery(
+    {
+      businessId: businessId ?? '',
+      search: debouncedSearch,
+      limit: 10,
+    },
+    {
+      enabled: isOpen && canSearchOwners && Boolean(businessId),
+      retry: false,
+      staleTime: 30_000,
+    },
+  );
+
+  const ownerSearchQuery = businessId
+    ? businessOwnerSearchQuery
+    : adminOwnerSearchQuery;
 
   useEffect(() => {
     if (!value) {

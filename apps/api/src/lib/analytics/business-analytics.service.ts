@@ -45,7 +45,11 @@ export class BusinessAnalyticsService {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
         }
 
-        this.ensureBusinessCanBeManaged({ ownerId: business.ownerId, managers: business.managers });
+        this.ensureBusinessCanBeManaged({
+            ownerId: business.ownerId,
+            managers: business.managers,
+            memberships: business.memberships,
+        });
 
         const now = new Date();
         const since7Days = subtractDays(now, 6);
@@ -122,7 +126,7 @@ export class BusinessAnalyticsService {
         };
     }
 
-    private ensureBusinessCanBeManaged(business: { ownerId: string; managers: string[] }) {
+    private ensureBusinessCanBeManaged(business: { ownerId: string; managers: string[]; memberships?: Array<{ userId: string; role: 'OWNER' | 'MANAGER' }> }) {
         const currentUser = requireActiveUser(this.currentUser);
 
         if (!canManageBusiness(currentUser, business)) {

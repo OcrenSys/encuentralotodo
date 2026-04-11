@@ -151,7 +151,7 @@ model UserBusinessRole {
     createdAt  DateTime               @default(now())
     updatedAt  DateTime               @updatedAt
 
-    @@unique([userId, businessId, role])
+    @@unique([userId, businessId])
     @@index([userId])
     @@index([businessId])
     @@index([businessId, role])

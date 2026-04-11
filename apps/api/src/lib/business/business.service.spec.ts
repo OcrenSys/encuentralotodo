@@ -14,6 +14,7 @@ const baseUser: RepositoryUserRecord = {
     email: 'sofia@encuentralotodo.app',
     role: 'USER',
     avatarUrl: null,
+    isActive: true,
 };
 
 const managerUser: RepositoryUserRecord = {
@@ -22,6 +23,7 @@ const managerUser: RepositoryUserRecord = {
     email: 'carlos@encuentralotodo.app',
     role: 'USER',
     avatarUrl: null,
+    isActive: true,
 };
 
 function createBusinessRecord(overrides: Partial<RepositoryBusinessRecord> = {}): RepositoryBusinessRecord {
@@ -49,6 +51,18 @@ function createBusinessRecord(overrides: Partial<RepositoryBusinessRecord> = {})
                 user: managerUser,
             },
         ],
+        memberships: [
+            {
+                userId: baseUser.id,
+                role: 'OWNER',
+                user: baseUser,
+            },
+            {
+                userId: managerUser.id,
+                role: 'MANAGER',
+                user: managerUser,
+            },
+        ],
         products: [
             {
                 id: 'prod-1',
@@ -70,7 +84,7 @@ function createBusinessRecord(overrides: Partial<RepositoryBusinessRecord> = {})
                 description: 'Promo activa',
                 promoPrice: 100,
                 originalPrice: 200,
-                validUntil: new Date('2026-04-10T10:00:00.000Z'),
+                validUntil: new Date('2026-05-10T10:00:00.000Z'),
                 businessId: 'biz-casa-norte',
                 image: 'https://example.com/promo.jpg',
                 lastUpdated: new Date('2026-03-29T10:00:00.000Z'),
@@ -90,9 +104,25 @@ function createBusinessRecord(overrides: Partial<RepositoryBusinessRecord> = {})
                     email: 'ana@encuentralotodo.app',
                     role: 'USER',
                     avatarUrl: null,
+                    isActive: true,
                 },
             },
         ],
+        ...overrides,
+    };
+}
+
+function createBusinessAccessRecord(overrides: Record<string, unknown> = {}) {
+    return {
+        id: 'biz-casa-norte',
+        ownerId: 'owner-sofia',
+        managers: ['manager-carlos'],
+        memberships: [
+            { userId: 'owner-sofia', role: 'OWNER' as const },
+            { userId: 'manager-carlos', role: 'MANAGER' as const },
+        ],
+        subscriptionType: 'PREMIUM_PLUS' as const,
+        status: 'APPROVED' as const,
         ...overrides,
     };
 }
@@ -104,12 +134,14 @@ function createRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
         listBusinessesByUserAccess: jest.fn(),
         listBusinessesForManagementPage: jest.fn(),
         listBusinessesByUserAccessPage: jest.fn(),
+        synchronizeCanonicalMemberships: jest.fn(),
         findBusinessById: jest.fn(),
         findBusinessAccessById: jest.fn(),
         listPendingBusinesses: jest.fn(),
         createBusiness: jest.fn(),
         updateBusiness: jest.fn(),
         approveBusiness: jest.fn(),
+        searchUsers: jest.fn(),
         findUserById: jest.fn(),
         findUsersByIds: jest.fn(),
     };
@@ -232,7 +264,6 @@ describe('BusinessService', () => {
                 banner: 'https://example.com/banner.jpg',
             },
             subscriptionType: 'FREE_TRIAL',
-            ownerId: 'user-ana',
             managers: ['manager-carlos'],
             whatsappNumber: '18095550199',
         };
@@ -285,7 +316,6 @@ describe('BusinessService', () => {
                 banner: 'https://example.com/banner.jpg',
             },
             subscriptionType: 'FREE_TRIAL',
-            ownerId: 'user-ana',
             managers: [],
             whatsappNumber: '18095550199',
         })).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
@@ -342,13 +372,8 @@ describe('BusinessService', () => {
             managers: ['manager-carlos'],
         };
 
-        repository.findBusinessAccessById.mockResolvedValue({
-            id: 'biz-casa-norte',
-            ownerId: 'owner-sofia',
-            managers: ['manager-carlos'],
-            subscriptionType: 'PREMIUM_PLUS',
-            status: 'APPROVED',
-        });
+        repository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
+        repository.findBusinessById.mockResolvedValue(createBusinessRecord());
         repository.findUsersByIds.mockResolvedValue([managerUser]);
         repository.updateBusiness.mockResolvedValue(
             createBusinessRecord({
@@ -375,19 +400,59 @@ describe('BusinessService', () => {
         expect(result).toMatchObject({ name: 'Casa Norte Plus', whatsappNumber: '18095550155' });
     });
 
-    it('prevents an owner from changing managers', async () => {
+    it('allows an owner to change managers', async () => {
         const actor = createCurrentPlatformUser();
         const { service, repository } = createService(actor);
 
-        repository.findBusinessAccessById.mockResolvedValue({
-            id: 'biz-casa-norte',
-            ownerId: 'owner-sofia',
-            managers: ['manager-carlos'],
-            subscriptionType: 'PREMIUM_PLUS',
-            status: 'APPROVED',
-        });
+        repository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
+        repository.findBusinessById.mockResolvedValue(createBusinessRecord());
+        repository.findUsersByIds.mockResolvedValue([
+            managerUser,
+            {
+                id: 'manager-new',
+                fullName: 'Laura Vega',
+                email: 'laura@encuentralotodo.app',
+                role: 'USER',
+                avatarUrl: null,
+                isActive: true,
+            },
+        ]);
+        repository.updateBusiness.mockResolvedValue(
+            createBusinessRecord({
+                managers: [
+                    { userId: 'manager-carlos', user: managerUser },
+                    {
+                        userId: 'manager-new',
+                        user: {
+                            id: 'manager-new',
+                            fullName: 'Laura Vega',
+                            email: 'laura@encuentralotodo.app',
+                            role: 'USER',
+                            avatarUrl: null,
+                            isActive: true,
+                        },
+                    },
+                ],
+                memberships: [
+                    { userId: 'owner-sofia', role: 'OWNER', user: baseUser },
+                    { userId: 'manager-carlos', role: 'MANAGER', user: managerUser },
+                    {
+                        userId: 'manager-new',
+                        role: 'MANAGER',
+                        user: {
+                            id: 'manager-new',
+                            fullName: 'Laura Vega',
+                            email: 'laura@encuentralotodo.app',
+                            role: 'USER',
+                            avatarUrl: null,
+                            isActive: true,
+                        },
+                    },
+                ],
+            }),
+        );
 
-        await expect(service.updateBusiness({
+        const result = await service.updateBusiness({
             businessId: 'biz-casa-norte',
             name: 'Casa Norte Market',
             description: 'Descripción suficientemente larga para intentar cambiar managers sin permisos válidos.',
@@ -404,15 +469,15 @@ describe('BusinessService', () => {
             },
             whatsappNumber: '18095550101',
             managers: ['manager-carlos', 'manager-new'],
-        })).rejects.toMatchObject({
-            code: 'FORBIDDEN',
-            message: 'Only a SuperAdmin can change business managers.',
         });
 
-        expect(repository.updateBusiness).not.toHaveBeenCalled();
+        expect(repository.updateBusiness).toHaveBeenCalledWith(
+            expect.objectContaining({ managers: ['manager-carlos', 'manager-new'] }),
+        );
+        expect(result.managersDetailed).toHaveLength(2);
     });
 
-    it('prevents an owner from changing the membership plan', async () => {
+    it('allows an owner to change the membership plan', async () => {
         const actor = createCurrentPlatformUser();
         const { service, repository } = createService(actor);
         const input: UpdateBusinessInput = {
@@ -435,19 +500,15 @@ describe('BusinessService', () => {
             subscriptionType: 'FREE_TRIAL',
         };
 
-        repository.findBusinessAccessById.mockResolvedValue({
-            id: 'biz-casa-norte',
-            ownerId: 'owner-sofia',
-            managers: ['manager-carlos'],
-            subscriptionType: 'PREMIUM_PLUS',
-            status: 'APPROVED',
-        });
+        repository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
+        repository.findBusinessById.mockResolvedValue(createBusinessRecord());
+        repository.findUsersByIds.mockResolvedValue([managerUser]);
+        repository.updateBusiness.mockResolvedValue(createBusinessRecord({ subscriptionType: 'FREE_TRIAL' }));
 
-        await expect(service.updateBusiness(input)).rejects.toMatchObject({
-            code: 'FORBIDDEN',
-            message: 'Only a SuperAdmin can change the membership plan.',
-        });
-        expect(repository.updateBusiness).not.toHaveBeenCalled();
+        const result = await service.updateBusiness(input);
+
+        expect(repository.updateBusiness).toHaveBeenCalledWith(expect.objectContaining({ subscriptionType: 'FREE_TRIAL' }));
+        expect(result).toMatchObject({ subscriptionType: 'FREE_TRIAL' });
     });
 
     it('allows a SuperAdmin to change the membership plan', async () => {
@@ -479,13 +540,8 @@ describe('BusinessService', () => {
             subscriptionType: 'FREE_TRIAL',
         };
 
-        repository.findBusinessAccessById.mockResolvedValue({
-            id: 'biz-casa-norte',
-            ownerId: 'owner-sofia',
-            managers: ['manager-carlos'],
-            subscriptionType: 'PREMIUM_PLUS',
-            status: 'APPROVED',
-        });
+        repository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
+        repository.findBusinessById.mockResolvedValue(createBusinessRecord());
         repository.findUsersByIds.mockResolvedValue([managerUser]);
         repository.updateBusiness.mockResolvedValue(createBusinessRecord({ subscriptionType: 'FREE_TRIAL' }));
 
@@ -495,7 +551,7 @@ describe('BusinessService', () => {
         expect(result).toMatchObject({ subscriptionType: 'FREE_TRIAL' });
     });
 
-    it('prevents managers from updating the business', async () => {
+    it('allows managers to update operational business fields', async () => {
         const actor = createCurrentPlatformUser({
             id: 'manager-carlos',
             fullName: 'Carlos Mena',
@@ -507,6 +563,60 @@ describe('BusinessService', () => {
         const input: UpdateBusinessInput = {
             businessId: 'biz-casa-norte',
             name: 'Casa Norte Market',
+            description: 'Descripción suficientemente larga para una actualización operativa desde manager.',
+            category: 'GENERAL_STORE',
+            location: {
+                lat: 18.4861,
+                lng: -69.9312,
+                zone: 'Zona Colonial',
+                address: 'Calle El Conde 21, Santo Domingo',
+            },
+            images: {
+                profile: 'https://example.com/profile.jpg',
+                banner: 'https://example.com/banner.jpg',
+            },
+            whatsappNumber: '18095550199',
+            managers: ['manager-carlos'],
+        };
+
+        repository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
+        repository.findBusinessById.mockResolvedValue(createBusinessRecord());
+        repository.updateBusiness.mockResolvedValue(
+            createBusinessRecord({
+                description: input.description,
+                zone: input.location.zone,
+                address: input.location.address,
+                whatsappNumber: input.whatsappNumber,
+            }),
+        );
+
+        const result = await service.updateBusiness(input);
+
+        expect(repository.updateBusiness).toHaveBeenCalledWith(
+            expect.objectContaining({
+                description: input.description,
+                whatsappNumber: '18095550199',
+            }),
+        );
+        expect(result).toMatchObject({ whatsappNumber: '18095550199' });
+    });
+
+    it('prevents managers from changing critical business identity fields', async () => {
+        const actor = createCurrentPlatformUser({
+            id: 'manager-carlos',
+            fullName: 'Carlos Mena',
+            email: 'carlos@encuentralotodo.app',
+            role: 'USER',
+            externalAuthId: 'firebase-manager-carlos',
+        });
+        const { service, repository } = createService(actor);
+
+        repository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
+        repository.findBusinessById.mockResolvedValue(createBusinessRecord());
+
+        await expect(service.updateBusiness({
+            businessId: 'biz-casa-norte',
+            name: 'Casa Norte Rebrand',
             description: 'Descripción suficientemente larga para un intento de edición desde manager.',
             category: 'GENERAL_STORE',
             location: {
@@ -521,21 +631,10 @@ describe('BusinessService', () => {
             },
             whatsappNumber: '18095550101',
             managers: ['manager-carlos'],
-        };
-
-        repository.findBusinessAccessById.mockResolvedValue({
-            id: 'biz-casa-norte',
-            ownerId: 'owner-sofia',
-            managers: ['manager-carlos'],
-            subscriptionType: 'PREMIUM_PLUS',
-            status: 'APPROVED',
-        });
-
-        await expect(service.updateBusiness(input)).rejects.toMatchObject({
+        })).rejects.toMatchObject({
             code: 'FORBIDDEN',
-            message: 'Only the owner or a SuperAdmin can update this business.',
+            message: 'Managers can only update operational business fields.',
         });
-        expect(repository.updateBusiness).not.toHaveBeenCalled();
     });
 
     it('approve updates business status correctly', async () => {
@@ -581,7 +680,6 @@ describe('BusinessService', () => {
                 banner: 'https://example.com/banner.jpg',
             },
             subscriptionType: 'PREMIUM',
-            ownerId: 'user-ana',
             managers: [],
             whatsappNumber: '18095550200',
         };
@@ -601,6 +699,86 @@ describe('BusinessService', () => {
         await service.createBusiness(input);
 
         expect(repository.createBusiness).toHaveBeenCalledWith(expect.objectContaining({ ownerId: 'owner-sofia' }));
-        expect(repository.createBusiness).not.toHaveBeenCalledWith(expect.objectContaining({ ownerId: 'user-ana' }));
+    });
+
+    it('allows admins to create a business for another explicit owner', async () => {
+        const actor = createCurrentPlatformUser({
+            id: 'admin-luis',
+            fullName: 'Luis Admin',
+            email: 'luis@encuentralotodo.app',
+            role: 'ADMIN',
+            externalAuthId: 'firebase-admin-luis',
+        });
+        const { service, repository } = createService(actor);
+
+        repository.findUserById
+            .mockResolvedValueOnce({
+                id: 'owner-lucia',
+                fullName: 'Lucia Diaz',
+                email: 'lucia@encuentralotodo.app',
+                role: 'USER',
+                avatarUrl: null,
+                isActive: true,
+            })
+            .mockResolvedValueOnce(baseUser);
+        repository.findUsersByIds.mockResolvedValue([managerUser]);
+        repository.createBusiness.mockResolvedValue(
+            createBusinessRecord({
+                id: 'biz-admin-owner',
+                ownerId: 'owner-lucia',
+                owner: {
+                    id: 'owner-lucia',
+                    fullName: 'Lucia Diaz',
+                    email: 'lucia@encuentralotodo.app',
+                    role: 'USER',
+                    avatarUrl: null,
+                    isActive: true,
+                },
+                memberships: [
+                    {
+                        userId: 'owner-lucia',
+                        role: 'OWNER',
+                        user: {
+                            id: 'owner-lucia',
+                            fullName: 'Lucia Diaz',
+                            email: 'lucia@encuentralotodo.app',
+                            role: 'USER',
+                            avatarUrl: null,
+                            isActive: true,
+                        },
+                    },
+                    { userId: managerUser.id, role: 'MANAGER', user: managerUser },
+                ],
+                managers: [{ userId: managerUser.id, user: managerUser }],
+                products: [],
+                promotions: [],
+                reviews: [],
+            }),
+        );
+
+        const result = await service.createBusinessForOwner({
+            name: 'Negocio delegado',
+            description: 'Descripción suficientemente larga para el alta delegada desde administración.',
+            category: 'GENERAL_STORE',
+            location: {
+                lat: 18.47,
+                lng: -69.9,
+                zone: 'Piantini',
+                address: 'Av. Sarasota 10',
+            },
+            images: {
+                profile: 'https://example.com/profile.jpg',
+                banner: 'https://example.com/banner.jpg',
+            },
+            subscriptionType: 'PREMIUM',
+            ownerId: 'owner-lucia',
+            managers: ['manager-carlos'],
+            whatsappNumber: '18095550200',
+        });
+
+        expect(repository.createBusiness).toHaveBeenCalledWith(
+            expect.objectContaining({ ownerId: 'owner-lucia' }),
+        );
+        expect(result.ownerId).toBe('owner-lucia');
     });
 });

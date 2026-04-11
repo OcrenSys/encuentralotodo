@@ -270,7 +270,11 @@ export class ProductService {
             };
         }
 
-        if (!canManageBusiness(currentUser, { ownerId: business.ownerId, managers: business.managers })) {
+        if (!canManageBusiness(currentUser, {
+            ownerId: business.ownerId,
+            managers: business.managers,
+            memberships: business.memberships,
+        })) {
             input.items.forEach((row) => {
                 errors.push(buildImportValidationMessage(row.rowNumber, 'No tienes acceso para importar productos en este negocio.'));
             });
@@ -348,7 +352,11 @@ export class ProductService {
             throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
         }
 
-        if (!canManageBusiness(this.currentUser, { ownerId: business.ownerId, managers: business.managers.map((manager) => typeof manager === 'string' ? manager : manager.userId) })) {
+        if (!canManageBusiness(this.currentUser, {
+            ownerId: business.ownerId,
+            managers: business.managers.map((manager) => typeof manager === 'string' ? manager : manager.userId),
+            memberships: 'memberships' in business ? business.memberships : undefined,
+        })) {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'Business access required.' });
         }
     }

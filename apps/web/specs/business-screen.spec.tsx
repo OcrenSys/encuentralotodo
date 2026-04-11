@@ -115,15 +115,14 @@ jest.mock('../src/lib/trpc', () => ({
       managedPage: {
         useQuery: jest.fn(),
       },
+      transferOwnership: {
+        useMutation: jest.fn(),
+      },
       update: {
         useMutation: jest.fn(),
       },
     },
-    admin: {
-      transferBusinessOwnership: {
-        useMutation: jest.fn(),
-      },
-    },
+    admin: {},
   },
 }));
 
@@ -196,13 +195,13 @@ describe('BusinessScreen', () => {
       isPending: false,
     });
 
-    trpc.admin.transferBusinessOwnership.useMutation.mockReturnValue({
+    trpc.business.transferOwnership.useMutation.mockReturnValue({
       mutate: mutateTransferMock,
       isPending: false,
     });
   });
 
-  it('allows the owner to save general business changes', async () => {
+  it('shows owner-only management controls for the current owner', async () => {
     useCurrentUserRole.mockReturnValue({
       currentUser: { id: 'owner-sofia', role: 'USER' },
       isLoading: false,
@@ -211,28 +210,21 @@ describe('BusinessScreen', () => {
 
     render(<BusinessScreen />);
 
-    fireEvent.change(screen.getByDisplayValue('Casa Norte Market'), {
-      target: { value: 'Casa Norte Express' },
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
-
     await act(async () => {
       await Promise.resolve();
     });
 
-    expect(mutateUpdateMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByDisplayValue('Casa Norte Market')).toBeTruthy();
     expect(screen.getByText('Managers selector')).toBeTruthy();
-    expect(mutateUpdateMock.mock.calls[0][0]).toMatchObject({
-      businessId: 'biz-casa-norte',
-      managers: ['manager-carlos'],
-      name: 'Casa Norte Express',
-      whatsappNumber: '18095550101',
-    });
-    expect(mutateUpdateMock.mock.calls[0][0].subscriptionType).toBeUndefined();
+    expect(
+      screen.getByRole('button', { name: 'Transferir owner' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Guardar cambios' }),
+    ).toBeTruthy();
   });
 
-  it('keeps managers in read-only mode', () => {
+  it('lets managers edit operational fields while keeping owner controls locked', async () => {
     useCurrentUserRole.mockReturnValue({
       currentUser: { id: 'manager-carlos', role: 'USER' },
       isLoading: false,
@@ -241,10 +233,30 @@ describe('BusinessScreen', () => {
 
     render(<BusinessScreen />);
 
-    expect(screen.getByText('Vista solo lectura')).toBeTruthy();
-    expect(
-      screen.queryByRole('button', { name: 'Guardar cambios' }),
-    ).toBeNull();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('Edición operativa')).toBeTruthy();
+
+    fireEvent.change(screen.getByPlaceholderText('18095550101'), {
+      target: { value: '18095550199' },
+    });
+    fireEvent.submit(
+      screen.getByRole('button', { name: 'Guardar cambios' }).closest('form')!,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mutateUpdateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: 'biz-casa-norte',
+        whatsappNumber: '18095550199',
+      }),
+    );
+    expect(screen.queryByText('Managers selector')).toBeNull();
   });
 
   it('lets SuperAdmin switch businesses from the paginated search selector', async () => {

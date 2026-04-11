@@ -2,6 +2,7 @@ import {
   adminUserProfileUpdateInputSchema,
   assignUserBusinessRoleInputSchema,
   approveBusinessInputSchema,
+  createBusinessForOwnerInputSchema,
   getUserByIdInputSchema,
   listPlatformUsersInputSchema,
   removeUserBusinessRoleInputSchema,
@@ -16,6 +17,9 @@ import { adminProcedure, router, superAdminProcedure } from '../trpc';
 
 export const adminRouter = router({
   pendingBusinesses: adminProcedure.query(({ ctx }) => ctx.businessService.listPendingBusinesses()),
+  createBusinessForOwner: adminProcedure.input(createBusinessForOwnerInputSchema).mutation(({ ctx, input }) => {
+    return ctx.businessService.createBusinessForOwner(input);
+  }),
   approveBusiness: adminProcedure.input(approveBusinessInputSchema).mutation(({ ctx, input }) => {
     return ctx.businessService.approveBusiness({ businessId: input.businessId });
   }),

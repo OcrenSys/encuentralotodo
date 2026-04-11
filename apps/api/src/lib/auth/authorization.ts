@@ -23,6 +23,10 @@ export interface FutureBusinessPlanAuthorizationContext {
 export interface BusinessAccessContext {
     ownerId: string;
     managers: readonly string[];
+    memberships?: ReadonlyArray<{
+        userId: string;
+        role: 'OWNER' | 'MANAGER';
+    }>;
 }
 
 export function hasPlatformRole(subject: RoleSubject, allowedRoles: readonly UserRole[]) {
@@ -42,6 +46,11 @@ export function hasBusinessAccess(
     }
 
     if (hasPlatformRole(subject, platformAdminRoles)) {
+        return true;
+    }
+
+    const canonicalMembership = business.memberships?.some((membership) => membership.userId === subject.id);
+    if (canonicalMembership) {
         return true;
     }
 

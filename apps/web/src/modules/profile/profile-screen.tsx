@@ -79,6 +79,19 @@ export function ProfileScreen() {
     },
   });
 
+  const removeOwnBusinessRole = trpc.auth.removeOwnBusinessRole.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.auth.profile.invalidate(),
+        utils.auth.me.invalidate(),
+      ]);
+      toast.success('Asignación removida correctamente.');
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   if (profileQuery.isLoading) {
     return <LoadingSkeleton className="h-[420px]" />;
   }
@@ -286,6 +299,24 @@ export function ProfileScreen() {
                       ) : null}
                     </div>
                   </div>
+                  {assignment.role === 'MANAGER' ? (
+                    <div className="flex justify-end">
+                      <Button
+                        disabled={removeOwnBusinessRole.isPending}
+                        onClick={() =>
+                          removeOwnBusinessRole.mutate({
+                            businessId: assignment.businessId,
+                          })
+                        }
+                        type="button"
+                        variant="ghost"
+                      >
+                        {removeOwnBusinessRole.isPending
+                          ? 'Actualizando...'
+                          : 'Salir de este negocio'}
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>

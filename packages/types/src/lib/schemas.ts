@@ -48,16 +48,21 @@ export const businessImagesSchema = z.object({
     banner: z.string().url(),
 });
 
-export const createBusinessInputSchema = z.object({
+const businessCreateBaseSchema = z.object({
     name: z.string().min(2).max(80),
     description: z.string().min(20).max(600),
     category: businessCategorySchema,
     location: businessLocationSchema,
     images: businessImagesSchema,
     subscriptionType: subscriptionTypeSchema,
-    ownerId: z.string().min(2),
     managers: z.array(z.string()).default([]),
     whatsappNumber: z.string().min(10).max(20),
+});
+
+export const createBusinessInputSchema = businessCreateBaseSchema;
+
+export const createBusinessForOwnerInputSchema = businessCreateBaseSchema.extend({
+    ownerId: z.string().min(2),
 });
 
 export const updateBusinessInputSchema = z.object({
@@ -295,9 +300,19 @@ export const transferBusinessOwnershipInputSchema = z.object({
     reason: z.string().trim().max(240).optional(),
 });
 
+export const removeOwnBusinessRoleInputSchema = z.object({
+    businessId: z.string().min(2),
+});
+
 export const listManagedBusinessesInputSchema = managementPaginationInputSchema.extend({
     category: businessCategorySchema.or(z.literal('ALL')).optional().default('ALL'),
     status: businessStatusSchema.or(z.literal('ALL')).optional().default('ALL'),
+});
+
+export const searchBusinessUsersInputSchema = z.object({
+    businessId: z.string().min(2),
+    search: z.string().trim().max(80).optional().default(''),
+    limit: z.number().int().min(1).max(10).optional().default(10),
 });
 
 export const listPlatformUsersInputSchema = managementPaginationInputSchema.extend({
@@ -311,6 +326,7 @@ export const searchPlatformUsersInputSchema = z.object({
 });
 
 export type CreateBusinessInput = z.infer<typeof createBusinessInputSchema>;
+export type CreateBusinessForOwnerInput = z.infer<typeof createBusinessForOwnerInputSchema>;
 export type UpdateBusinessInput = z.infer<typeof updateBusinessInputSchema>;
 export type ListBusinessesInput = z.infer<typeof listBusinessesInputSchema>;
 export type GetBusinessByIdInput = z.infer<typeof getBusinessByIdInputSchema>;
@@ -342,6 +358,8 @@ export type UpdateBaseUserRoleInput = z.infer<typeof updateBaseUserRoleInputSche
 export type AssignUserBusinessRoleInput = z.infer<typeof assignUserBusinessRoleInputSchema>;
 export type RemoveUserBusinessRoleInput = z.infer<typeof removeUserBusinessRoleInputSchema>;
 export type TransferBusinessOwnershipInput = z.infer<typeof transferBusinessOwnershipInputSchema>;
+export type RemoveOwnBusinessRoleInput = z.infer<typeof removeOwnBusinessRoleInputSchema>;
 export type ListManagedBusinessesInput = z.infer<typeof listManagedBusinessesInputSchema>;
+export type SearchBusinessUsersInput = z.infer<typeof searchBusinessUsersInputSchema>;
 export type ListPlatformUsersInput = z.infer<typeof listPlatformUsersInputSchema>;
 export type SearchPlatformUsersInput = z.infer<typeof searchPlatformUsersInputSchema>;

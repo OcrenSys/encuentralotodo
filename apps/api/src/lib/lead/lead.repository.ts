@@ -1,4 +1,5 @@
 import type {
+    BusinessAssignmentRole,
     CreateLeadInput,
     LeadSource,
     LeadStatus,
@@ -23,6 +24,7 @@ export interface RepositoryLeadWithBusinessRecord extends RepositoryLeadRecord {
         id: string;
         ownerId: string;
         managers: Array<{ userId: string }>;
+        memberships: Array<{ userId: string; role: BusinessAssignmentRole }>;
     };
 }
 
@@ -79,6 +81,10 @@ function mapLeadWithBusinessRecord(record: any): RepositoryLeadWithBusinessRecor
             id: record.business.id,
             ownerId: record.business.ownerId,
             managers: (record.business.managers ?? []).map((manager: any) => ({ userId: manager.userId })),
+            memberships: (record.business.userRoles ?? []).map((membership: any) => ({
+                userId: membership.userId,
+                role: membership.role,
+            })),
         },
     };
 }
@@ -129,6 +135,12 @@ export class LeadRepository implements LeadRepositoryPort {
                         managers: {
                             select: {
                                 userId: true,
+                            },
+                        },
+                        userRoles: {
+                            select: {
+                                userId: true,
+                                role: true,
                             },
                         },
                     },

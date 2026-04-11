@@ -15,7 +15,12 @@ import {
 } from 'lucide-react';
 import { z } from 'zod';
 
-import { createBusinessInputSchema, type CreateBusinessInput } from 'types';
+import {
+  createBusinessForOwnerInputSchema,
+  createBusinessInputSchema,
+  type CreateBusinessForOwnerInput,
+  type CreateBusinessInput,
+} from 'types';
 import {
   Badge,
   BottomNavigation,
@@ -41,7 +46,11 @@ import { useCurrentUserRole } from '../lib/platform-authorization';
 import { hasPlatformRole, platformAdminRoles } from '../lib/platform-roles';
 import { trpc } from '../lib/trpc';
 
-type CreateBusinessFormValues = z.input<typeof createBusinessInputSchema>;
+const createBusinessFormSchema = createBusinessForOwnerInputSchema.extend({
+  ownerId: z.string().min(2).optional(),
+});
+
+type CreateBusinessFormValues = z.input<typeof createBusinessFormSchema>;
 
 const defaultValues: CreateBusinessFormValues = {
   name: '',
@@ -101,20 +110,20 @@ const subscriptionOptions = [
   },
 ] as const;
 
-const generalStepSchema = createBusinessInputSchema.pick({
+const generalStepSchema = createBusinessFormSchema.pick({
   name: true,
   description: true,
   category: true,
   subscriptionType: true,
 });
 
-const locationOwnershipStepSchema = createBusinessInputSchema.pick({
+const locationOwnershipStepSchema = createBusinessFormSchema.pick({
   location: true,
   whatsappNumber: true,
   ownerId: true,
 });
 
-const mediaManagementStepSchema = createBusinessInputSchema.pick({
+const mediaManagementStepSchema = createBusinessFormSchema.pick({
   images: true,
   managers: true,
 });
@@ -158,12 +167,23 @@ export function SubmitBusinessForm() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isStepThreeConfirmed, setIsStepThreeConfirmed] = useState(false);
   const form = useForm<CreateBusinessFormValues>({
-    resolver: zodResolver(createBusinessInputSchema),
+    resolver: zodResolver(createBusinessFormSchema),
     defaultValues,
   });
   const watchedValues = useWatch({ control: form.control });
 
   const createBusiness = trpc.business.create.useMutation({
+    onSuccess: async () => {
+      await utils.business.list.invalidate();
+      toast.success('Negocio enviado para aprobación.');
+      router.push(canAssignUsers ? '/admin' : '/dashboard');
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const createBusinessForOwner = trpc.admin.createBusinessForOwner.useMutation({
     onSuccess: async () => {
       await utils.business.list.invalidate();
       toast.success('Negocio enviado para aprobación.');
@@ -175,12 +195,26 @@ export function SubmitBusinessForm() {
   });
 
   const onSubmit = form.handleSubmit((values) => {
-    const payload = createBusinessInputSchema.parse(values);
+    if (canAssignUsers) {
+      const payload = createBusinessForOwnerInputSchema.parse(
+        values,
+      ) as CreateBusinessForOwnerInput;
+
+      createBusinessForOwner.mutate(payload);
+      return;
+    }
+
+    const { ownerId: _ignoredOwnerId, ...selfServiceValues } = values;
+    const payload = createBusinessInputSchema.parse(
+      selfServiceValues,
+    ) as CreateBusinessInput;
 
     createBusiness.mutate(payload);
   });
 
-  const selectedOwnerId = form.watch('ownerId');
+  const selectedOwnerId = form.watch('ownerId') ?? currentUser?.id ?? '';
+  const isSubmitting =
+    createBusiness.isPending || createBusinessForOwner.isPending;
   const stepValidity = formSteps.map(
     (step) => step.schema.safeParse(watchedValues).success,
   );
@@ -575,31 +609,39 @@ export function SubmitBusinessForm() {
                   hint={
                     canAssignUsers
                       ? 'Búsqueda remota con debounce. Se consultan hasta 10 usuarios por intento.'
-                      : 'Necesitas un rol admin activo para buscar propietarios reales.'
+                      : 'En el alta self-service, la cuenta autenticada actual se convierte automáticamente en owner.'
                   }
                   label="Responsable principal"
                 >
-                  <BusinessOwnerSelect
-                    canSearchOwners={canAssignUsers}
-                    disabled={isCurrentUserLoading || !canAssignUsers}
-                    onSelect={(user) => {
-                      form.setValue('ownerId', user.id, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                      form.setValue(
-                        'managers',
-                        (form.getValues('managers') ?? []).filter(
-                          (managerId) => managerId !== user.id,
-                        ),
-                        {
+                  {canAssignUsers ? (
+                    <BusinessOwnerSelect
+                      canSearchOwners={canAssignUsers}
+                      disabled={isCurrentUserLoading || !canAssignUsers}
+                      onSelect={(user) => {
+                        form.setValue('ownerId', user.id, {
                           shouldDirty: true,
                           shouldValidate: true,
-                        },
-                      );
-                    }}
-                    value={selectedOwnerId}
-                  />
+                        });
+                        form.setValue(
+                          'managers',
+                          (form.getValues('managers') ?? []).filter(
+                            (managerId) => managerId !== user.id,
+                          ),
+                          {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          },
+                        );
+                      }}
+                      value={selectedOwnerId}
+                    />
+                  ) : (
+                    <div className="rounded-[var(--radius-lg)] border border-border-subtle bg-white/70 px-4 py-3 text-sm text-text-muted">
+                      {currentUser
+                        ? `${currentUser.fullName} será el owner inicial del negocio cuando envíes este alta.`
+                        : 'Necesitas una sesión autenticada para crear un negocio en modo self-service.'}
+                    </div>
+                  )}
                 </FormField>
               </div>
             </FormSection>
@@ -622,7 +664,7 @@ export function SubmitBusinessForm() {
                     name="images.profile"
                     render={({ field }) => (
                       <ImageDropzone
-                        disabled={createBusiness.isPending}
+                        disabled={isSubmitting}
                         maxFileCount={1}
                         maxFileSizeBytes={5 * 1024 * 1024}
                         onChange={(nextImages) => {
@@ -647,7 +689,7 @@ export function SubmitBusinessForm() {
                     name="images.banner"
                     render={({ field }) => (
                       <ImageDropzone
-                        disabled={createBusiness.isPending}
+                        disabled={isSubmitting}
                         maxFileCount={1}
                         maxFileSizeBytes={8 * 1024 * 1024}
                         onChange={(nextImages) => {
@@ -691,8 +733,9 @@ export function SubmitBusinessForm() {
 
           <div className="flex flex-col gap-3 px-5 pb-5 lg:col-span-2 lg:flex-row lg:items-center lg:justify-between">
             <p className="text-sm leading-6 text-text-muted">
-              El payload final incluye `ownerId` real, categoría, suscripción,
-              media y ubicación completa.
+              {canAssignUsers
+                ? 'El payload final incluye owner explícito, categoría, suscripción, media y ubicación completa.'
+                : 'El payload final usa la cuenta autenticada actual como owner y conserva categoría, suscripción, media y ubicación completa.'}
             </p>
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
               {currentStepIndex > 0 ? (

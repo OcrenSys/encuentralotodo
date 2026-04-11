@@ -1,6 +1,7 @@
 import { createCurrentUser } from 'auth';
 import type { UserRole } from 'types';
 
+import type { BusinessRepositoryPort } from '../business/business.repository';
 import type { RepositoryPlatformUserRecord, UserAdminRepositoryPort } from './user-admin.repository';
 import { UserAdminService } from './user-admin.service';
 
@@ -11,7 +12,9 @@ function createPlatformUser(overrides: Partial<RepositoryPlatformUserRecord> = {
         email: 'ana@encuentralotodo.app',
         role: 'USER',
         avatarUrl: null,
+        phone: null,
         isActive: true,
+        lastAccessAt: null,
         createdAt: new Date('2026-04-01T10:00:00.000Z'),
         updatedAt: new Date('2026-04-01T10:00:00.000Z'),
         identities: [
@@ -29,12 +32,44 @@ function createPlatformUser(overrides: Partial<RepositoryPlatformUserRecord> = {
 function createRepositoryMock(): jest.Mocked<UserAdminRepositoryPort> {
     return {
         listUsers: jest.fn(),
+        listUsersPage: jest.fn(),
         searchUsers: jest.fn(),
         findUserById: jest.fn(),
+        listUserBusinessRoles: jest.fn(),
+        listBusinessesForAssignment: jest.fn(),
+        listBusinessesOwnedByUser: jest.fn(),
+        updateUserProfile: jest.fn(),
+        updateBaseUserRole: jest.fn(),
         updateUserRole: jest.fn(),
         setUserActive: jest.fn(),
         countUsersByRole: jest.fn(),
-    };
+        assignUserBusinessRole: jest.fn(),
+        removeUserBusinessRole: jest.fn(),
+        countBusinessOwners: jest.fn(),
+        transferBusinessOwnership: jest.fn(),
+        createAuditLog: jest.fn(),
+        listAuditLogsForUser: jest.fn(),
+    } as unknown as jest.Mocked<UserAdminRepositoryPort>;
+}
+
+function createBusinessRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
+    return {
+        listBusinesses: jest.fn(),
+        listBusinessesForManagement: jest.fn(),
+        listBusinessesByUserAccess: jest.fn(),
+        listBusinessesForManagementPage: jest.fn(),
+        listBusinessesByUserAccessPage: jest.fn(),
+        synchronizeCanonicalMemberships: jest.fn(),
+        findBusinessById: jest.fn(),
+        findBusinessAccessById: jest.fn(),
+        listPendingBusinesses: jest.fn(),
+        createBusiness: jest.fn(),
+        updateBusiness: jest.fn(),
+        approveBusiness: jest.fn(),
+        searchUsers: jest.fn(),
+        findUserById: jest.fn(),
+        findUsersByIds: jest.fn(),
+    } as unknown as jest.Mocked<BusinessRepositoryPort>;
 }
 
 function createService(options?: {
@@ -44,11 +79,14 @@ function createService(options?: {
     repository?: jest.Mocked<UserAdminRepositoryPort>;
 }) {
     const repository = options?.repository ?? createRepositoryMock();
+    const businessRepository = createBusinessRepositoryMock();
 
     return {
         repository,
+        businessRepository,
         service: new UserAdminService({
             repository,
+            businessRepository,
             currentUser: createCurrentUser({
                 id: options?.currentUserId ?? 'superadmin-1',
                 fullName: 'Super Admin',

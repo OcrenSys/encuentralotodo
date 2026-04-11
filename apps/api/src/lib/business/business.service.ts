@@ -2,23 +2,29 @@ import { TRPCError } from '@trpc/server';
 import type { CurrentUser } from 'auth';
 import type {
     BusinessListFilters,
+    CreateBusinessForOwnerInput,
     CreateBusinessInput,
     ListManagedBusinessesInput,
     ManagementListResult,
     BusinessDetails,
+    PlatformUserSearchResult,
+    SearchBusinessUsersInput,
+    TransferBusinessOwnershipInput,
     UpdateBusinessInput,
 } from 'types';
 
 import { isSuperAdmin, platformAdminRoles, requireActiveUser, requirePlatformRole } from '../auth/authorization';
 import type { EmailService } from '../email';
-import { canEditBusiness, isAdminUser } from './business-access';
+import { canEditBusiness, canEditBusinessOperationally, isAdminUser, isBusinessOwner } from './business-access';
 import { mapBusiness, mapBusinessDetails, mapBusinessSummary } from './business.mappers';
 import type { BusinessRepositoryPort } from './business.repository';
+import type { UserAdminRepositoryPort } from '../user/user-admin.repository';
 
 interface BusinessServiceDependencies {
     repository: BusinessRepositoryPort;
     emailService: EmailService;
     currentUser: CurrentUser | null;
+    userAdminRepository?: Pick<UserAdminRepositoryPort, 'countBusinessOwners' | 'createAuditLog' | 'transferBusinessOwnership'>;
 }
 
 function sortBusinessSummaries(left: ReturnType<typeof mapBusinessSummary>, right: ReturnType<typeof mapBusinessSummary>) {
@@ -41,15 +47,30 @@ function haveSameManagers(left: string[], right: string[]) {
     return right.every((managerId) => leftSet.has(managerId));
 }
 
+function haveSameImages(
+    left: UpdateBusinessInput['images'],
+    right: Pick<BusinessDetails, 'images'>['images'],
+) {
+    return left.profile === right.profile && left.banner === right.banner;
+}
+
+function hasCriticalIdentityChanges(currentBusiness: BusinessDetails, input: UpdateBusinessInput) {
+    return currentBusiness.name !== input.name
+        || currentBusiness.category !== input.category
+        || !haveSameImages(input.images, currentBusiness.images);
+}
+
 export class BusinessService {
     private readonly repository: BusinessRepositoryPort;
     private readonly emailService: EmailService;
     private readonly currentUser: CurrentUser | null;
+    private readonly userAdminRepository?: Pick<UserAdminRepositoryPort, 'countBusinessOwners' | 'createAuditLog' | 'transferBusinessOwnership'>;
 
-    constructor({ repository, emailService, currentUser }: BusinessServiceDependencies) {
+    constructor({ repository, emailService, currentUser, userAdminRepository }: BusinessServiceDependencies) {
         this.repository = repository;
         this.emailService = emailService;
         this.currentUser = currentUser;
+        this.userAdminRepository = userAdminRepository;
     }
 
     async listBusinesses(filters: BusinessListFilters = {}) {
@@ -96,6 +117,33 @@ export class BusinessService {
         };
     }
 
+    async searchAssignableUsers(input: SearchBusinessUsersInput): Promise<PlatformUserSearchResult[]> {
+        const currentUser = requireActiveUser(this.currentUser);
+        const business = await this.repository.findBusinessAccessById(input.businessId);
+
+        if (!business) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
+        }
+
+        if (!canEditBusiness(currentUser, business)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can manage business membership.' });
+        }
+
+        const users = await this.repository.searchUsers({
+            search: input.search,
+            limit: Math.min(input.limit, 10),
+        });
+
+        return users.map((user) => ({
+            id: user.id,
+            fullName: user.fullName,
+            email: user.email,
+            role: user.role,
+            avatarUrl: user.avatarUrl ?? undefined,
+            isActive: user.isActive,
+        }));
+    }
+
     async createBusiness(input: CreateBusinessInput) {
         const currentUser = requireActiveUser(this.currentUser);
         const owner = await this.repository.findUserById(currentUser.id);
@@ -104,13 +152,25 @@ export class BusinessService {
             throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authenticated owner not found.' });
         }
 
-        const ownerId = owner.id;
-        const managers = await this.resolveManagerIds(input.managers, ownerId);
-        const business = await this.repository.createBusiness({
-            ...input,
-            ownerId,
-            managers,
-            status: 'PENDING',
+        const business = await this.createBusinessRecord({
+            input,
+            ownerId: owner.id,
+        });
+
+        return mapBusinessSummary(business);
+    }
+
+    async createBusinessForOwner(input: CreateBusinessForOwnerInput) {
+        requirePlatformRole(this.currentUser, platformAdminRoles, 'Admin access required.');
+
+        const owner = await this.repository.findUserById(input.ownerId);
+        if (!owner) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Selected owner does not exist.' });
+        }
+
+        const business = await this.createBusinessRecord({
+            input,
+            ownerId: owner.id,
         });
 
         return mapBusinessSummary(business);
@@ -118,32 +178,43 @@ export class BusinessService {
 
     async updateBusiness(input: UpdateBusinessInput) {
         const currentUser = requireActiveUser(this.currentUser);
-        const businessAccess = await this.repository.findBusinessAccessById(input.businessId);
+        const [businessAccess, currentBusiness] = await Promise.all([
+            this.repository.findBusinessAccessById(input.businessId),
+            this.repository.findBusinessById(input.businessId),
+        ]);
 
-        if (!businessAccess) {
+        if (!businessAccess || !currentBusiness) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
         }
 
         const isAllowedSuperAdmin = isSuperAdmin(currentUser);
-        if (!canEditBusiness(currentUser, businessAccess)) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can update this business.' });
+        if (!canEditBusinessOperationally(currentUser, businessAccess)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Business access required.' });
         }
 
-        if (!isAllowedSuperAdmin && input.subscriptionType && input.subscriptionType !== businessAccess.subscriptionType) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only a SuperAdmin can change the membership plan.' });
+        const isOwner = isBusinessOwner(currentUser, businessAccess);
+
+        if (!isAllowedSuperAdmin && !isOwner) {
+            if (input.subscriptionType && input.subscriptionType !== businessAccess.subscriptionType) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can change the membership plan.' });
+            }
+
+            if (!haveSameManagers(input.managers, businessAccess.managers)) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can change business managers.' });
+            }
+
+            if (hasCriticalIdentityChanges(mapBusinessDetails(currentBusiness), input)) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Managers can only update operational business fields.' });
+            }
         }
 
-        if (!isAllowedSuperAdmin && !haveSameManagers(input.managers, businessAccess.managers)) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only a SuperAdmin can change business managers.' });
-        }
-
-        const managers = isAllowedSuperAdmin
+        const managers = (isAllowedSuperAdmin || isOwner)
             ? await this.resolveManagerIds(input.managers ?? businessAccess.managers, businessAccess.ownerId)
             : businessAccess.managers;
         const updatedBusiness = await this.repository.updateBusiness({
             ...input,
             managers,
-            subscriptionType: isAllowedSuperAdmin
+            subscriptionType: (isAllowedSuperAdmin || isOwner)
                 ? (input.subscriptionType ?? businessAccess.subscriptionType)
                 : businessAccess.subscriptionType,
         });
@@ -186,8 +257,69 @@ export class BusinessService {
         return { business, owner };
     }
 
+    async transferOwnership(input: TransferBusinessOwnershipInput) {
+        const currentUser = requireActiveUser(this.currentUser);
+        const businessAccess = await this.repository.findBusinessAccessById(input.businessId);
+
+        if (!this.userAdminRepository) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Ownership transfer support is not available.' });
+        }
+
+        if (!businessAccess) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
+        }
+
+        const isAllowedSuperAdmin = isSuperAdmin(currentUser);
+        if (!isAllowedSuperAdmin && !isBusinessOwner(currentUser, businessAccess)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can transfer ownership.' });
+        }
+
+        if (!isAllowedSuperAdmin && currentUser.id !== input.fromUserId) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Ownership transfer must originate from the current owner.' });
+        }
+
+        const ownerCount = await this.userAdminRepository.countBusinessOwners(input.businessId);
+        if (ownerCount <= 1 && input.fromUserId === input.toUserId) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Ownership transfer requires a different target owner.',
+            });
+        }
+
+        await this.userAdminRepository.transferBusinessOwnership({
+            businessId: input.businessId,
+            fromUserId: input.fromUserId,
+            toUserId: input.toUserId,
+        });
+
+        await this.userAdminRepository.createAuditLog({
+            actorUserId: currentUser.id,
+            targetUserId: input.toUserId,
+            businessId: input.businessId,
+            action: 'BUSINESS_OWNERSHIP_TRANSFERRED',
+            metadata: {
+                fromUserId: input.fromUserId,
+                toUserId: input.toUserId,
+                reason: input.reason,
+            },
+        });
+
+        return this.getBusinessById(input.businessId);
+    }
+
     private ensureAdmin() {
         return requirePlatformRole(this.currentUser, platformAdminRoles, 'Admin access required.');
+    }
+
+    private async createBusinessRecord(input: { input: CreateBusinessInput | CreateBusinessForOwnerInput; ownerId: string }) {
+        const managers = await this.resolveManagerIds(input.input.managers, input.ownerId);
+
+        return this.repository.createBusiness({
+            ...input.input,
+            ownerId: input.ownerId,
+            managers,
+            status: 'PENDING',
+        });
     }
 
     private async resolveManagerIds(managerIds: string[], ownerId: string) {

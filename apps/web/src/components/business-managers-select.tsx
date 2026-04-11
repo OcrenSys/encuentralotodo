@@ -44,6 +44,7 @@ interface BusinessManagersSelectProps {
   onChange: (managerIds: string[]) => void;
   disabled?: boolean;
   canSearchManagers: boolean;
+  businessId?: string;
 }
 
 export function BusinessManagersSelect({
@@ -52,6 +53,7 @@ export function BusinessManagersSelect({
   onChange,
   disabled = false,
   canSearchManagers,
+  businessId,
 }: BusinessManagersSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,17 +62,35 @@ export function BusinessManagersSelect({
   >([]);
   const debouncedSearch = useDebouncedValue(searchTerm, 280);
 
-  const managerSearchQuery = trpc.admin.searchUsers.useQuery(
+  const adminManagerSearchQuery = trpc.admin.searchUsers.useQuery(
     {
       search: debouncedSearch,
       limit: 10,
     },
     {
-      enabled: isOpen && canSearchManagers,
+      enabled: isOpen && canSearchManagers && !businessId,
       retry: false,
       staleTime: 30_000,
     },
   );
+
+  const businessManagerSearchQuery =
+    trpc.business.searchAssignableUsers.useQuery(
+      {
+        businessId: businessId ?? '',
+        search: debouncedSearch,
+        limit: 10,
+      },
+      {
+        enabled: isOpen && canSearchManagers && Boolean(businessId),
+        retry: false,
+        staleTime: 30_000,
+      },
+    );
+
+  const managerSearchQuery = businessId
+    ? businessManagerSearchQuery
+    : adminManagerSearchQuery;
 
   useEffect(() => {
     setSelectedManagers((current) =>

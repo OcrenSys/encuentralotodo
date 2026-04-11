@@ -1,4 +1,5 @@
 import type {
+    BusinessAssignmentRole,
     CreatePromotionInput,
     UpdatePromotionInput,
 } from 'types';
@@ -25,6 +26,7 @@ export interface RepositoryPromotionWithBusinessRecord extends RepositoryPromoti
         subscriptionType: 'FREE_TRIAL' | 'PREMIUM' | 'PREMIUM_PLUS';
         status: 'PENDING' | 'APPROVED';
         managers: Array<{ userId: string }>;
+        memberships: Array<{ userId: string; role: BusinessAssignmentRole }>;
     };
 }
 
@@ -75,6 +77,10 @@ function mapPromotionWithBusinessRecord(record: any): RepositoryPromotionWithBus
             subscriptionType: record.business.subscriptionType,
             status: record.business.status,
             managers: (record.business.managers ?? []).map((manager: any) => ({ userId: manager.userId })),
+            memberships: (record.business.userRoles ?? []).map((membership: any) => ({
+                userId: membership.userId,
+                role: membership.role,
+            })),
         },
     };
 }
@@ -133,6 +139,12 @@ export class PromotionRepository implements PromotionRepositoryPort {
                         managers: {
                             select: {
                                 userId: true,
+                            },
+                        },
+                        userRoles: {
+                            select: {
+                                userId: true,
+                                role: true,
                             },
                         },
                     },

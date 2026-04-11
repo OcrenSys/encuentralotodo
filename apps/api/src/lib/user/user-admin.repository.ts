@@ -213,6 +213,13 @@ function mapAuditLogRecord(record: any): RepositoryAuditLogRecord {
     };
 }
 
+const userBusinessRoleBusinessSelect = {
+    id: true,
+    name: true,
+    status: true,
+    ownerId: true,
+} as const;
+
 export class UserAdminRepository implements UserAdminRepositoryPort {
     constructor(private readonly prisma: ReturnType<typeof getPrismaClient>) { }
 
@@ -373,7 +380,12 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
     async listBusinessesOwnedByUser(userId: string) {
         return this.prisma.business.findMany({
             where: {
-                ownerId: userId,
+                userRoles: {
+                    some: {
+                        userId,
+                        role: 'OWNER',
+                    },
+                },
             },
             orderBy: [{ name: 'asc' }],
             select: {
@@ -478,27 +490,7 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
     }
 
     async assignUserBusinessRole(input: { userId: string; businessId: string; role: BusinessAssignmentRole }) {
-        const record = await this.prisma.userBusinessRole.upsert({
-            where: {
-                userId_businessId_role: {
-                    userId: input.userId,
-                    businessId: input.businessId,
-                    role: input.role,
-                },
-            },
-            update: {},
-            create: input,
-            include: {
-                business: {
-                    select: {
-                        id: true,
-                        name: true,
-                        status: true,
-                        ownerId: true,
-                    },
-                },
-            },
-        });
+        const record = await this.setCanonicalBusinessRole(input);
 
         return mapUserBusinessRoleRecord(record);
     }
@@ -519,38 +511,33 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
     }
 
     async transferBusinessOwnership(input: { businessId: string; fromUserId: string; toUserId: string }) {
-        await this.prisma.$transaction([
-            this.prisma.userBusinessRole.deleteMany({
+        await this.prisma.$transaction(async (tx) => {
+            await tx.userBusinessRole.deleteMany({
                 where: {
                     businessId: input.businessId,
                     userId: input.fromUserId,
                     role: 'OWNER',
                 },
-            }),
-            this.prisma.userBusinessRole.upsert({
-                where: {
-                    userId_businessId_role: {
-                        userId: input.toUserId,
-                        businessId: input.businessId,
-                        role: 'OWNER',
-                    },
-                },
-                update: {},
-                create: {
+            });
+
+            await this.setCanonicalBusinessRole(
+                {
                     userId: input.toUserId,
                     businessId: input.businessId,
                     role: 'OWNER',
                 },
-            }),
-            this.prisma.business.update({
+                tx,
+            );
+
+            await tx.business.update({
                 where: {
                     id: input.businessId,
                 },
                 data: {
                     ownerId: input.toUserId,
                 },
-            }),
-        ]);
+            });
+        });
     }
 
     async createAuditLog(input: {
@@ -602,5 +589,77 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
         });
 
         return logs.map(mapAuditLogRecord);
+    }
+
+    private async setCanonicalBusinessRole(
+        input: { userId: string; businessId: string; role: BusinessAssignmentRole },
+        tx: typeof this.prisma = this.prisma,
+    ) {
+        const existingRecords = await tx.userBusinessRole.findMany({
+            where: {
+                userId: input.userId,
+                businessId: input.businessId,
+            },
+            select: {
+                id: true,
+                role: true,
+                createdAt: true,
+            },
+            orderBy: [{ createdAt: 'asc' }],
+        });
+
+        const recordToKeep = existingRecords.find((existingRecord) => existingRecord.role === input.role)
+            ?? existingRecords[0];
+        const duplicateIds = existingRecords
+            .filter((existingRecord) => existingRecord.id !== recordToKeep?.id)
+            .map((existingRecord) => existingRecord.id);
+
+        if (duplicateIds.length > 0) {
+            await tx.userBusinessRole.deleteMany({
+                where: {
+                    id: {
+                        in: duplicateIds,
+                    },
+                },
+            });
+        }
+
+        if (!recordToKeep) {
+            return tx.userBusinessRole.create({
+                data: input,
+                include: {
+                    business: {
+                        select: userBusinessRoleBusinessSelect,
+                    },
+                },
+            });
+        }
+
+        if (recordToKeep.role !== input.role) {
+            return tx.userBusinessRole.update({
+                where: {
+                    id: recordToKeep.id,
+                },
+                data: {
+                    role: input.role,
+                },
+                include: {
+                    business: {
+                        select: userBusinessRoleBusinessSelect,
+                    },
+                },
+            });
+        }
+
+        return tx.userBusinessRole.findUniqueOrThrow({
+            where: {
+                id: recordToKeep.id,
+            },
+            include: {
+                business: {
+                    select: userBusinessRoleBusinessSelect,
+                },
+            },
+        });
     }
 }

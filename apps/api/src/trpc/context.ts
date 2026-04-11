@@ -158,6 +158,7 @@ export async function createTrpcContext({ req, env }: { req: Request; res: Respo
       repository: businessRepository,
       emailService,
       currentUser,
+      userAdminRepository,
     }),
     businessAnalyticsService: new BusinessAnalyticsService({
       repository: businessAnalyticsRepository,
@@ -190,6 +191,7 @@ export async function createTrpcContext({ req, env }: { req: Request; res: Respo
     }),
     userAdminService: new UserAdminService({
       repository: userAdminRepository,
+      businessRepository,
       currentUser,
     }),
   };

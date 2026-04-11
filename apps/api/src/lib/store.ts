@@ -114,7 +114,7 @@ export class MarketplaceStore {
     return this.listBusinesses({ includePending: true }).filter((business) => business.status === 'PENDING');
   }
 
-  createBusiness(input: CreateBusinessInput) {
+  createBusiness(input: CreateBusinessInput & { ownerId: string }) {
     const business: Business = {
       id: `biz-${input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
       name: input.name,

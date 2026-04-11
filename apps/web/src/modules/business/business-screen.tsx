@@ -398,6 +398,16 @@ export function BusinessScreen() {
     currentUser &&
     (isSuperAdmin || currentUser.id === selectedBusiness.ownerId),
   );
+  const canEditOperationalFields = Boolean(
+    selectedBusiness &&
+    currentUser &&
+    (isSuperAdmin ||
+      currentUser.id === selectedBusiness.ownerId ||
+      selectedBusiness.managers.includes(currentUser.id)),
+  );
+  const canManageManagers = canEditBusiness;
+  const canManageSubscription = canEditBusiness;
+  const canTransferOwnership = canEditBusiness;
 
   const updateBusiness = trpc.business.update.useMutation({
     onSuccess: async (updatedBusiness) => {
@@ -415,7 +425,7 @@ export function BusinessScreen() {
     },
   });
 
-  const transferOwnership = trpc.admin.transferBusinessOwnership.useMutation({
+  const transferOwnership = trpc.business.transferOwnership.useMutation({
     onSuccess: async () => {
       if (!selectedBusiness) {
         return;
@@ -467,7 +477,9 @@ export function BusinessScreen() {
     updateBusiness.mutate(
       updateBusinessInputSchema.parse({
         ...values,
-        subscriptionType: isSuperAdmin ? values.subscriptionType : undefined,
+        subscriptionType: canManageSubscription
+          ? values.subscriptionType
+          : undefined,
         managers: values.managers,
       }),
     );
@@ -504,7 +516,7 @@ export function BusinessScreen() {
         title="Centro de gestión del negocio"
       />
 
-      {!canEditBusiness ? (
+      {!canEditOperationalFields ? (
         <Card className="space-y-3" interactive={false} variant="default">
           <div className="icon-tile">
             <ShieldCheck className="size-5" />
@@ -513,7 +525,23 @@ export function BusinessScreen() {
             Vista solo lectura
           </h3>
           <p className="text-sm leading-6 text-text-muted">
-            Solo el owner actual o un SuperAdmin pueden editar este comercio.
+            No tienes permisos operativos para editar este comercio.
+          </p>
+        </Card>
+      ) : null}
+
+      {canEditOperationalFields && !canEditBusiness ? (
+        <Card className="space-y-3" interactive={false} variant="default">
+          <div className="icon-tile">
+            <ShieldCheck className="size-5" />
+          </div>
+          <h3 className="font-display text-xl font-semibold text-text-secondary">
+            Edición operativa
+          </h3>
+          <p className="text-sm leading-6 text-text-muted">
+            Como manager puedes actualizar descripción, contacto y ubicación
+            operativa. La identidad del negocio, la membresía y la gestión de
+            managers siguen reservadas para el owner o un SuperAdmin.
           </p>
         </Card>
       ) : null}
@@ -572,7 +600,9 @@ export function BusinessScreen() {
                 <Textarea
                   {...field}
                   className="min-h-28"
-                  disabled={!canEditBusiness || updateBusiness.isPending}
+                  disabled={
+                    !canEditOperationalFields || updateBusiness.isPending
+                  }
                   placeholder="Describe el negocio, su propuesta y lo que lo hace claro para discovery."
                 />
               )}
@@ -651,7 +681,9 @@ export function BusinessScreen() {
                 render={({ field }) => (
                   <Input
                     {...field}
-                    disabled={!canEditBusiness || updateBusiness.isPending}
+                    disabled={
+                      !canEditOperationalFields || updateBusiness.isPending
+                    }
                     placeholder="18095550101"
                   />
                 )}
@@ -718,7 +750,9 @@ export function BusinessScreen() {
                 render={({ field }) => (
                   <Input
                     {...field}
-                    disabled={!canEditBusiness || updateBusiness.isPending}
+                    disabled={
+                      !canEditOperationalFields || updateBusiness.isPending
+                    }
                     placeholder="Ej. Piantini"
                   />
                 )}
@@ -735,7 +769,9 @@ export function BusinessScreen() {
                 render={({ field }) => (
                   <Input
                     {...field}
-                    disabled={!canEditBusiness || updateBusiness.isPending}
+                    disabled={
+                      !canEditOperationalFields || updateBusiness.isPending
+                    }
                     placeholder="Av. Abraham Lincoln 1012, Santo Domingo"
                   />
                 )}
@@ -750,7 +786,9 @@ export function BusinessScreen() {
                 name="location.lat"
                 render={({ field }) => (
                   <Input
-                    disabled={!canEditBusiness || updateBusiness.isPending}
+                    disabled={
+                      !canEditOperationalFields || updateBusiness.isPending
+                    }
                     onChange={(event) =>
                       field.onChange(Number(event.target.value))
                     }
@@ -770,7 +808,9 @@ export function BusinessScreen() {
                 name="location.lng"
                 render={({ field }) => (
                   <Input
-                    disabled={!canEditBusiness || updateBusiness.isPending}
+                    disabled={
+                      !canEditOperationalFields || updateBusiness.isPending
+                    }
                     onChange={(event) =>
                       field.onChange(Number(event.target.value))
                     }
@@ -835,21 +875,22 @@ export function BusinessScreen() {
               No hay managers asignados.
             </p>
           )}
-          {!isSuperAdmin ? (
+          {!canTransferOwnership ? (
             <p className="text-sm leading-6 text-text-muted">
-              La membresía y la transferencia de owner siguen reservadas para
-              SuperAdmin.
+              La membresía y la transferencia de owner siguen reservadas para el
+              owner o un SuperAdmin.
             </p>
           ) : null}
 
-          {canEditBusiness ? (
+          {canManageManagers ? (
             <FormField label="Managers del comercio">
               <Controller
                 control={form.control}
                 name="managers"
                 render={({ field }) => (
                   <BusinessManagersSelect
-                    canSearchManagers={isSuperAdmin}
+                    businessId={selectedBusiness.id}
+                    canSearchManagers={canManageManagers}
                     disabled={updateBusiness.isPending}
                     onChange={field.onChange}
                     ownerId={selectedBusiness.ownerId}
@@ -861,10 +902,10 @@ export function BusinessScreen() {
           ) : null}
         </Card>
 
-        {isSuperAdmin ? (
+        {canManageSubscription ? (
           <FormSection
             className="min-w-0"
-            description="Solo SuperAdmin puede cambiar la membresía comercial y transferir ownership."
+            description="El owner actual o un SuperAdmin puede cambiar la membresía comercial y transferir ownership."
             title="Controles administrativos"
           >
             <FormField
@@ -892,7 +933,8 @@ export function BusinessScreen() {
                 Transferir owner
               </p>
               <BusinessOwnerSelect
-                canSearchOwners={true}
+                businessId={selectedBusiness.id}
+                canSearchOwners={canTransferOwnership}
                 disabled={transferOwnership.isPending}
                 onSelect={(user) => setTransferTargetId(user.id)}
                 value={transferTargetId}
@@ -951,7 +993,7 @@ export function BusinessScreen() {
         title="Confirmar transferencia de owner"
       />
 
-      {canEditBusiness ? (
+      {canEditOperationalFields ? (
         <div className="flex justify-end pt-1">
           <Button disabled={updateBusiness.isPending} type="submit">
             {updateBusiness.isPending
