@@ -6,7 +6,6 @@ import {
     CheckCheck,
     CreditCard,
     FileBarChart2,
-    FolderKanban,
     Inbox,
     LayoutDashboard,
     Megaphone,
@@ -18,7 +17,11 @@ import {
 import type { UserRole } from 'types';
 
 import type { ManagementRole } from './role-view';
-import { assignedPlatformRoles, platformAdminRoles, superAdminRoles } from './platform-roles';
+import {
+    assignedPlatformRoles,
+    platformAdminRoles,
+    superAdminRoles,
+} from './platform-roles';
 
 export type NavigationAccessContext =
     | { mode: 'mock'; role: ManagementRole }
@@ -29,6 +32,8 @@ export type NavigationAccessContext =
         ownsManagedBusinesses: boolean;
     };
 
+export type NavigationGroupKey = 'operation' | 'management' | 'system';
+
 export type NavigationItem = {
     key: string;
     label: string;
@@ -36,10 +41,26 @@ export type NavigationItem = {
     icon: LucideIcon;
     description: string;
     demoRoles: ManagementRole[];
+    group: NavigationGroupKey;
     platformRoles?: readonly UserRole[];
     realBusinessAccess?: 'managed' | 'owned';
     mobilePriority?: number;
 };
+
+export type NavigationGroup = {
+    key: NavigationGroupKey;
+    label: string;
+    items: NavigationItem[];
+};
+
+const navigationGroupDefinitions: Array<{
+    key: NavigationGroupKey;
+    label: string;
+}> = [
+        { key: 'operation', label: 'Operación' },
+        { key: 'management', label: 'Gestión' },
+        { key: 'system', label: 'Sistema' },
+    ];
 
 export const navigationItems: NavigationItem[] = [
     {
@@ -49,6 +70,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Users,
         description: 'Perfil personal, acceso y negocios asignados.',
         demoRoles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        group: 'management',
         platformRoles: assignedPlatformRoles,
         realBusinessAccess: 'managed',
     },
@@ -59,6 +81,7 @@ export const navigationItems: NavigationItem[] = [
         icon: LayoutDashboard,
         description: 'Resumen operativo, indicadores clave y accesos rápidos según el rol.',
         demoRoles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        group: 'operation',
         platformRoles: platformAdminRoles,
         realBusinessAccess: 'managed',
         mobilePriority: 1,
@@ -70,6 +93,7 @@ export const navigationItems: NavigationItem[] = [
         icon: CheckCheck,
         description: 'Moderación y aprobaciones antes de publicar negocios.',
         demoRoles: ['SUPERADMIN'],
+        group: 'management',
         platformRoles: platformAdminRoles,
         mobilePriority: 2,
     },
@@ -80,6 +104,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Building2,
         description: 'Vista global de todos los negocios registrados.',
         demoRoles: ['SUPERADMIN'],
+        group: 'management',
         platformRoles: platformAdminRoles,
         mobilePriority: 3,
     },
@@ -90,6 +115,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Users,
         description: 'Gestión de roles y acceso para usuarios de la plataforma.',
         demoRoles: ['SUPERADMIN'],
+        group: 'management',
         platformRoles: superAdminRoles,
     },
     {
@@ -99,6 +125,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Shapes,
         description: 'Gobierno de categorías y estructura editorial.',
         demoRoles: ['SUPERADMIN'],
+        group: 'management',
         platformRoles: superAdminRoles,
     },
     {
@@ -108,6 +135,7 @@ export const navigationItems: NavigationItem[] = [
         icon: CreditCard,
         description: 'Matriz de planes, beneficios y límites comerciales.',
         demoRoles: ['SUPERADMIN'],
+        group: 'system',
         platformRoles: platformAdminRoles,
     },
     {
@@ -117,6 +145,7 @@ export const navigationItems: NavigationItem[] = [
         icon: FileBarChart2,
         description: 'Alertas de operación, salud de plataforma y reportes.',
         demoRoles: ['SUPERADMIN'],
+        group: 'system',
         platformRoles: platformAdminRoles,
         mobilePriority: 4,
     },
@@ -127,6 +156,7 @@ export const navigationItems: NavigationItem[] = [
         icon: BriefcaseBusiness,
         description: 'Marca, ubicación, horarios y estado de publicación.',
         demoRoles: ['OWNER', 'MANAGER'],
+        group: 'operation',
         realBusinessAccess: 'managed',
         mobilePriority: 2,
     },
@@ -137,6 +167,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Package,
         description: 'Catálogo, filtros y estado comercial del inventario.',
         demoRoles: ['OWNER', 'MANAGER'],
+        group: 'operation',
         realBusinessAccess: 'managed',
         mobilePriority: 3,
     },
@@ -147,6 +178,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Megaphone,
         description: 'Campañas activas, expiradas y puntos de creación.',
         demoRoles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        group: 'operation',
         realBusinessAccess: 'managed',
         mobilePriority: 4,
     },
@@ -157,6 +189,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Inbox,
         description: 'Seguimiento comercial, fuente y estado de atención.',
         demoRoles: ['OWNER', 'MANAGER'],
+        group: 'operation',
         realBusinessAccess: 'managed',
         mobilePriority: 5,
     },
@@ -167,6 +200,7 @@ export const navigationItems: NavigationItem[] = [
         icon: Users,
         description: 'Coordinación entre propietario y encargados por negocio.',
         demoRoles: ['OWNER'],
+        group: 'operation',
         realBusinessAccess: 'owned',
     },
     {
@@ -176,6 +210,7 @@ export const navigationItems: NavigationItem[] = [
         icon: BarChart3,
         description: 'Rendimiento comercial, tráfico y conversión.',
         demoRoles: ['SUPERADMIN', 'OWNER'],
+        group: 'operation',
         platformRoles: platformAdminRoles,
         realBusinessAccess: 'managed',
         mobilePriority: 5,
@@ -187,12 +222,16 @@ export const navigationItems: NavigationItem[] = [
         icon: Settings,
         description: 'Preferencias, notificaciones y operación.',
         demoRoles: ['SUPERADMIN', 'OWNER', 'MANAGER'],
+        group: 'system',
         platformRoles: assignedPlatformRoles,
         mobilePriority: 6,
     },
 ];
 
-function isItemVisibleForContext(item: NavigationItem, context: NavigationAccessContext) {
+function isItemVisibleForContext(
+    item: NavigationItem,
+    context: NavigationAccessContext,
+) {
     if (context.mode === 'mock') {
         return item.demoRoles.includes(context.role);
     }
@@ -212,8 +251,23 @@ function isItemVisibleForContext(item: NavigationItem, context: NavigationAccess
     return false;
 }
 
+function groupNavigationItems(items: NavigationItem[]): NavigationGroup[] {
+    return navigationGroupDefinitions
+        .map((group) => ({
+            ...group,
+            items: items.filter((item) => item.group === group.key),
+        }))
+        .filter((group) => group.items.length > 0);
+}
+
 export function getNavigationForAccess(context: NavigationAccessContext) {
     return navigationItems.filter((item) => isItemVisibleForContext(item, context));
+}
+
+export function getNavigationGroupsForAccess(
+    context: NavigationAccessContext,
+) {
+    return groupNavigationItems(getNavigationForAccess(context));
 }
 
 export function getMobileNavigationForAccess(context: NavigationAccessContext) {
@@ -224,11 +278,17 @@ export function getMobileNavigationForAccess(context: NavigationAccessContext) {
 }
 
 export function getNavigationItemByPath(pathname: string) {
-    return navigationItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
+    return navigationItems.find(
+        (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+    );
 }
 
 export function isPathAllowedForAccess(pathname: string, context: NavigationAccessContext) {
-    return navigationItems.some((item) => (pathname === item.href || pathname.startsWith(`${item.href}/`)) && isItemVisibleForContext(item, context));
+    return navigationItems.some(
+        (item) =>
+            (pathname === item.href || pathname.startsWith(`${item.href}/`)) &&
+            isItemVisibleForContext(item, context),
+    );
 }
 
 export function getDefaultPathForAccess(context: NavigationAccessContext) {
@@ -278,6 +338,24 @@ export const quickLinks = [
     { label: 'Cola de aprobaciones', href: '/admin/approvals' },
 ] as const;
 
-export const adminPrefixes = ['/admin/approvals', '/admin/businesses', '/admin/users', '/admin/categories', '/admin/plans', '/admin/reports'];
+export const adminPrefixes = [
+    '/admin/approvals',
+    '/admin/businesses',
+    '/admin/users',
+    '/admin/categories',
+    '/admin/plans',
+    '/admin/reports',
+];
 
-export const managementPrefixes = ['/profile', '/dashboard', '/business', '/products', '/promotions', '/leads', '/team', '/analytics', '/settings', ...adminPrefixes];
+export const managementPrefixes = [
+    '/profile',
+    '/dashboard',
+    '/business',
+    '/products',
+    '/promotions',
+    '/leads',
+    '/team',
+    '/analytics',
+    '/settings',
+    ...adminPrefixes,
+];

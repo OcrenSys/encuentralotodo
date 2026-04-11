@@ -473,7 +473,7 @@ export function BusinessScreen() {
   });
 
   return (
-    <form className="space-y-6" onSubmit={onSubmit}>
+    <form className="space-y-6 pb-4 lg:pb-6" onSubmit={onSubmit}>
       <ModuleHeader
         actions={
           isSuperAdmin ? (
@@ -934,7 +934,7 @@ export function BusinessScreen() {
       />
 
       {canEditBusiness ? (
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-1">
           <Button disabled={updateBusiness.isPending} type="submit">
             {updateBusiness.isPending
               ? 'Guardando cambios...'

@@ -2,6 +2,7 @@ import { act, fireEvent, render } from '@testing-library/react';
 import type { RefObject } from 'react';
 
 import { Topbar } from '../src/components/layout/topbar';
+import type { NavigationGroup } from '../src/lib/management-navigation';
 
 jest.mock('../src/components/layout/role-switcher', () => ({
   RoleSwitcher: () => <div>RoleSwitcher</div>,
@@ -29,12 +30,20 @@ function renderTopbar() {
   const scrollContainerRef = {
     current: scrollContainer,
   } as RefObject<HTMLDivElement>;
+  const navigationGroups: NavigationGroup[] = [
+    {
+      key: 'operation',
+      label: 'Operación',
+      items: [],
+    },
+  ];
 
   const view = render(
     <Topbar
       activePath="/dashboard"
       description="Resumen operativo de la consola."
       eyebrow="Gestión"
+      navigationGroups={navigationGroups}
       scrollContainerRef={scrollContainerRef}
       title="Dashboard"
     />,

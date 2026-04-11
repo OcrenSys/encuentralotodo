@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState, type RefObject } from 'react';
 
-import { ChevronDown, Layers3, ShieldCheck } from 'lucide-react';
+import { ChevronDown, Layers3, Menu, ShieldCheck } from 'lucide-react';
 
-import { routeSearchLabels } from '../../lib/management-navigation';
+import {
+  routeSearchLabels,
+  type NavigationGroup,
+} from '../../lib/management-navigation';
 import { AuthUserPanel } from '../auth/auth-user-panel';
+import { NavigationDrawer } from './navigation-drawer';
 import { RoleSwitcher } from './role-switcher';
 
 function readScrollOffset(scrollContainer: HTMLDivElement | null) {
@@ -29,15 +33,18 @@ export function Topbar({
   eyebrow,
   title,
   description,
+  navigationGroups,
   scrollContainerRef,
 }: {
   activePath: string;
   eyebrow: string;
   title: string;
   description: string;
+  navigationGroups: NavigationGroup[];
   scrollContainerRef?: RefObject<HTMLDivElement | null>;
 }) {
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
+  const [isNavigationDrawerOpen, setIsNavigationDrawerOpen] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const lastScrollYRef = useRef(0);
   const panelOpenedAtScrollYRef = useRef(0);
@@ -68,6 +75,12 @@ export function Topbar({
       scrollContainerRef?.current ?? null,
     );
   }, [scrollContainerRef]);
+
+  useEffect(() => {
+    setIsMobilePanelOpen(false);
+    setIsNavigationDrawerOpen(false);
+    setIsHeaderVisible(true);
+  }, [activePath]);
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef?.current ?? null;
@@ -151,21 +164,37 @@ export function Topbar({
                 <Layers3 className="size-3.5" />
                 {eyebrow}
               </div>
-              <button
-                type="button"
-                aria-expanded={isMobilePanelOpen}
-                aria-label={
-                  isMobilePanelOpen ? 'Ocultar controles' : 'Mostrar controles'
-                }
-                className="surface-soft inline-flex size-10 items-center justify-center rounded-full p-0 text-text-secondary lg:hidden"
-                onClick={toggleMobilePanel}
-              >
-                <ChevronDown
-                  className={`size-4 transition-transform duration-normal ${
-                    isMobilePanelOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+              <div className="flex items-center gap-2 lg:hidden">
+                <button
+                  type="button"
+                  aria-expanded={isNavigationDrawerOpen}
+                  aria-label="Abrir navegación"
+                  className="surface-soft inline-flex size-10 items-center justify-center rounded-full p-0 text-text-secondary"
+                  onClick={() => {
+                    setIsMobilePanelOpen(false);
+                    setIsNavigationDrawerOpen(true);
+                  }}
+                >
+                  <Menu className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-expanded={isMobilePanelOpen}
+                  aria-label={
+                    isMobilePanelOpen
+                      ? 'Ocultar controles de cuenta'
+                      : 'Mostrar controles de cuenta'
+                  }
+                  className="surface-soft inline-flex size-10 items-center justify-center rounded-full p-0 text-text-secondary"
+                  onClick={toggleMobilePanel}
+                >
+                  <ChevronDown
+                    className={`size-4 transition-transform duration-normal ${
+                      isMobilePanelOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
             <div>
               <h1 className="font-display text-[1.9rem] font-semibold tracking-tight text-text-secondary lg:text-3xl">
@@ -236,6 +265,13 @@ export function Topbar({
           </div>
         </div>
       </div>
+
+      <NavigationDrawer
+        activePath={activePath}
+        groups={navigationGroups}
+        onOpenChange={setIsNavigationDrawerOpen}
+        open={isNavigationDrawerOpen}
+      />
     </header>
   );
 }

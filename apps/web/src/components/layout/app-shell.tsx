@@ -12,8 +12,8 @@ import {
 
 import {
   getDefaultPathForAccess,
+  getNavigationGroupsForAccess,
   getMobileNavigationForAccess,
-  getNavigationForAccess,
   getNavigationItemByPath,
   isPathAllowedForAccess,
   routeEyebrows,
@@ -42,6 +42,9 @@ export function AppShell({
   const router = useRouter();
   const pathname = usePathname();
   const contentScrollRef = useRef<HTMLDivElement>(null);
+  const hasStoredScrollRef = useRef(false);
+  const previousPathRef = useRef(pathname ?? '/settings');
+  const scrollPositionsRef = useRef(new Map<string, number>());
   const resolvedActivePath = activePath ?? pathname ?? '/settings';
   const { roleView, isReady } = useRoleView();
   const {
@@ -78,7 +81,7 @@ export function AppShell({
         };
 
   const route = getNavigationItemByPath(resolvedActivePath);
-  const sidebarItems = getNavigationForAccess(accessContext);
+  const navigationGroups = getNavigationGroupsForAccess(accessContext);
   const mobileItems = getMobileNavigationForAccess(accessContext);
   const isAllowed = isPathAllowedForAccess(resolvedActivePath, accessContext);
   const fallbackPath = getDefaultPathForAccess(accessContext);
@@ -123,25 +126,49 @@ export function AppShell({
 
   useEffect(() => {
     const scrollContainer = contentScrollRef.current;
+    const isDesktop = window.innerWidth >= 1024;
+    const readOffset = () => {
+      if (!isDesktop) {
+        return window.scrollY;
+      }
 
-    if (window.innerWidth < 1024) {
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      return scrollContainer?.scrollTop ?? 0;
+    };
+
+    const applyOffset = (offset: number) => {
+      if (!isDesktop) {
+        window.scrollTo({ top: offset, behavior: 'auto' });
+        return;
+      }
+
+      if (scrollContainer) {
+        scrollContainer.scrollTop = offset;
+      }
+    };
+
+    if (!hasStoredScrollRef.current) {
+      hasStoredScrollRef.current = true;
+      previousPathRef.current = resolvedActivePath;
+      scrollPositionsRef.current.set(resolvedActivePath, readOffset());
       return;
     }
 
-    if (scrollContainer) {
-      scrollContainer.scrollTop = 0;
-      return;
-    }
+    scrollPositionsRef.current.set(previousPathRef.current, readOffset());
 
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+    const nextOffset = scrollPositionsRef.current.get(resolvedActivePath) ?? 0;
+    previousPathRef.current = resolvedActivePath;
+
+    const frameId = window.requestAnimationFrame(() => {
+      applyOffset(nextOffset);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [resolvedActivePath]);
 
   if (isShellAccessLoading) {
     return (
-      <div className="management-shell min-h-[100dvh] lg:grid lg:h-[100dvh] lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden">
-        <aside className="relative hidden h-[100dvh] min-h-0 border-r border-border-subtle bg-[var(--shell-gradient)] shadow-[inset_-1px_0_0_rgba(255,255,255,0.4)] backdrop-blur lg:block">
+      <div className="management-shell min-h-[100dvh] lg:fixed lg:inset-0 lg:grid lg:min-h-0 lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden">
+        <aside className="relative hidden h-full min-h-0 border-r border-border-subtle bg-[var(--shell-gradient)] shadow-[inset_-1px_0_0_rgba(255,255,255,0.4)] backdrop-blur lg:block">
           <div className="flex h-full min-h-0 flex-col gap-6 px-5 py-6">
             <div className="space-y-3">
               <LoadingSkeleton className="h-4 w-32 rounded-full" />
@@ -159,7 +186,7 @@ export function AppShell({
         </aside>
 
         <div className="min-w-0 lg:min-h-0">
-          <div className="flex min-h-[100dvh] flex-col pb-24 lg:h-[100dvh] lg:min-h-0 lg:overflow-y-auto lg:overscroll-y-contain lg:pb-0">
+          <div className="flex min-h-[100dvh] flex-col pb-24 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-y-contain lg:pb-0">
             <header className="sticky top-0 z-30 border-b border-border-subtle bg-[rgba(244,248,252,0.74)] backdrop-blur-xl">
               <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
                 <PageHeaderSkeleton />
@@ -170,8 +197,8 @@ export function AppShell({
               </div>
             </header>
 
-            <main className="flex-1 px-4 py-4 pb-10 sm:px-6 sm:pb-12 lg:min-h-0 lg:px-8 lg:py-5 lg:pb-12 xl:px-10">
-              <div className="surface-soft space-y-6 rounded-xl p-1 sm:p-1.5">
+            <main className="flex-1 min-h-0 px-4 py-4 pb-10 sm:px-6 sm:pb-12 lg:px-8 lg:py-5 lg:pb-8 xl:px-10">
+              <div className="surface-soft space-y-6 rounded-xl p-1 pb-3 sm:p-1.5 sm:pb-4">
                 <div className="p-4 sm:p-5 lg:p-6">
                   <ContentSectionLoadingShell variant="table" />
                 </div>
@@ -184,24 +211,25 @@ export function AppShell({
   }
 
   return (
-    <div className="management-shell min-h-[100dvh] lg:grid lg:h-[100dvh] lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden">
-      <Sidebar activePath={resolvedActivePath} items={sidebarItems} />
+    <div className="management-shell min-h-[100dvh] lg:fixed lg:inset-0 lg:grid lg:min-h-0 lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden">
+      <Sidebar activePath={resolvedActivePath} groups={navigationGroups} />
       {provider === 'mock' ? <ActiveSimulationFloating /> : null}
 
       <div className="min-w-0 lg:min-h-0">
         <div
-          className="flex min-h-[100dvh] flex-col pb-24 lg:h-[100dvh] lg:min-h-0 lg:overflow-y-auto lg:overscroll-y-contain lg:pb-0"
+          className="flex min-h-[100dvh] flex-col pb-24 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-y-contain lg:pb-0"
           ref={contentScrollRef}
         >
           <Topbar
             activePath={resolvedActivePath}
             description={route?.description ?? 'Ruta de gestión.'}
             eyebrow={routeEyebrows[resolvedActivePath] ?? 'Gestión'}
+            navigationGroups={navigationGroups}
             scrollContainerRef={contentScrollRef}
             title={route?.label ?? 'Gestión'}
           />
 
-          <main className="flex-1 px-4 py-4 pb-10 sm:px-6 sm:pb-12 lg:min-h-0 lg:px-8 lg:py-5 lg:pb-12 xl:px-10">
+          <main className="flex-1 min-h-0 px-4 py-4 pb-10 sm:px-6 sm:pb-12 lg:px-8 lg:py-5 lg:pb-8 xl:px-10">
             {isAccountDisabled ? (
               <EmptyState
                 title="Tu cuenta está deshabilitada"
@@ -215,7 +243,7 @@ export function AppShell({
             ) : isAllowed &&
               (!requiresPlatformUserManagementAccess ||
                 hasPlatformUserAccess) ? (
-              <div className="surface-soft space-y-6 rounded-xl p-1 sm:p-1.5">
+              <div className="surface-soft space-y-6 rounded-xl p-1 pb-3 sm:p-1.5 sm:pb-4">
                 {children}
               </div>
             ) : requiresPlatformUserManagementAccess ? (
