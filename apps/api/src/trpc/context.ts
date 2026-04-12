@@ -9,6 +9,7 @@ import { PrismaAuthIdentityRepository } from '../lib/auth/auth-identity.reposito
 import { resolveVerifiedRequestIdentity } from '../lib/auth/request-auth';
 import { PlatformAnalyticsRepository } from '../lib/analytics/platform-analytics.repository';
 import { PlatformAnalyticsService } from '../lib/analytics/platform-analytics.service';
+import { BusinessMembershipSyncService } from '../lib/business/business-membership-sync.service';
 import { BusinessRepository } from '../lib/business/business.repository';
 import { BusinessService } from '../lib/business/business.service';
 import { createEmailService } from '../lib/email';
@@ -131,6 +132,7 @@ export async function createTrpcContext({ req, env }: { req: Request; res: Respo
   const emailService = createEmailService(env.RESEND_API_KEY);
   const prisma = getPrismaClient();
   const businessRepository = new BusinessRepository(prisma);
+  const businessMembershipSyncService = new BusinessMembershipSyncService(businessRepository);
   const businessAnalyticsRepository = new BusinessAnalyticsRepository(prisma);
   const authIdentityRepository = new PrismaAuthIdentityRepository(prisma);
   const authIdentityService = new AuthIdentityService({ repository: authIdentityRepository });
@@ -159,6 +161,7 @@ export async function createTrpcContext({ req, env }: { req: Request; res: Respo
       emailService,
       currentUser,
       userAdminRepository,
+      businessMembershipSyncService,
     }),
     businessAnalyticsService: new BusinessAnalyticsService({
       repository: businessAnalyticsRepository,
@@ -191,7 +194,7 @@ export async function createTrpcContext({ req, env }: { req: Request; res: Respo
     }),
     userAdminService: new UserAdminService({
       repository: userAdminRepository,
-      businessRepository,
+      businessMembershipSyncService,
       currentUser,
     }),
   };

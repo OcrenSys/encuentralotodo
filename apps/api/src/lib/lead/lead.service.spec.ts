@@ -17,12 +17,15 @@ import { LeadService } from './lead.service';
 
 function createBusinessAccess(overrides: Partial<RepositoryBusinessAccessRecord> = {}): RepositoryBusinessAccessRecord {
     return {
-        id: 'biz-casa-norte',
-        ownerId: 'owner-sofia',
-        managers: ['manager-carlos'],
-        subscriptionType: 'PREMIUM_PLUS',
-        status: 'APPROVED',
-        ...overrides,
+        id: overrides.id ?? 'biz-casa-norte',
+        ownerId: overrides.ownerId ?? 'owner-sofia',
+        managers: overrides.managers ?? ['manager-carlos'],
+        memberships: overrides.memberships ?? [
+            { userId: 'owner-sofia', role: 'OWNER' },
+            { userId: 'manager-carlos', role: 'MANAGER' },
+        ],
+        subscriptionType: overrides.subscriptionType ?? 'PREMIUM_PLUS',
+        status: overrides.status ?? 'APPROVED',
     };
 }
 
@@ -43,15 +46,20 @@ function createLeadRecord(overrides: Partial<RepositoryLeadRecord> = {}): Reposi
 
 function createLeadWithBusinessRecord(overrides: Partial<RepositoryLeadWithBusinessRecord> = {}): RepositoryLeadWithBusinessRecord {
     const base = createLeadRecord();
+    const businessOverrides = overrides.business;
 
     return {
         ...base,
-        business: {
-            id: base.businessId,
-            ownerId: 'owner-sofia',
-            managers: [{ userId: 'manager-carlos' }],
-        },
         ...overrides,
+        business: {
+            id: businessOverrides?.id ?? base.businessId,
+            ownerId: businessOverrides?.ownerId ?? 'owner-sofia',
+            managers: businessOverrides?.managers ?? [{ userId: 'manager-carlos' }],
+            memberships: businessOverrides?.memberships ?? [
+                { userId: 'owner-sofia', role: 'OWNER' },
+                { userId: 'manager-carlos', role: 'MANAGER' },
+            ],
+        },
     };
 }
 
@@ -77,9 +85,12 @@ function createBusinessRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
         createBusiness: jest.fn(),
         updateBusiness: jest.fn(),
         approveBusiness: jest.fn(),
+        listBusinessMembershipSources: jest.fn(),
+        upsertCanonicalMemberships: jest.fn(),
+        searchUsers: jest.fn(),
         findUserById: jest.fn(),
         findUsersByIds: jest.fn(),
-    };
+    } as unknown as jest.Mocked<BusinessRepositoryPort>;
 }
 
 function createService(currentUser: UserProfile | null) {

@@ -28,7 +28,7 @@ import {
     requirePlatformRole,
     requireSuperAdmin,
 } from '../auth/authorization';
-import type { BusinessRepositoryPort } from '../business/business.repository';
+import type { BusinessMembershipSyncPort } from '../business/business-membership-sync.service';
 import type {
     RepositoryAuditLogRecord,
     RepositoryBusinessOptionRecord,
@@ -40,7 +40,7 @@ import type {
 
 interface UserAdminServiceDependencies {
     repository: UserAdminRepositoryPort;
-    businessRepository: BusinessRepositoryPort;
+    businessMembershipSyncService?: BusinessMembershipSyncPort;
     currentUser: CurrentUser | null;
 }
 
@@ -190,7 +190,7 @@ export class UserAdminService {
 
     async getSelfProfile(): Promise<SelfProfile> {
         const currentUser = this.assertAuthenticatedSelf();
-        await this.dependencies.businessRepository.synchronizeCanonicalMemberships();
+        await this.dependencies.businessMembershipSyncService?.synchronizeAllBusinessMemberships();
         const user = await this.getExistingUser(currentUser.id);
         const [assignments, compatibilityOwnedBusinesses, auditLogs] = await Promise.all([
             this.dependencies.repository.listUserBusinessRoles(user.id),
@@ -247,7 +247,7 @@ export class UserAdminService {
 
     async getUserDetail(userId: string): Promise<AdminUserDetail> {
         this.assertSuperAdmin();
-        await this.dependencies.businessRepository.synchronizeCanonicalMemberships();
+        await this.dependencies.businessMembershipSyncService?.synchronizeAllBusinessMemberships();
         const user = await this.getExistingUser(userId);
         const [assignments, compatibilityOwnedBusinesses, availableBusinesses, auditLogs] = await Promise.all([
             this.dependencies.repository.listUserBusinessRoles(userId),
@@ -431,7 +431,7 @@ export class UserAdminService {
 
     async removeOwnBusinessRole(input: RemoveOwnBusinessRoleInput): Promise<SelfProfile> {
         const currentUser = this.assertAuthenticatedSelf();
-        await this.dependencies.businessRepository.synchronizeCanonicalMemberships();
+        await this.dependencies.businessMembershipSyncService?.synchronizeAllBusinessMemberships();
 
         const assignments = await this.dependencies.repository.listUserBusinessRoles(currentUser.id);
         const assignment = assignments.find((candidate) => candidate.businessId === input.businessId);

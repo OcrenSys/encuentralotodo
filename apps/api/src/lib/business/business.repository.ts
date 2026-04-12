@@ -10,6 +10,10 @@ import type {
 } from 'types';
 
 import type { getPrismaClient } from '../prisma';
+import {
+    resolveBusinessMembershipState,
+    type BusinessMembershipSourceRecord,
+} from './business-membership';
 
 export interface RepositoryUserRecord {
     id: string;
@@ -111,13 +115,14 @@ export interface BusinessRepositoryPort {
     listBusinessesByUserAccess(userId: string, filters?: BusinessListFilters): Promise<RepositoryBusinessRecord[]>;
     listBusinessesForManagementPage(filters: ListManagedBusinessesInput): Promise<RepositoryManagedBusinessesPage>;
     listBusinessesByUserAccessPage(userId: string, filters: ListManagedBusinessesInput): Promise<RepositoryManagedBusinessesPage>;
-    synchronizeCanonicalMemberships(): Promise<void>;
     findBusinessById(businessId: string): Promise<RepositoryBusinessRecord | null>;
     findBusinessAccessById(businessId: string): Promise<RepositoryBusinessAccessRecord | null>;
     listPendingBusinesses(): Promise<RepositoryBusinessRecord[]>;
     createBusiness(input: CreateBusinessInput & { ownerId: string; managers: string[]; status: BusinessStatus }): Promise<RepositoryBusinessRecord>;
     updateBusiness(input: UpdateBusinessInput & { subscriptionType: RepositoryBusinessRecord['subscriptionType']; managers: string[] }): Promise<RepositoryBusinessRecord | null>;
     approveBusiness(businessId: string): Promise<RepositoryBusinessRecord | null>;
+    listBusinessMembershipSources(businessIds?: string[]): Promise<BusinessMembershipSourceRecord[]>;
+    upsertCanonicalMemberships(input: Array<{ businessId: string; userId: string; role: BusinessAssignmentRole }>): Promise<void>;
     searchUsers(input: { search: string; limit: number }): Promise<RepositoryUserRecord[]>;
     findUserById(userId: string): Promise<RepositoryUserRecord | null>;
     findUsersByIds(userIds: string[]): Promise<RepositoryUserRecord[]>;
@@ -226,6 +231,17 @@ const businessDetailSelect = {
     },
 } as const;
 
+function mapUserRecord(record: any): RepositoryUserRecord {
+    return {
+        id: record.id,
+        fullName: record.fullName,
+        email: record.email,
+        role: record.role,
+        avatarUrl: record.avatarUrl,
+        isActive: Boolean(record.isActive),
+    };
+}
+
 function mapBusinessRecord(record: any): RepositoryBusinessRecord {
     const membershipState = resolveBusinessMembershipState(record);
 
@@ -235,9 +251,16 @@ function mapBusinessRecord(record: any): RepositoryBusinessRecord {
         subscriptionType: record.subscriptionType,
         status: record.status,
         ownerId: membershipState.ownerId,
-        owner: membershipState.owner,
-        managers: membershipState.managers,
-        memberships: membershipState.memberships,
+        owner: membershipState.owner ? mapUserRecord(membershipState.owner) : undefined,
+        managers: membershipState.managers.map((manager) => ({
+            userId: manager.userId,
+            user: manager.user ? mapUserRecord(manager.user) : undefined,
+        })),
+        memberships: membershipState.memberships.map((membership) => ({
+            userId: membership.userId,
+            role: membership.role,
+            user: membership.user ? mapUserRecord(membership.user) : undefined,
+        })),
         products: (record.products ?? []).map((product: any) => ({
             ...product,
             price: product.price,
@@ -252,27 +275,8 @@ function mapBusinessRecord(record: any): RepositoryBusinessRecord {
             userId: review.userId,
             businessId: review.businessId,
             createdAt: review.createdAt,
-            user: review.user
-                ? {
-                    id: review.user.id,
-                    fullName: review.user.fullName,
-                    email: review.user.email,
-                    role: review.user.role,
-                    avatarUrl: review.user.avatarUrl,
-                }
-                : undefined,
+            user: review.user ? mapUserRecord(review.user) : undefined,
         })),
-    };
-}
-
-function mapUserRecord(record: any): RepositoryUserRecord {
-    return {
-        id: record.id,
-        fullName: record.fullName,
-        email: record.email,
-        role: record.role,
-        avatarUrl: record.avatarUrl,
-        isActive: Boolean(record.isActive),
     };
 }
 
@@ -285,108 +289,11 @@ function mapBusinessAccessRecord(record: any): RepositoryBusinessAccessRecord {
         subscriptionType: record.subscriptionType,
         status: record.status,
         managers: membershipState.managers.map((manager) => manager.userId),
-        memberships: membershipState.memberships,
-    };
-}
-
-function mapMembershipUser(record: any): RepositoryUserRecord | undefined {
-    if (!record) {
-        return undefined;
-    }
-
-    return mapUserRecord(record);
-}
-
-function createMembershipRecord(
-    userId: string,
-    role: BusinessAssignmentRole,
-    user?: RepositoryUserRecord,
-): RepositoryBusinessMembershipRecord {
-    return {
-        userId,
-        role,
-        user,
-    };
-}
-
-function resolveBusinessMembershipState(record: any) {
-    const legacyOwner = mapMembershipUser(record.owner);
-    const legacyManagersById = new Map<string, RepositoryUserRecord | undefined>(
-        (record.managers ?? []).map((manager: any) => [manager.userId, mapMembershipUser(manager.user)]),
-    );
-    const membershipByUserId = new Map<string, RepositoryBusinessMembershipRecord>();
-    const missingCanonicalRoles: Array<{ businessId: string; userId: string; role: BusinessAssignmentRole }> = [];
-    const conflicts: string[] = [];
-
-    for (const membership of record.userRoles ?? []) {
-        const existing = membershipByUserId.get(membership.userId);
-        const user = mapMembershipUser(membership.user)
-            ?? legacyManagersById.get(membership.userId)
-            ?? (membership.userId === record.ownerId ? legacyOwner : undefined);
-
-        if (existing && existing.role !== membership.role) {
-            conflicts.push(`Business ${record.id} has multiple canonical roles for user ${membership.userId}.`);
-            continue;
-        }
-
-        membershipByUserId.set(
-            membership.userId,
-            createMembershipRecord(membership.userId, membership.role, user),
-        );
-    }
-
-    if (!membershipByUserId.has(record.ownerId)) {
-        membershipByUserId.set(record.ownerId, createMembershipRecord(record.ownerId, 'OWNER', legacyOwner));
-        missingCanonicalRoles.push({ businessId: record.id, userId: record.ownerId, role: 'OWNER' });
-    } else if (membershipByUserId.get(record.ownerId)?.role !== 'OWNER') {
-        conflicts.push(`Business ${record.id} legacy owner ${record.ownerId} conflicts with canonical role ${membershipByUserId.get(record.ownerId)?.role}.`);
-    }
-
-    for (const legacyManager of record.managers ?? []) {
-        if (legacyManager.userId === record.ownerId) {
-            continue;
-        }
-
-        const existing = membershipByUserId.get(legacyManager.userId);
-        if (!existing) {
-            membershipByUserId.set(
-                legacyManager.userId,
-                createMembershipRecord(legacyManager.userId, 'MANAGER', mapMembershipUser(legacyManager.user)),
-            );
-            missingCanonicalRoles.push({ businessId: record.id, userId: legacyManager.userId, role: 'MANAGER' });
-            continue;
-        }
-
-        if (existing.role !== 'MANAGER') {
-            conflicts.push(`Business ${record.id} legacy manager ${legacyManager.userId} conflicts with canonical role ${existing.role}.`);
-        }
-    }
-
-    const memberships = Array.from(membershipByUserId.values()).sort((left, right) => {
-        if (left.role !== right.role) {
-            return left.role.localeCompare(right.role);
-        }
-
-        return left.userId.localeCompare(right.userId);
-    });
-    const owners = memberships.filter((membership) => membership.role === 'OWNER');
-
-    if (owners.length !== 1) {
-        conflicts.push(`Business ${record.id} must resolve to exactly one owner, found ${owners.length}.`);
-    }
-
-    return {
-        ownerId: owners[0]?.userId ?? record.ownerId,
-        owner: owners[0]?.user ?? legacyOwner,
-        managers: memberships
-            .filter((membership) => membership.role === 'MANAGER')
-            .map((membership) => ({
-                userId: membership.userId,
-                user: membership.user,
-            })),
-        memberships,
-        missingCanonicalRoles,
-        conflicts,
+        memberships: membershipState.memberships.map((membership) => ({
+            userId: membership.userId,
+            role: membership.role,
+            user: membership.user ? mapUserRecord(membership.user) : undefined,
+        })),
     };
 }
 
@@ -468,8 +375,6 @@ export class BusinessRepository implements BusinessRepositoryPort {
             select: businessSummarySelect,
         });
 
-        await this.synchronizeCanonicalMembershipsForRecords(records);
-
         return records.map(mapBusinessRecord);
     }
 
@@ -478,8 +383,6 @@ export class BusinessRepository implements BusinessRepositoryPort {
             where: buildBusinessWhere(filters),
             select: businessDetailSelect,
         });
-
-        await this.synchronizeCanonicalMembershipsForRecords(records);
 
         return records.map(mapBusinessRecord);
     }
@@ -495,8 +398,6 @@ export class BusinessRepository implements BusinessRepositoryPort {
             }),
             select: businessDetailSelect,
         });
-
-        await this.synchronizeCanonicalMembershipsForRecords(records);
 
         return records.map(mapBusinessRecord);
     }
@@ -517,8 +418,6 @@ export class BusinessRepository implements BusinessRepositoryPort {
             }),
             this.prisma.business.count({ where }),
         ]);
-
-        await this.synchronizeCanonicalMembershipsForRecords(records);
 
         return {
             items: records.map(mapBusinessRecord),
@@ -549,44 +448,10 @@ export class BusinessRepository implements BusinessRepositoryPort {
             this.prisma.business.count({ where }),
         ]);
 
-        await this.synchronizeCanonicalMembershipsForRecords(records);
-
         return {
             items: records.map(mapBusinessRecord),
             total,
         };
-    }
-
-    async synchronizeCanonicalMemberships() {
-        const records = await this.prisma.business.findMany({
-            select: {
-                id: true,
-                name: true,
-                ownerId: true,
-                owner: {
-                    select: userSelect,
-                },
-                managers: {
-                    select: {
-                        userId: true,
-                        user: {
-                            select: userSelect,
-                        },
-                    },
-                },
-                userRoles: {
-                    select: {
-                        userId: true,
-                        role: true,
-                        user: {
-                            select: userSelect,
-                        },
-                    },
-                },
-            },
-        });
-
-        await this.synchronizeCanonicalMembershipsForRecords(records);
     }
 
     async findBusinessById(businessId: string) {
@@ -594,8 +459,6 @@ export class BusinessRepository implements BusinessRepositoryPort {
             where: { id: businessId },
             select: businessDetailSelect,
         });
-
-        await this.synchronizeCanonicalMembershipsForRecords(record ? [record] : []);
 
         return record ? mapBusinessRecord(record) : null;
     }
@@ -632,8 +495,6 @@ export class BusinessRepository implements BusinessRepositoryPort {
             },
         });
 
-        await this.synchronizeCanonicalMembershipsForRecords(record ? [record] : []);
-
         return record ? mapBusinessAccessRecord(record) : null;
     }
 
@@ -644,8 +505,6 @@ export class BusinessRepository implements BusinessRepositoryPort {
             },
             select: businessDetailSelect,
         });
-
-        await this.synchronizeCanonicalMembershipsForRecords(records);
 
         return records.map(mapBusinessRecord);
     }
@@ -666,6 +525,9 @@ export class BusinessRepository implements BusinessRepositoryPort {
                 status: input.status,
                 whatsappNumber: input.whatsappNumber,
                 ownerId: input.ownerId,
+                managers: {
+                    create: input.managers.map((userId) => ({ userId })),
+                },
                 userRoles: {
                     create: [
                         { userId: input.ownerId, role: 'OWNER' },
@@ -682,35 +544,66 @@ export class BusinessRepository implements BusinessRepositoryPort {
     async updateBusiness(input: UpdateBusinessInput & { subscriptionType: RepositoryBusinessRecord['subscriptionType']; managers: string[] }) {
         const existing = await this.prisma.business.findUnique({
             where: { id: input.businessId },
-            select: { id: true },
+            select: { id: true, ownerId: true },
         });
 
         if (!existing) {
             return null;
         }
 
-        const record = await this.prisma.business.update({
-            where: { id: input.businessId },
-            data: {
-                name: input.name,
-                description: input.description,
-                category: input.category,
-                lat: input.location.lat,
-                lng: input.location.lng,
-                zone: input.location.zone,
-                address: input.location.address,
-                profileImage: input.images.profile,
-                bannerImage: input.images.banner,
-                subscriptionType: input.subscriptionType,
-                whatsappNumber: input.whatsappNumber,
-                userRoles: {
-                    deleteMany: {
-                        role: 'MANAGER',
-                    },
-                    create: input.managers.map((userId) => ({ userId, role: 'MANAGER' as const })),
+        const record = await this.prisma.$transaction(async (tx) => {
+            await tx.business.update({
+                where: { id: input.businessId },
+                data: {
+                    name: input.name,
+                    description: input.description,
+                    category: input.category,
+                    lat: input.location.lat,
+                    lng: input.location.lng,
+                    zone: input.location.zone,
+                    address: input.location.address,
+                    profileImage: input.images.profile,
+                    bannerImage: input.images.banner,
+                    subscriptionType: input.subscriptionType,
+                    whatsappNumber: input.whatsappNumber,
                 },
-            },
-            select: businessDetailSelect,
+            });
+
+            await tx.businessManager.deleteMany({
+                where: {
+                    businessId: input.businessId,
+                },
+            });
+
+            if (input.managers.length > 0) {
+                await tx.businessManager.createMany({
+                    data: input.managers.map((userId) => ({
+                        businessId: input.businessId,
+                        userId,
+                    })),
+                });
+            }
+
+            await tx.userBusinessRole.deleteMany({
+                where: {
+                    businessId: input.businessId,
+                    role: 'MANAGER',
+                },
+            });
+
+            await this.applyCanonicalMemberships([
+                { businessId: input.businessId, userId: existing.ownerId, role: 'OWNER' },
+                ...input.managers.map((userId) => ({
+                    businessId: input.businessId,
+                    userId,
+                    role: 'MANAGER' as const,
+                })),
+            ], tx);
+
+            return tx.business.findUniqueOrThrow({
+                where: { id: input.businessId },
+                select: businessDetailSelect,
+            });
         });
 
         return mapBusinessRecord(record);
@@ -735,6 +628,54 @@ export class BusinessRepository implements BusinessRepositoryPort {
         });
 
         return mapBusinessRecord(record);
+    }
+
+    async listBusinessMembershipSources(businessIds?: string[]) {
+        const records = await this.prisma.business.findMany({
+            where: businessIds && businessIds.length > 0
+                ? {
+                    id: {
+                        in: businessIds,
+                    },
+                }
+                : undefined,
+            select: {
+                id: true,
+                ownerId: true,
+                owner: {
+                    select: userSelect,
+                },
+                managers: {
+                    select: {
+                        userId: true,
+                        user: {
+                            select: userSelect,
+                        },
+                    },
+                },
+                userRoles: {
+                    select: {
+                        userId: true,
+                        role: true,
+                        user: {
+                            select: userSelect,
+                        },
+                    },
+                },
+            },
+        });
+
+        return records;
+    }
+
+    async upsertCanonicalMemberships(input: Array<{ businessId: string; userId: string; role: BusinessAssignmentRole }>) {
+        if (input.length === 0) {
+            return;
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+            await this.applyCanonicalMemberships(input, tx);
+        });
     }
 
     async searchUsers(input: { search: string; limit: number }) {
@@ -815,100 +756,83 @@ export class BusinessRepository implements BusinessRepositoryPort {
         return users.map(mapUserRecord);
     }
 
-    private async synchronizeCanonicalMembershipsForRecords(records: any[]) {
-        if (records.length === 0) {
+    private async applyCanonicalMemberships(
+        input: Array<{ businessId: string; userId: string; role: BusinessAssignmentRole }>,
+        tx: typeof this.prisma,
+    ) {
+        if (input.length === 0) {
             return;
         }
 
-        const missingRoleMap = new Map<string, { businessId: string; userId: string; role: BusinessAssignmentRole }>();
-        const conflicts: string[] = [];
-
-        for (const record of records) {
-            const membershipState = resolveBusinessMembershipState(record);
-
-            membershipState.missingCanonicalRoles.forEach((role) => {
-                missingRoleMap.set(`${role.businessId}:${role.userId}`, role);
-            });
-            conflicts.push(...membershipState.conflicts);
-        }
-
-        if (conflicts.length > 0) {
-            throw new Error(`Business membership conflicts require manual review: ${conflicts.join(' | ')}`);
-        }
-
-        const missingRoles = Array.from(missingRoleMap.values());
-        if (missingRoles.length === 0) {
-            return;
-        }
-
-        await this.prisma.$transaction(async (tx) => {
-            const existingMemberships = await tx.userBusinessRole.findMany({
-                where: {
-                    OR: missingRoles.map((membership) => ({
-                        userId: membership.userId,
-                        businessId: membership.businessId,
-                    })),
-                },
-                select: {
-                    id: true,
-                    userId: true,
-                    businessId: true,
-                    role: true,
-                    createdAt: true,
-                },
-                orderBy: [{ createdAt: 'asc' }],
-            });
-
-            const existingByKey = new Map<string, typeof existingMemberships>();
-
-            for (const existingMembership of existingMemberships) {
-                const key = `${existingMembership.businessId}:${existingMembership.userId}`;
-                const bucket = existingByKey.get(key);
-
-                if (bucket) {
-                    bucket.push(existingMembership);
-                } else {
-                    existingByKey.set(key, [existingMembership]);
-                }
-            }
-
-            for (const membership of missingRoles) {
-                const key = `${membership.businessId}:${membership.userId}`;
-                const existingRecords = existingByKey.get(key) ?? [];
-                const recordToKeep = existingRecords.find((existingRecord) => existingRecord.role === membership.role)
-                    ?? existingRecords[0];
-                const duplicateIds = existingRecords
-                    .filter((existingRecord) => existingRecord.id !== recordToKeep?.id)
-                    .map((existingRecord) => existingRecord.id);
-
-                if (duplicateIds.length > 0) {
-                    await tx.userBusinessRole.deleteMany({
-                        where: {
-                            id: {
-                                in: duplicateIds,
-                            },
-                        },
-                    });
-                }
-
-                if (!recordToKeep) {
-                    await tx.userBusinessRole.create({
-                        data: membership,
-                    });
-                    continue;
-                }
-
-                if (recordToKeep.role !== membership.role) {
-                    await tx.userBusinessRole.update({
-                        where: {
-                            id: recordToKeep.id,
-                        },
-                        data: {
-                            role: membership.role,
-                        },
-                    });
-                }
-            }
+        const uniqueInput = Array.from(
+            new Map(input.map((membership) => [`${membership.businessId}:${membership.userId}`, membership])).values(),
+        );
+        const existingMemberships = await tx.userBusinessRole.findMany({
+            where: {
+                OR: uniqueInput.map((membership) => ({
+                    userId: membership.userId,
+                    businessId: membership.businessId,
+                })),
+            },
+            select: {
+                id: true,
+                userId: true,
+                businessId: true,
+                role: true,
+                createdAt: true,
+            },
+            orderBy: [{ createdAt: 'asc' }],
         });
+
+        const existingByKey = new Map<string, typeof existingMemberships>();
+
+        for (const existingMembership of existingMemberships) {
+            const key = `${existingMembership.businessId}:${existingMembership.userId}`;
+            const bucket = existingByKey.get(key);
+
+            if (bucket) {
+                bucket.push(existingMembership);
+            } else {
+                existingByKey.set(key, [existingMembership]);
+            }
+        }
+
+        for (const membership of uniqueInput) {
+            const key = `${membership.businessId}:${membership.userId}`;
+            const existingRecords = existingByKey.get(key) ?? [];
+            const recordToKeep = existingRecords.find((existingRecord) => existingRecord.role === membership.role)
+                ?? existingRecords[0];
+            const duplicateIds = existingRecords
+                .filter((existingRecord) => existingRecord.id !== recordToKeep?.id)
+                .map((existingRecord) => existingRecord.id);
+
+            if (duplicateIds.length > 0) {
+                await tx.userBusinessRole.deleteMany({
+                    where: {
+                        id: {
+                            in: duplicateIds,
+                        },
+                    },
+                });
+            }
+
+            if (!recordToKeep) {
+                await tx.userBusinessRole.create({
+                    data: membership,
+                });
+                continue;
+            }
+
+            if (recordToKeep.role !== membership.role) {
+                await tx.userBusinessRole.update({
+                    where: {
+                        id: recordToKeep.id,
+                    },
+                    data: {
+                        role: membership.role,
+                    },
+                });
+            }
+        }
     }
 }

@@ -6,7 +6,7 @@ import type {
 } from 'types';
 
 import { requireActiveUser } from '../auth/authorization';
-import { canManageBusiness } from '../business/business-access';
+import { canAccessBusiness } from '../business/business-access';
 import type { BusinessRepositoryPort } from '../business/business.repository';
 import {
     buildTrendPoints,
@@ -129,7 +129,7 @@ export class BusinessAnalyticsService {
     private ensureBusinessCanBeManaged(business: { ownerId: string; managers: string[]; memberships?: Array<{ userId: string; role: 'OWNER' | 'MANAGER' }> }) {
         const currentUser = requireActiveUser(this.currentUser);
 
-        if (!canManageBusiness(currentUser, business)) {
+        if (!canAccessBusiness(currentUser, business)) {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'Business access required.' });
         }
     }

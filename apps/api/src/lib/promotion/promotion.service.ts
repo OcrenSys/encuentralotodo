@@ -7,7 +7,7 @@ import type {
     UserProfile,
 } from 'types';
 
-import { canManageBusiness } from '../business/business-access';
+import { canAccessBusiness } from '../business/business-access';
 import type {
     BusinessRepositoryPort,
     RepositoryBusinessAccessRecord,
@@ -118,7 +118,7 @@ export class PromotionService {
             throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
         }
 
-        if (!canManageBusiness(this.currentUser, {
+        if (!canAccessBusiness(this.currentUser, {
             ownerId: business.ownerId,
             managers: business.managers.map((manager) => typeof manager === 'string' ? manager : manager.userId),
             memberships: 'memberships' in business ? business.memberships : undefined,

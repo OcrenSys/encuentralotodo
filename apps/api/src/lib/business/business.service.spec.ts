@@ -6,6 +6,7 @@ import type {
     RepositoryBusinessRecord,
     RepositoryUserRecord,
 } from './business.repository';
+import type { BusinessMembershipSyncPort } from './business-membership-sync.service';
 import { BusinessService } from './business.service';
 
 const baseUser: RepositoryUserRecord = {
@@ -134,13 +135,14 @@ function createRepositoryMock(): jest.Mocked<BusinessRepositoryPort> {
         listBusinessesByUserAccess: jest.fn(),
         listBusinessesForManagementPage: jest.fn(),
         listBusinessesByUserAccessPage: jest.fn(),
-        synchronizeCanonicalMemberships: jest.fn(),
         findBusinessById: jest.fn(),
         findBusinessAccessById: jest.fn(),
         listPendingBusinesses: jest.fn(),
         createBusiness: jest.fn(),
         updateBusiness: jest.fn(),
         approveBusiness: jest.fn(),
+        listBusinessMembershipSources: jest.fn(),
+        upsertCanonicalMemberships: jest.fn(),
         searchUsers: jest.fn(),
         findUserById: jest.fn(),
         findUsersByIds: jest.fn(),
@@ -161,15 +163,23 @@ function createCurrentPlatformUser(overrides: Partial<ReturnType<typeof createCu
     });
 }
 
-function createService(currentUser: ReturnType<typeof createCurrentPlatformUser> | null, repository = createRepositoryMock()) {
+function createService(
+    currentUser: ReturnType<typeof createCurrentPlatformUser> | null,
+    repository = createRepositoryMock(),
+    businessMembershipSyncService: jest.Mocked<BusinessMembershipSyncPort> = {
+        synchronizeAllBusinessMemberships: jest.fn(),
+    },
+) {
     return {
         repository,
+        businessMembershipSyncService,
         service: new BusinessService({
             repository,
             currentUser,
             emailService: {
                 sendBusinessApprovedEmail: jest.fn(async () => undefined),
             },
+            businessMembershipSyncService,
         }),
     };
 }
@@ -210,11 +220,12 @@ describe('BusinessService', () => {
 
     it('listManagedBusinesses returns only businesses the authenticated owner can manage', async () => {
         const actor = createCurrentPlatformUser();
-        const { service, repository } = createService(actor);
+        const { service, repository, businessMembershipSyncService } = createService(actor);
         repository.listBusinessesByUserAccess.mockResolvedValue([createBusinessRecord()]);
 
         const result = await service.listManagedBusinesses();
 
+        expect(businessMembershipSyncService.synchronizeAllBusinessMemberships).toHaveBeenCalled();
         expect(repository.listBusinessesByUserAccess).toHaveBeenCalledWith('owner-sofia', { includePending: true });
         expect(result).toEqual([
             expect.objectContaining({
@@ -551,7 +562,7 @@ describe('BusinessService', () => {
         expect(result).toMatchObject({ subscriptionType: 'FREE_TRIAL' });
     });
 
-    it('allows managers to update operational business fields', async () => {
+    it('prevents managers from updating business records', async () => {
         const actor = createCurrentPlatformUser({
             id: 'manager-carlos',
             fullName: 'Carlos Mena',
@@ -581,60 +592,12 @@ describe('BusinessService', () => {
 
         repository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
         repository.findBusinessById.mockResolvedValue(createBusinessRecord());
-        repository.updateBusiness.mockResolvedValue(
-            createBusinessRecord({
-                description: input.description,
-                zone: input.location.zone,
-                address: input.location.address,
-                whatsappNumber: input.whatsappNumber,
-            }),
-        );
-
-        const result = await service.updateBusiness(input);
-
-        expect(repository.updateBusiness).toHaveBeenCalledWith(
-            expect.objectContaining({
-                description: input.description,
-                whatsappNumber: '18095550199',
-            }),
-        );
-        expect(result).toMatchObject({ whatsappNumber: '18095550199' });
-    });
-
-    it('prevents managers from changing critical business identity fields', async () => {
-        const actor = createCurrentPlatformUser({
-            id: 'manager-carlos',
-            fullName: 'Carlos Mena',
-            email: 'carlos@encuentralotodo.app',
-            role: 'USER',
-            externalAuthId: 'firebase-manager-carlos',
-        });
-        const { service, repository } = createService(actor);
-
-        repository.findBusinessAccessById.mockResolvedValue(createBusinessAccessRecord());
-        repository.findBusinessById.mockResolvedValue(createBusinessRecord());
-
-        await expect(service.updateBusiness({
-            businessId: 'biz-casa-norte',
-            name: 'Casa Norte Rebrand',
-            description: 'Descripción suficientemente larga para un intento de edición desde manager.',
-            category: 'GENERAL_STORE',
-            location: {
-                lat: 18.4861,
-                lng: -69.9312,
-                zone: 'Zona Norte',
-                address: 'Av. Charles Summer 42, Santo Domingo',
-            },
-            images: {
-                profile: 'https://example.com/profile.jpg',
-                banner: 'https://example.com/banner.jpg',
-            },
-            whatsappNumber: '18095550101',
-            managers: ['manager-carlos'],
-        })).rejects.toMatchObject({
+        await expect(service.updateBusiness(input)).rejects.toMatchObject({
             code: 'FORBIDDEN',
-            message: 'Managers can only update operational business fields.',
+            message: 'Only the owner or a platform admin can update this business.',
         });
+
+        expect(repository.updateBusiness).not.toHaveBeenCalled();
     });
 
     it('approve updates business status correctly', async () => {

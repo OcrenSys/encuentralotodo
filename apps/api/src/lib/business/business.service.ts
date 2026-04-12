@@ -15,7 +15,8 @@ import type {
 
 import { isSuperAdmin, platformAdminRoles, requireActiveUser, requirePlatformRole } from '../auth/authorization';
 import type { EmailService } from '../email';
-import { canEditBusiness, canEditBusinessOperationally, isAdminUser, isBusinessOwner } from './business-access';
+import { canEditBusiness, canManageBusiness, isAdminUser, isBusinessOwner } from './business-access';
+import type { BusinessMembershipSyncPort } from './business-membership-sync.service';
 import { mapBusiness, mapBusinessDetails, mapBusinessSummary } from './business.mappers';
 import type { BusinessRepositoryPort } from './business.repository';
 import type { UserAdminRepositoryPort } from '../user/user-admin.repository';
@@ -25,6 +26,7 @@ interface BusinessServiceDependencies {
     emailService: EmailService;
     currentUser: CurrentUser | null;
     userAdminRepository?: Pick<UserAdminRepositoryPort, 'countBusinessOwners' | 'createAuditLog' | 'transferBusinessOwnership'>;
+    businessMembershipSyncService?: BusinessMembershipSyncPort;
 }
 
 function sortBusinessSummaries(left: ReturnType<typeof mapBusinessSummary>, right: ReturnType<typeof mapBusinessSummary>) {
@@ -38,39 +40,19 @@ function sortBusinessLikeSummaries(
     return right.rating - left.rating || left.distanceKm - right.distanceKm;
 }
 
-function haveSameManagers(left: string[], right: string[]) {
-    if (left.length !== right.length) {
-        return false;
-    }
-
-    const leftSet = new Set(left);
-    return right.every((managerId) => leftSet.has(managerId));
-}
-
-function haveSameImages(
-    left: UpdateBusinessInput['images'],
-    right: Pick<BusinessDetails, 'images'>['images'],
-) {
-    return left.profile === right.profile && left.banner === right.banner;
-}
-
-function hasCriticalIdentityChanges(currentBusiness: BusinessDetails, input: UpdateBusinessInput) {
-    return currentBusiness.name !== input.name
-        || currentBusiness.category !== input.category
-        || !haveSameImages(input.images, currentBusiness.images);
-}
-
 export class BusinessService {
     private readonly repository: BusinessRepositoryPort;
     private readonly emailService: EmailService;
     private readonly currentUser: CurrentUser | null;
     private readonly userAdminRepository?: Pick<UserAdminRepositoryPort, 'countBusinessOwners' | 'createAuditLog' | 'transferBusinessOwnership'>;
+    private readonly businessMembershipSyncService?: BusinessMembershipSyncPort;
 
-    constructor({ repository, emailService, currentUser, userAdminRepository }: BusinessServiceDependencies) {
+    constructor({ repository, emailService, currentUser, userAdminRepository, businessMembershipSyncService }: BusinessServiceDependencies) {
         this.repository = repository;
         this.emailService = emailService;
         this.currentUser = currentUser;
         this.userAdminRepository = userAdminRepository;
+        this.businessMembershipSyncService = businessMembershipSyncService;
     }
 
     async listBusinesses(filters: BusinessListFilters = {}) {
@@ -95,6 +77,11 @@ export class BusinessService {
             ...filters,
             includePending: true,
         };
+
+        if (!isAdminUser(currentUser)) {
+            await this.businessMembershipSyncService?.synchronizeAllBusinessMemberships();
+        }
+
         const businesses = isAdminUser(currentUser)
             ? await this.repository.listBusinessesForManagement(managedFilters)
             : await this.repository.listBusinessesByUserAccess(currentUser.id, managedFilters);
@@ -104,6 +91,11 @@ export class BusinessService {
 
     async listManagedBusinessesPage(filters: ListManagedBusinessesInput): Promise<ManagementListResult<BusinessDetails>> {
         const currentUser = requireActiveUser(this.currentUser);
+
+        if (!isAdminUser(currentUser)) {
+            await this.businessMembershipSyncService?.synchronizeAllBusinessMemberships();
+        }
+
         const result = isAdminUser(currentUser)
             ? await this.repository.listBusinessesForManagementPage(filters)
             : await this.repository.listBusinessesByUserAccessPage(currentUser.id, filters);
@@ -187,36 +179,15 @@ export class BusinessService {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
         }
 
-        const isAllowedSuperAdmin = isSuperAdmin(currentUser);
-        if (!canEditBusinessOperationally(currentUser, businessAccess)) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Business access required.' });
+        if (!canManageBusiness(currentUser, businessAccess)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a platform admin can update this business.' });
         }
 
-        const isOwner = isBusinessOwner(currentUser, businessAccess);
-
-        if (!isAllowedSuperAdmin && !isOwner) {
-            if (input.subscriptionType && input.subscriptionType !== businessAccess.subscriptionType) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can change the membership plan.' });
-            }
-
-            if (!haveSameManagers(input.managers, businessAccess.managers)) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can change business managers.' });
-            }
-
-            if (hasCriticalIdentityChanges(mapBusinessDetails(currentBusiness), input)) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Managers can only update operational business fields.' });
-            }
-        }
-
-        const managers = (isAllowedSuperAdmin || isOwner)
-            ? await this.resolveManagerIds(input.managers ?? businessAccess.managers, businessAccess.ownerId)
-            : businessAccess.managers;
+        const managers = await this.resolveManagerIds(input.managers ?? businessAccess.managers, businessAccess.ownerId);
         const updatedBusiness = await this.repository.updateBusiness({
             ...input,
             managers,
-            subscriptionType: (isAllowedSuperAdmin || isOwner)
-                ? (input.subscriptionType ?? businessAccess.subscriptionType)
-                : businessAccess.subscriptionType,
+            subscriptionType: input.subscriptionType ?? businessAccess.subscriptionType,
         });
 
         if (!updatedBusiness) {

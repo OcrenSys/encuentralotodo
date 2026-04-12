@@ -52,7 +52,7 @@ export function canEditBusiness(user: UserProfile | null | undefined, business: 
     return isAdminUser(user) || isBusinessOwner(user, business);
 }
 
-export function canEditBusinessOperationally(user: UserProfile | null | undefined, business: BusinessAccessIdentity) {
+export function canAccessBusiness(user: UserProfile | null | undefined, business: BusinessAccessIdentity) {
     if (!user) {
         return false;
     }
@@ -61,5 +61,5 @@ export function canEditBusinessOperationally(user: UserProfile | null | undefine
 }
 
 export function canManageBusiness(user: UserProfile | null | undefined, business: BusinessAccessIdentity) {
-    return canEditBusinessOperationally(user, business);
+    return canEditBusiness(user, business);
 }

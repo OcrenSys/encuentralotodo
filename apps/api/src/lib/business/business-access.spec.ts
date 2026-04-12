@@ -1,6 +1,6 @@
 import type { UserProfile } from 'types';
 
-import { canEditBusiness, canManageBusiness, isBusinessManager, isBusinessOwner } from './business-access';
+import { canAccessBusiness, canEditBusiness, canManageBusiness, isBusinessManager, isBusinessOwner } from './business-access';
 
 const ownerUser = {
     id: 'owner-sofia',
@@ -26,6 +26,10 @@ const adminUser = {
 const business = {
     ownerId: 'owner-sofia',
     managers: ['manager-carlos'],
+    memberships: [
+        { userId: 'owner-sofia', role: 'OWNER' as const },
+        { userId: 'manager-carlos', role: 'MANAGER' as const },
+    ],
 };
 
 describe('business-access', () => {
@@ -39,10 +43,12 @@ describe('business-access', () => {
     it('allows admins to edit and manage any business', () => {
         expect(canEditBusiness(adminUser, business)).toBe(true);
         expect(canManageBusiness(adminUser, business)).toBe(true);
+        expect(canAccessBusiness(adminUser, business)).toBe(true);
     });
 
-    it('allows managers to manage but not edit business records', () => {
-        expect(canManageBusiness(managerUser, business)).toBe(true);
+    it('allows managers to access but not manage business records', () => {
+        expect(canAccessBusiness(managerUser, business)).toBe(true);
+        expect(canManageBusiness(managerUser, business)).toBe(false);
         expect(canEditBusiness(managerUser, business)).toBe(false);
     });
 });
