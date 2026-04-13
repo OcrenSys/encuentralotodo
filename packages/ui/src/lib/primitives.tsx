@@ -25,6 +25,8 @@ const buttonVariants = {
   destructive: 'action-destructive',
   ghost: 'action-secondary border-transparent bg-transparent shadow-none',
   outline: 'action-secondary border',
+  google:
+    'bg-[#DB4437] text-[#ffffff] border border-[#dadce0] hover:bg-[#c1351d] active:bg-[#a52714]',
 } as const;
 
 const buttonSizes = {

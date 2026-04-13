@@ -39,6 +39,12 @@ export type LeadVolumeBucket = (typeof leadVolumeBuckets)[number];
 export const promotionUsageLevels = ['NONE', 'LIGHT', 'ACTIVE'] as const;
 export type PromotionUsageLevel = (typeof promotionUsageLevels)[number];
 
+export const promotionTypes = ['DISCOUNT', 'EVENT', 'ANNOUNCEMENT'] as const;
+export type PromotionType = (typeof promotionTypes)[number];
+
+export const promotionStatuses = ['DRAFT', 'ACTIVE', 'EXPIRED'] as const;
+export type PromotionStatus = (typeof promotionStatuses)[number];
+
 export const reviewStrengthLevels = ['NONE', 'LIMITED', 'STRONG'] as const;
 export type ReviewStrengthLevel = (typeof reviewStrengthLevels)[number];
 
@@ -114,12 +120,18 @@ export type Product =
 
 export interface Promotion {
     id: string;
+    businessId: string;
     title: string;
     description: string;
+    type: PromotionType;
+    startDate: string;
+    endDate: string;
+    status: PromotionStatus;
+    createdAt: string;
+    updatedAt: string;
     promoPrice: number;
     originalPrice: number;
     validUntil: string;
-    businessId: string;
     image: string;
     lastUpdated: string;
 }

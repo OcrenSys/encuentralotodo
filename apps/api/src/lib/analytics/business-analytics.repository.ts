@@ -58,7 +58,7 @@ const recentPromotionSelect = {
     id: true,
     title: true,
     businessId: true,
-    validUntil: true,
+    endDate: true,
     createdAt: true,
     business: {
         select: {
@@ -86,7 +86,7 @@ function mapRecentPromotionRecord(record: any): RepositoryBusinessAnalyticsRecen
         title: record.title,
         businessId: record.businessId,
         businessName: record.business.name,
-        validUntil: record.validUntil,
+        validUntil: record.endDate,
         createdAt: record.createdAt,
     };
 }

@@ -333,7 +333,7 @@ export function LoginScreen() {
             disabled={isGooglePending || !isFirebaseRuntime}
             onClick={() => void handleGoogleSignIn()}
             type="button"
-            variant="secondary"
+            variant="google"
           >
             {isGooglePending ? (
               <LoaderCircle className="size-4 animate-spin" />

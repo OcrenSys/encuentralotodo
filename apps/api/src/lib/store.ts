@@ -194,6 +194,10 @@ export class MarketplaceStore {
     const promotion: Promotion = {
       id: `promo-${Date.now()}`,
       ...input,
+      endDate: input.endDate,
+      validUntil: input.endDate,
+      createdAt: now(),
+      updatedAt: now(),
       lastUpdated: now(),
     };
 
@@ -221,7 +225,7 @@ export class MarketplaceStore {
   }
 
   listPromotions() {
-    return this.data.promotions.filter((promotion) => new Date(promotion.validUntil) >= new Date());
+    return this.data.promotions.filter((promotion) => promotion.status !== 'DRAFT' && new Date(promotion.endDate) >= new Date());
   }
 }
 

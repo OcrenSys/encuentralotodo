@@ -50,14 +50,18 @@ export interface RepositoryProductRecord {
 
 export interface RepositoryPromotionRecord {
     id: string;
+    businessId: string;
     title: string;
     description: string;
+    type: 'DISCOUNT' | 'EVENT' | 'ANNOUNCEMENT';
+    startDate: Date;
+    endDate: Date;
+    status: 'DRAFT' | 'ACTIVE' | 'EXPIRED';
+    createdAt: Date;
+    updatedAt: Date;
     promoPrice: number;
     originalPrice: number;
-    validUntil: Date;
-    businessId: string;
     image: string;
-    lastUpdated: Date;
 }
 
 export interface RepositoryReviewRecord {
@@ -152,14 +156,18 @@ const productSelect = {
 
 const promotionSelect = {
     id: true,
+    businessId: true,
     title: true,
     description: true,
+    type: true,
+    startDate: true,
+    endDate: true,
+    status: true,
+    createdAt: true,
+    updatedAt: true,
     promoPrice: true,
     originalPrice: true,
-    validUntil: true,
-    businessId: true,
     image: true,
-    lastUpdated: true,
 } as const;
 
 const reviewSelect = {
@@ -551,7 +559,7 @@ export class BusinessRepository implements BusinessRepositoryPort {
             return null;
         }
 
-        const record = await this.prisma.$transaction(async (tx) => {
+        const record = await this.prisma.$transaction(async (tx: ReturnType<typeof getPrismaClient>) => {
             await tx.business.update({
                 where: { id: input.businessId },
                 data: {
@@ -673,7 +681,7 @@ export class BusinessRepository implements BusinessRepositoryPort {
             return;
         }
 
-        await this.prisma.$transaction(async (tx) => {
+        await this.prisma.$transaction(async (tx: ReturnType<typeof getPrismaClient>) => {
             await this.applyCanonicalMemberships(input, tx);
         });
     }
@@ -800,11 +808,13 @@ export class BusinessRepository implements BusinessRepositoryPort {
         for (const membership of uniqueInput) {
             const key = `${membership.businessId}:${membership.userId}`;
             const existingRecords = existingByKey.get(key) ?? [];
-            const recordToKeep = existingRecords.find((existingRecord) => existingRecord.role === membership.role)
+            const recordToKeep = existingRecords.find(
+                (existingRecord: (typeof existingRecords)[number]) => existingRecord.role === membership.role,
+            )
                 ?? existingRecords[0];
             const duplicateIds = existingRecords
-                .filter((existingRecord) => existingRecord.id !== recordToKeep?.id)
-                .map((existingRecord) => existingRecord.id);
+                .filter((existingRecord: (typeof existingRecords)[number]) => existingRecord.id !== recordToKeep?.id)
+                .map((existingRecord: (typeof existingRecords)[number]) => existingRecord.id);
 
             if (duplicateIds.length > 0) {
                 await tx.userBusinessRole.deleteMany({

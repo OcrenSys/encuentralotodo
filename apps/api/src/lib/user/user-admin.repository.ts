@@ -511,7 +511,7 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
     }
 
     async transferBusinessOwnership(input: { businessId: string; fromUserId: string; toUserId: string }) {
-        await this.prisma.$transaction(async (tx) => {
+        await this.prisma.$transaction(async (tx: ReturnType<typeof getPrismaClient>) => {
             await tx.userBusinessRole.deleteMany({
                 where: {
                     businessId: input.businessId,
@@ -608,11 +608,13 @@ export class UserAdminRepository implements UserAdminRepositoryPort {
             orderBy: [{ createdAt: 'asc' }],
         });
 
-        const recordToKeep = existingRecords.find((existingRecord) => existingRecord.role === input.role)
+        const recordToKeep = existingRecords.find(
+            (existingRecord: (typeof existingRecords)[number]) => existingRecord.role === input.role,
+        )
             ?? existingRecords[0];
         const duplicateIds = existingRecords
-            .filter((existingRecord) => existingRecord.id !== recordToKeep?.id)
-            .map((existingRecord) => existingRecord.id);
+            .filter((existingRecord: (typeof existingRecords)[number]) => existingRecord.id !== recordToKeep?.id)
+            .map((existingRecord: (typeof existingRecords)[number]) => existingRecord.id);
 
         if (duplicateIds.length > 0) {
             await tx.userBusinessRole.deleteMany({

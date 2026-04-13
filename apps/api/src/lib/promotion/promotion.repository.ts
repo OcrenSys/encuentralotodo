@@ -1,6 +1,8 @@
 import type {
     BusinessAssignmentRole,
     CreatePromotionInput,
+    PromotionStatus,
+    PromotionType,
     UpdatePromotionInput,
 } from 'types';
 
@@ -8,15 +10,18 @@ import type { getPrismaClient } from '../prisma';
 
 export interface RepositoryPromotionRecord {
     id: string;
+    businessId: string;
     title: string;
     description: string;
+    type: PromotionType;
+    startDate: Date;
+    endDate: Date;
+    status: PromotionStatus;
+    createdAt: Date;
+    updatedAt: Date;
     promoPrice: number;
     originalPrice: number;
-    validUntil: Date;
-    businessId: string;
     image: string;
-    lastUpdated: Date;
-    createdAt: Date;
 }
 
 export interface RepositoryPromotionWithBusinessRecord extends RepositoryPromotionRecord {
@@ -42,29 +47,35 @@ export interface PromotionRepositoryPort {
 
 const promotionSelect = {
     id: true,
+    businessId: true,
     title: true,
     description: true,
+    type: true,
+    startDate: true,
+    endDate: true,
+    status: true,
+    createdAt: true,
+    updatedAt: true,
     promoPrice: true,
     originalPrice: true,
-    validUntil: true,
-    businessId: true,
     image: true,
-    lastUpdated: true,
-    createdAt: true,
 } as const;
 
 function mapPromotionRecord(record: any): RepositoryPromotionRecord {
     return {
         id: record.id,
+        businessId: record.businessId,
         title: record.title,
         description: record.description,
+        type: record.type,
+        startDate: record.startDate,
+        endDate: record.endDate,
+        status: record.status,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
         promoPrice: record.promoPrice,
         originalPrice: record.originalPrice,
-        validUntil: record.validUntil,
-        businessId: record.businessId,
         image: record.image,
-        lastUpdated: record.lastUpdated,
-        createdAt: record.createdAt,
     };
 }
 
@@ -95,7 +106,7 @@ export class PromotionRepository implements PromotionRepositoryPort {
     async listByBusiness(businessId: string) {
         const records = await this.prisma.promotion.findMany({
             where: { businessId },
-            orderBy: { lastUpdated: 'desc' },
+            orderBy: { updatedAt: 'desc' },
             select: promotionSelect,
         });
 
@@ -105,11 +116,14 @@ export class PromotionRepository implements PromotionRepositoryPort {
     async listActive(now: Date) {
         const records = await this.prisma.promotion.findMany({
             where: {
-                validUntil: {
+                status: {
+                    not: 'DRAFT',
+                },
+                endDate: {
                     gte: now,
                 },
             },
-            orderBy: { lastUpdated: 'desc' },
+            orderBy: { updatedAt: 'desc' },
             select: promotionSelect,
         });
 
@@ -161,9 +175,12 @@ export class PromotionRepository implements PromotionRepositoryPort {
                 businessId: input.businessId,
                 title: input.title,
                 description: input.description,
+                type: input.type,
+                startDate: new Date(input.startDate),
+                endDate: new Date(input.endDate),
+                status: input.status,
                 promoPrice: input.promoPrice,
                 originalPrice: input.originalPrice,
-                validUntil: new Date(input.validUntil),
                 image: input.image,
             },
             select: promotionSelect,
@@ -187,9 +204,12 @@ export class PromotionRepository implements PromotionRepositoryPort {
             data: {
                 title: input.title,
                 description: input.description,
+                type: input.type,
+                startDate: input.startDate ? new Date(input.startDate) : undefined,
+                endDate: input.endDate ? new Date(input.endDate) : undefined,
+                status: input.status,
                 promoPrice: input.promoPrice,
                 originalPrice: input.originalPrice,
-                validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
                 image: input.image,
             },
             select: promotionSelect,

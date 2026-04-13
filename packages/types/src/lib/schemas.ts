@@ -10,6 +10,8 @@ import {
     leadSources,
     leadStatuses,
     leadVolumeBuckets,
+    promotionStatuses,
+    promotionTypes,
     promotionUsageLevels,
     reviewStrengthLevels,
     subscriptionTypes,
@@ -27,6 +29,8 @@ export const leadSourceSchema = z.enum(leadSources);
 export const leadStatusSchema = z.enum(leadStatuses);
 export const analyticsPeriodSchema = z.enum(analyticsPeriods);
 export const leadVolumeBucketSchema = z.enum(leadVolumeBuckets);
+export const promotionTypeSchema = z.enum(promotionTypes);
+export const promotionStatusSchema = z.enum(promotionStatuses);
 export const promotionUsageLevelSchema = z.enum(promotionUsageLevels);
 export const reviewStrengthLevelSchema = z.enum(reviewStrengthLevels);
 
@@ -190,10 +194,29 @@ export const createPromotionInputSchema = z.object({
     businessId: z.string().min(2),
     title: z.string().min(2).max(80),
     description: z.string().min(10).max(240),
-    promoPrice: z.number().positive(),
-    originalPrice: z.number().positive(),
-    validUntil: z.string().datetime(),
+    type: promotionTypeSchema,
+    startDate: z.string().datetime(),
+    endDate: z.string().datetime(),
+    status: promotionStatusSchema,
+    promoPrice: z.number().nonnegative(),
+    originalPrice: z.number().nonnegative(),
     image: z.string().url(),
+}).superRefine((values, ctx) => {
+    if (new Date(values.startDate).getTime() >= new Date(values.endDate).getTime()) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'La fecha de inicio debe ser anterior a la fecha de fin.',
+            path: ['endDate'],
+        });
+    }
+
+    if (values.originalPrice < values.promoPrice) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'El precio original debe ser mayor o igual al precio promocional.',
+            path: ['originalPrice'],
+        });
+    }
 });
 
 export const getPromotionByIdInputSchema = z.object({
@@ -204,10 +227,29 @@ export const updatePromotionInputSchema = z.object({
     promotionId: z.string().min(2),
     title: z.string().min(2).max(80).optional(),
     description: z.string().min(10).max(240).optional(),
-    promoPrice: z.number().positive().optional(),
-    originalPrice: z.number().positive().optional(),
-    validUntil: z.string().datetime().optional(),
+    type: promotionTypeSchema.optional(),
+    startDate: z.string().datetime().optional(),
+    endDate: z.string().datetime().optional(),
+    status: promotionStatusSchema.optional(),
+    promoPrice: z.number().nonnegative().optional(),
+    originalPrice: z.number().nonnegative().optional(),
     image: z.string().url().optional(),
+}).superRefine((values, ctx) => {
+    if (values.startDate && values.endDate && new Date(values.startDate).getTime() >= new Date(values.endDate).getTime()) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'La fecha de inicio debe ser anterior a la fecha de fin.',
+            path: ['endDate'],
+        });
+    }
+
+    if (typeof values.promoPrice === 'number' && typeof values.originalPrice === 'number' && values.originalPrice < values.promoPrice) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'El precio original debe ser mayor o igual al precio promocional.',
+            path: ['originalPrice'],
+        });
+    }
 });
 
 export const deletePromotionInputSchema = z.object({

@@ -3,11 +3,12 @@ import type {
     CreatePromotionInput,
     DeletePromotionInput,
     GetPromotionByIdInput,
+    PromotionStatus,
     UpdatePromotionInput,
     UserProfile,
 } from 'types';
 
-import { canAccessBusiness } from '../business/business-access';
+import { canManageBusiness } from '../business/business-access';
 import type {
     BusinessRepositoryPort,
     RepositoryBusinessAccessRecord,
@@ -17,6 +18,7 @@ import type {
     PromotionRepositoryPort,
     RepositoryPromotionWithBusinessRecord,
 } from './promotion.repository';
+import { normalizePromotionStatusForPersistence } from './promotion-status';
 
 interface PromotionServiceDependencies {
     repository: PromotionRepositoryPort;
@@ -58,8 +60,12 @@ export class PromotionService {
     async create(input: CreatePromotionInput) {
         const business = await this.requireBusinessAccess(input.businessId);
         this.ensureBusinessCanBeManaged(business);
+        this.assertValidDateRange(input.startDate, input.endDate);
 
-        const promotion = await this.repository.create(input);
+        const promotion = await this.repository.create({
+            ...input,
+            status: this.normalizeStatus(input.status, input.endDate),
+        });
         return mapPromotion(promotion);
     }
 
@@ -67,12 +73,19 @@ export class PromotionService {
         const promotion = await this.requirePromotionWithAccess(input.promotionId);
         this.ensureBusinessCanBeManaged(promotion.business);
 
+        const nextStartDate = input.startDate ?? promotion.startDate.toISOString();
+        const nextEndDate = input.endDate ?? promotion.endDate.toISOString();
+        this.assertValidDateRange(nextStartDate, nextEndDate);
+
         const updatedPromotion = await this.repository.update(input.promotionId, {
             title: input.title,
             description: input.description,
+            type: input.type,
+            startDate: input.startDate,
+            endDate: input.endDate,
+            status: this.normalizeStatus(input.status ?? promotion.status, nextEndDate),
             promoPrice: input.promoPrice,
             originalPrice: input.originalPrice,
-            validUntil: input.validUntil,
             image: input.image,
         });
 
@@ -118,12 +131,28 @@ export class PromotionService {
             throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
         }
 
-        if (!canAccessBusiness(this.currentUser, {
+        if (!canManageBusiness(this.currentUser, {
             ownerId: business.ownerId,
             managers: business.managers.map((manager) => typeof manager === 'string' ? manager : manager.userId),
             memberships: 'memberships' in business ? business.memberships : undefined,
         })) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Business access required.' });
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a platform admin can manage promotions.' });
         }
+    }
+
+    private assertValidDateRange(startDate: string, endDate: string) {
+        if (new Date(startDate).getTime() >= new Date(endDate).getTime()) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Promotion start date must be before the end date.',
+            });
+        }
+    }
+
+    private normalizeStatus(status: PromotionStatus, endDate: string) {
+        return normalizePromotionStatusForPersistence({
+            requestedStatus: status,
+            endDate: new Date(endDate),
+        }) as PromotionStatus;
     }
 }

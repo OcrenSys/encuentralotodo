@@ -196,13 +196,16 @@ model Promotion {
     id            String   @id @default(cuid())
     title         String
     description   String
+    type          String   @default("DISCOUNT")
+    status        String   @default("DRAFT")
     promoPrice    Float
     originalPrice Float
-    validUntil    DateTime
+    startDate     DateTime
+    endDate       DateTime
     image         String
     businessId    String
     business      Business @relation(fields: [businessId], references: [id])
-    lastUpdated   DateTime @updatedAt
+    updatedAt     DateTime @updatedAt
     createdAt     DateTime @default(now())
 }
 

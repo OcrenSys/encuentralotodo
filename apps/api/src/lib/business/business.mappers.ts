@@ -8,6 +8,7 @@ import type {
     RepositoryReviewRecord,
     RepositoryUserRecord,
 } from './business.repository';
+import { resolvePromotionStatus } from '../promotion/promotion-status';
 
 const defaultOrigin = { lat: 18.4706, lng: -69.8991 };
 
@@ -54,16 +55,27 @@ function mapProduct(record: RepositoryProductRecord) {
 }
 
 function mapPromotion(record: RepositoryPromotionRecord) {
+    const status = resolvePromotionStatus({
+        endDate: record.endDate,
+        storedStatus: record.status,
+    });
+
     return {
         id: record.id,
+        businessId: record.businessId,
         title: record.title,
         description: record.description,
+        type: record.type,
+        startDate: toIsoString(record.startDate),
+        endDate: toIsoString(record.endDate),
+        status,
+        createdAt: toIsoString(record.createdAt),
+        updatedAt: toIsoString(record.updatedAt),
         promoPrice: record.promoPrice,
         originalPrice: record.originalPrice,
-        validUntil: toIsoString(record.validUntil),
-        businessId: record.businessId,
+        validUntil: toIsoString(record.endDate),
         image: record.image,
-        lastUpdated: toIsoString(record.lastUpdated),
+        lastUpdated: toIsoString(record.updatedAt),
     };
 }
 

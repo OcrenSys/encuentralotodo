@@ -62,7 +62,10 @@ export class PlatformAnalyticsRepository implements PlatformAnalyticsRepositoryP
             this.prisma.product.count(),
             this.prisma.promotion.count({
                 where: {
-                    validUntil: {
+                    status: {
+                        not: 'DRAFT',
+                    },
+                    endDate: {
                         gte: input.now,
                     },
                 },
@@ -113,7 +116,7 @@ export class PlatformAnalyticsRepository implements PlatformAnalyticsRepositoryP
                 promotions: {
                     select: {
                         id: true,
-                        validUntil: true,
+                        endDate: true,
                     },
                 },
                 leads: {
@@ -136,7 +139,7 @@ export class PlatformAnalyticsRepository implements PlatformAnalyticsRepositoryP
             subscriptionType: SubscriptionType;
             createdAt: Date;
             products: Array<{ id: string }>;
-            promotions: Array<{ id: string; validUntil: Date }>;
+            promotions: Array<{ id: string; endDate: Date }>;
             leads: Array<{ createdAt: Date }>;
             reviews: Array<{ rating: number }>;
         }) => ({
@@ -147,7 +150,7 @@ export class PlatformAnalyticsRepository implements PlatformAnalyticsRepositoryP
             createdAt: record.createdAt,
             leadCreatedAt: record.leads.map((lead: { createdAt: Date }) => lead.createdAt),
             productCount: record.products.length,
-            activePromotionCount: record.promotions.filter((promotion: { validUntil: Date }) => promotion.validUntil >= input.now).length,
+            activePromotionCount: record.promotions.filter((promotion: { endDate: Date }) => promotion.endDate >= input.now).length,
             totalPromotionCount: record.promotions.length,
             reviewRatings: record.reviews.map((review: { rating: number }) => review.rating),
         }));
