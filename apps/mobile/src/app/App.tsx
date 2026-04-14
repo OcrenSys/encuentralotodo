@@ -12,7 +12,13 @@ import {
 } from 'react-native';
 
 import { marketplaceSeed, type BusinessCategory } from 'types';
-import { buildWhatsAppLink, calculateAverageRating, formatCurrency } from 'utils';
+import {
+  buildWhatsAppLink,
+  calculateAverageRating,
+  formatCurrency,
+} from 'utils';
+
+import { BrandLogo } from './components/brand-logo';
 
 const palette = {
   primary: '#1F3C5A',
@@ -38,20 +44,26 @@ export const App = () => {
 
   const approvedBusinesses = marketplaceSeed.businesses
     .filter((business) => business.status === 'APPROVED')
-    .filter((business) => (category === 'ALL' ? true : business.category === category))
+    .filter((business) =>
+      category === 'ALL' ? true : business.category === category,
+    )
     .filter((business) => {
       if (!search.trim()) {
         return true;
       }
 
       const normalizedSearch = search.toLowerCase();
-      return [business.name, business.description, business.location.zone].some((value) =>
-        value.toLowerCase().includes(normalizedSearch)
+      return [business.name, business.description, business.location.zone].some(
+        (value) => value.toLowerCase().includes(normalizedSearch),
       );
     })
     .map((business) => {
-      const reviews = marketplaceSeed.reviews.filter((review) => review.businessId === business.id);
-      const promotion = marketplaceSeed.promotions.find((item) => item.businessId === business.id);
+      const reviews = marketplaceSeed.reviews.filter(
+        (review) => review.businessId === business.id,
+      );
+      const promotion = marketplaceSeed.promotions.find(
+        (item) => item.businessId === business.id,
+      );
       return {
         ...business,
         rating: calculateAverageRating(reviews),
@@ -66,12 +78,19 @@ export const App = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor={palette.background} barStyle="dark-content" />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.heroCard}>
+          <BrandLogo size={68} />
           <Text style={styles.heroEyebrow}>ENCUENTRALOTODO MOBILE</Text>
-          <Text style={styles.heroTitle}>Descubre negocios locales y cierra por WhatsApp.</Text>
+          <Text style={styles.heroTitle}>
+            Descubre negocios locales y cierra por WhatsApp.
+          </Text>
           <Text style={styles.heroText}>
-            Versión inicial en Expo para validar discovery, promos y contacto inmediato desde móvil.
+            Versión inicial en Expo para validar discovery, promos y contacto
+            inmediato desde móvil.
           </Text>
         </View>
 
@@ -85,12 +104,24 @@ export const App = () => {
           />
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipsRow}
+        >
           {categories.map((item) => {
             const active = item.key === category;
             return (
-              <Pressable key={item.key} onPress={() => setCategory(item.key)} style={[styles.chip, active && styles.chipActive]}>
-                <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{item.label}</Text>
+              <Pressable
+                key={item.key}
+                onPress={() => setCategory(item.key)}
+                style={[styles.chip, active && styles.chipActive]}
+              >
+                <Text
+                  style={[styles.chipLabel, active && styles.chipLabelActive]}
+                >
+                  {item.label}
+                </Text>
               </Pressable>
             );
           })}
@@ -100,10 +131,16 @@ export const App = () => {
           <View style={styles.promoCard}>
             <Text style={styles.promoEyebrow}>PROMO ACTIVA</Text>
             <Text style={styles.promoTitle}>{featuredPromotion.title}</Text>
-            <Text style={styles.promoText}>{featuredPromotion.description}</Text>
+            <Text style={styles.promoText}>
+              {featuredPromotion.description}
+            </Text>
             <View style={styles.promoPricing}>
-              <Text style={styles.promoPrice}>{formatCurrency(featuredPromotion.promoPrice)}</Text>
-              <Text style={styles.promoOriginal}>{formatCurrency(featuredPromotion.originalPrice)}</Text>
+              <Text style={styles.promoPrice}>
+                {formatCurrency(featuredPromotion.promoPrice)}
+              </Text>
+              <Text style={styles.promoOriginal}>
+                {formatCurrency(featuredPromotion.originalPrice)}
+              </Text>
             </View>
           </View>
         ) : null}
@@ -116,17 +153,38 @@ export const App = () => {
         {approvedBusinesses.map((business) => (
           <View key={business.id} style={styles.businessCard}>
             <View style={styles.businessRow}>
-              <View style={styles.logoPlaceholder} />
+              <View style={styles.logoBadge}>
+                <BrandLogo size={40} subtitle={false} variant="mark" />
+              </View>
               <View style={styles.businessMeta}>
                 <Text style={styles.businessName}>{business.name}</Text>
-                <Text style={styles.businessSubline}>{business.location.zone} · {business.category.replace('_', ' ')}</Text>
-                <Text style={styles.businessSubline}>{business.rating.toFixed(1)} estrellas · {business.reviewCount} reseñas</Text>
+                <Text style={styles.businessSubline}>
+                  {business.location.zone} ·{' '}
+                  {business.category.replace('_', ' ')}
+                </Text>
+                <Text style={styles.businessSubline}>
+                  {business.rating.toFixed(1)} estrellas ·{' '}
+                  {business.reviewCount} reseñas
+                </Text>
               </View>
             </View>
-            <Text style={styles.businessDescription}>{business.description}</Text>
-            {business.promotion ? <Text style={styles.promoFlag}>Promo: {business.promotion.title}</Text> : null}
+            <Text style={styles.businessDescription}>
+              {business.description}
+            </Text>
+            {business.promotion ? (
+              <Text style={styles.promoFlag}>
+                Promo: {business.promotion.title}
+              </Text>
+            ) : null}
             <Pressable
-              onPress={() => Linking.openURL(buildWhatsAppLink(business.whatsappNumber, `Hola ${business.name}, vi su perfil en EncuentraloTodo.`))}
+              onPress={() =>
+                Linking.openURL(
+                  buildWhatsAppLink(
+                    business.whatsappNumber,
+                    `Hola ${business.name}, vi su perfil en EncuentraloTodo.`,
+                  ),
+                )
+              }
               style={styles.whatsAppButton}
             >
               <Text style={styles.whatsAppLabel}>Contactar por WhatsApp</Text>
@@ -139,7 +197,14 @@ export const App = () => {
 
       {featuredBusiness ? (
         <Pressable
-          onPress={() => Linking.openURL(buildWhatsAppLink(featuredBusiness.whatsappNumber, `Hola ${featuredBusiness.name}, quiero más información.`))}
+          onPress={() =>
+            Linking.openURL(
+              buildWhatsAppLink(
+                featuredBusiness.whatsappNumber,
+                `Hola ${featuredBusiness.name}, quiero más información.`,
+              ),
+            )
+          }
           style={styles.floatingButton}
         >
           <Text style={styles.floatingButtonLabel}>WhatsApp rápido</Text>
@@ -148,8 +213,21 @@ export const App = () => {
 
       <View style={styles.bottomNav}>
         {['Home', 'Buscar', 'Favoritos', 'Perfil'].map((item, index) => (
-          <View key={item} style={[styles.bottomNavItem, index === 0 && styles.bottomNavItemActive]}>
-            <Text style={[styles.bottomNavLabel, index === 0 && styles.bottomNavLabelActive]}>{item}</Text>
+          <View
+            key={item}
+            style={[
+              styles.bottomNavItem,
+              index === 0 && styles.bottomNavItemActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.bottomNavLabel,
+                index === 0 && styles.bottomNavLabelActive,
+              ]}
+            >
+              {item}
+            </Text>
           </View>
         ))}
       </View>
@@ -290,11 +368,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  logoPlaceholder: {
+  logoBadge: {
     width: 56,
     height: 56,
     borderRadius: 18,
+    alignItems: 'center',
     backgroundColor: 'rgba(79,191,159,0.18)',
+    justifyContent: 'center',
   },
   businessMeta: {
     flex: 1,

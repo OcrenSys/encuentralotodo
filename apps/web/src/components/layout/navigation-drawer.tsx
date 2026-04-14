@@ -9,6 +9,7 @@ import {
 } from 'ui';
 
 import type { NavigationGroup } from '../../lib/management-navigation';
+import { BrandLogo } from '../branding/brand-logo';
 import { ManagementNavigationList } from './management-navigation-list';
 
 export function NavigationDrawer({
@@ -27,9 +28,7 @@ export function NavigationDrawer({
       <DialogContent className="left-0 top-0 h-[100dvh] max-h-[100dvh] w-[min(24rem,calc(100vw-1.5rem))] max-w-none translate-x-0 translate-y-0 rounded-l-none rounded-r-[1.75rem] border-l-0 p-0 lg:hidden">
         <div className="flex h-full min-h-0 flex-col bg-[var(--shell-gradient)]">
           <DialogHeader className="border-b border-border-subtle px-5 py-5 pr-14">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-secondary">
-              EncuentraloTodo
-            </p>
+            <BrandLogo className="pb-2" />
             <DialogTitle className="mt-2">Navegación de gestión</DialogTitle>
             <DialogDescription>
               Accede a cualquier sección de la consola sin depender solo de la

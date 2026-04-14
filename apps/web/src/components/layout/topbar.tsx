@@ -8,6 +8,7 @@ import {
   routeSearchLabels,
   type NavigationGroup,
 } from '../../lib/management-navigation';
+import { BrandLogo } from '../branding/brand-logo';
 import { AuthUserPanel } from '../auth/auth-user-panel';
 import { NavigationDrawer } from './navigation-drawer';
 import { RoleSwitcher } from './role-switcher';
@@ -160,9 +161,13 @@ export function Topbar({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-3">
-              <div className="surface-soft inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-secondary">
-                <Layers3 className="size-3.5" />
-                {eyebrow}
+              <div className="flex min-w-0 items-start gap-3">
+                <BrandLogo className="sm:hidden" markClassName="w-9" />
+                <BrandLogo className="hidden sm:inline-flex lg:hidden" />
+                <div className="surface-soft inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-secondary">
+                  <Layers3 className="size-3.5" />
+                  {eyebrow}
+                </div>
               </div>
               <div className="flex items-center gap-2 lg:hidden">
                 <button

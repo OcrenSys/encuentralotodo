@@ -34,6 +34,7 @@ import {
 import { buildWhatsAppLink } from 'utils';
 
 import { trpc } from '../lib/trpc';
+import { BrandLogo } from './branding/brand-logo';
 
 const categories: Array<{
   key: BusinessCategory | 'ALL';
@@ -101,6 +102,7 @@ export function MarketplaceHomeScreen() {
         <div className="soft-panel market-grid overflow-hidden rounded-[32px] border border-white/70 px-5 py-6 shadow-card sm:px-8 sm:py-8 lg:px-10 lg:py-7 xl:px-12 xl:py-8">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between xl:gap-10">
             <div className="max-w-2xl space-y-4 lg:max-w-3xl xl:max-w-4xl">
+              <BrandLogo className="pb-1" markClassName="w-12 sm:w-14" />
               <span className="inline-flex rounded-full bg-[var(--color-secondary)]/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-secondary)]">
                 Discovery local con conversión real
               </span>

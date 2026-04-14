@@ -17,6 +17,7 @@ import { z } from 'zod';
 import { Button, Card, FormField, Input, LoadingSkeleton } from 'ui';
 
 import { useCurrentAuthUser } from '../../lib/auth-context';
+import { BrandLogo } from '../../components/branding/brand-logo';
 import { hasFirebasePublicConfig } from '../../lib/firebase-auth';
 
 const authModeSchema = z.enum(['login', 'register']);
@@ -146,6 +147,7 @@ export function LoginScreen() {
       <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="surface-soft flex flex-col justify-between rounded-xl p-8 sm:p-10">
           <div className="space-y-4">
+            <BrandLogo className="pb-2" markClassName="w-14 sm:w-16" />
             <span className="inline-flex rounded-full bg-secondary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-secondary">
               Acceso autenticado
             </span>
