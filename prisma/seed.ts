@@ -516,8 +516,8 @@ const allSeedUsers = [...platformUsers, ...businessUsers, ...customerUsers];
 const businesses: SeedBusiness[] = [
   {
     id: 'biz-casa-norte',
-    name: 'Casa Norte Market',
-    description: 'General store with curated pantry basics, office restock kits, and fast WhatsApp delivery across Zona Norte.',
+    name: 'Mercado Casa Norte',
+    description: 'Tienda de conveniencia con basicos de despensa seleccionados, kits de reposicion para oficina y entrega rapida por WhatsApp en toda la Zona Norte.',
     category: 'GENERAL_STORE',
     lat: 18.4861,
     lng: -69.9312,
@@ -536,7 +536,7 @@ const businesses: SeedBusiness[] = [
   {
     id: 'biz-sabor-urbano',
     name: 'Sabor Urbano',
-    description: 'Casual kitchen focused on lunch bowls, wraps, and corporate drop-offs booked directly from WhatsApp.',
+    description: 'Cocina casual enfocada en bowls de almuerzo, wraps y entregas corporativas reservadas directamente por WhatsApp.',
     category: 'RESTAURANT',
     lat: 18.4702,
     lng: -69.9078,
@@ -554,8 +554,8 @@ const businesses: SeedBusiness[] = [
   },
   {
     id: 'biz-barrio-fit',
-    name: 'Barrio Fit Studio',
-    description: 'Boutique training studio with functional classes, nutrition add-ons, and corporate wellness bundles.',
+    name: 'Estudio Barrio Fit',
+    description: 'Estudio boutique de entrenamiento con clases funcionales, complementos de nutricion y paquetes de bienestar corporativo.',
     category: 'SERVICE',
     lat: 18.4745,
     lng: -69.8881,
@@ -574,7 +574,7 @@ const businesses: SeedBusiness[] = [
   {
     id: 'biz-cafe-ruta-12',
     name: 'Cafe Ruta 12',
-    description: 'Urban cafe with brunch trays, office breakfast subscriptions, and short-notice meeting catering.',
+    description: 'Cafe urbano con bandejas de brunch, suscripciones de desayuno para oficinas y catering para reuniones de ultima hora.',
     category: 'RESTAURANT',
     lat: 18.4669,
     lng: -69.9423,
@@ -592,8 +592,8 @@ const businesses: SeedBusiness[] = [
   },
   {
     id: 'biz-estudio-aura',
-    name: 'Estudio Aura Print',
-    description: 'Fast-turn design and print studio for menus, branded kits, stickers, and retail signage.',
+    name: 'Impresos Aura',
+    description: 'Estudio agil de diseno e impresion para menus, kits de marca, stickers y rotulacion comercial.',
     category: 'SERVICE',
     lat: 18.4623,
     lng: -69.9145,
@@ -611,8 +611,8 @@ const businesses: SeedBusiness[] = [
   },
   {
     id: 'biz-mercado-colonial',
-    name: 'Mercado Colonial Express',
-    description: 'Compact market serving the Colonial Zone with grab-and-go baskets, drinks, and short-stay kits.',
+    name: 'Mercado Colonial Expres',
+    description: 'Mercado compacto para la Zona Colonial con canastas listas para llevar, bebidas y kits para estadias cortas.',
     category: 'GENERAL_STORE',
     lat: 18.4717,
     lng: -69.8859,
@@ -631,7 +631,7 @@ const businesses: SeedBusiness[] = [
   {
     id: 'biz-fixit-pro',
     name: 'FixIt Pro Servicios',
-    description: 'Home technical service operator for appliances, HVAC maintenance, and preventive visits.',
+    description: 'Operador de servicios tecnicos a domicilio para electrodomesticos, mantenimiento de HVAC y visitas preventivas.',
     category: 'SERVICE',
     lat: 18.4567,
     lng: -69.9524,
@@ -650,7 +650,7 @@ const businesses: SeedBusiness[] = [
   {
     id: 'biz-cocina-central',
     name: 'Cocina Central RD',
-    description: 'Production kitchen for weekly office lunch plans, executive trays, and recurring catering accounts.',
+    description: 'Cocina de produccion para planes semanales de almuerzo de oficina, bandejas ejecutivas y cuentas recurrentes de catering.',
     category: 'RESTAURANT',
     lat: 18.4431,
     lng: -69.9642,
@@ -669,7 +669,7 @@ const businesses: SeedBusiness[] = [
   {
     id: 'biz-verde-rapido',
     name: 'Verde Rapido',
-    description: 'Healthy convenience market with salads, juices, and quick pantry refills for nearby offices.',
+    description: 'Mercado saludable de conveniencia con ensaladas, jugos y reposiciones rapidas de despensa para oficinas cercanas.',
     category: 'GENERAL_STORE',
     lat: 18.4684,
     lng: -69.9169,
@@ -691,8 +691,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-casa-cereal-pack',
     businessId: 'biz-casa-norte',
-    name: 'Cereal and granola family pack',
-    description: 'Weekly breakfast bundle with cereal, granola, and shelf-stable milk for office kitchens.',
+    name: 'Paquete familiar de cereal y granola',
+    description: 'Combo semanal de desayuno con cereal, granola y leche de larga duracion para cocinas de oficina.',
     images: ['https://images.unsplash.com/photo-1515543904379-3d757afe72e2?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 12.5,
@@ -703,8 +703,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-casa-cleaning-kit',
     businessId: 'biz-casa-norte',
-    name: 'Office cleaning restock kit',
-    description: 'Practical restock with detergent, disinfectant, gloves, and surface cleaner for small teams.',
+    name: 'Kit de reposicion de limpieza para oficina',
+    description: 'Reposicion practica con detergente, desinfectante, guantes y limpiador de superficies para equipos pequenos.',
     images: ['https://images.unsplash.com/photo-1585421514738-01798e348b17?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 19.9,
@@ -715,8 +715,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-casa-snack-station',
     businessId: 'biz-casa-norte',
-    name: 'Snack station refill',
-    description: 'Assorted refill for coffee corners with sweet and savory portions for medium offices.',
+    name: 'Reposicion de estacion de snacks',
+    description: 'Reposicion surtida para rincones de cafe con porciones dulces y saladas para oficinas medianas.',
     images: ['https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 35.75,
@@ -727,8 +727,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-sabor-bowl',
     businessId: 'biz-sabor-urbano',
-    name: 'Bowl criollo grill',
-    description: 'Rice bowl with grilled protein, roasted vegetables, and house sauce for lunch rushes.',
+    name: 'Bowl criollo a la parrilla',
+    description: 'Bowl de arroz con proteina a la parrilla, vegetales asados y salsa de la casa para horas pico de almuerzo.',
     images: ['https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 8.9,
@@ -739,8 +739,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-sabor-wrap',
     businessId: 'biz-sabor-urbano',
-    name: 'Wrap spicy chicken',
-    description: 'Fresh wrap with seasoned chicken, lettuce, and cilantro dressing.',
+    name: 'Wrap de pollo picante',
+    description: 'Wrap fresco con pollo sazonado, lechuga y aderezo de cilantro.',
     images: ['https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 7.5,
@@ -751,8 +751,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-sabor-office-combo',
     businessId: 'biz-sabor-urbano',
-    name: 'Executive lunch combo',
-    description: 'High-volume lunch combo with bowl, drink, and dessert for corporate orders.',
+    name: 'Combo ejecutivo de almuerzo',
+    description: 'Combo de alto volumen con bowl, bebida y postre para pedidos corporativos.',
     images: ['https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 12.25,
@@ -763,8 +763,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-fit-week-pass',
     businessId: 'biz-barrio-fit',
-    name: 'Functional weekly pass',
-    description: 'Seven-day pass with class access and onboarding assessment.',
+    name: 'Pase semanal funcional',
+    description: 'Pase de siete dias con acceso a clases y evaluacion inicial.',
     images: ['https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 24,
@@ -775,11 +775,11 @@ const products: SeedProduct[] = [
   {
     id: 'prod-fit-corporate-plan',
     businessId: 'biz-barrio-fit',
-    name: 'Corporate wellness plan',
-    description: 'Configurable monthly wellness package for small teams and leadership groups.',
+    name: 'Plan corporativo de bienestar',
+    description: 'Paquete mensual configurable de bienestar para equipos pequenos y grupos de liderazgo.',
     images: ['https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80'],
     type: 'configurable',
-    configurationSummary: 'Includes kickoff assessment, class seats, nutrition office hours, and engagement recap.',
+    configurationSummary: 'Incluye evaluacion inicial, cupos para clases, consultorias de nutricion y resumen de participacion.',
     isFeatured: false,
     createdAt: daysAgo(84),
     lastUpdated: hoursAgo(34),
@@ -787,8 +787,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-ruta-brunch-box',
     businessId: 'biz-cafe-ruta-12',
-    name: 'Brunch box for meetings',
-    description: 'Assorted pastries, coffee, and fruit cups for morning meetings.',
+    name: 'Caja de brunch para reuniones',
+    description: 'Surtido de pasteles, cafe y vasos de fruta para reuniones matutinas.',
     images: ['https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 26,
@@ -799,8 +799,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-ruta-croissant-box',
     businessId: 'biz-cafe-ruta-12',
-    name: 'Croissant office box',
-    description: 'Sweet and savory croissants packed for team breakfasts.',
+    name: 'Caja de croissants para oficina',
+    description: 'Croissants dulces y salados empacados para desayunos de equipo.',
     images: ['https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 21.5,
@@ -811,11 +811,11 @@ const products: SeedProduct[] = [
   {
     id: 'prod-ruta-coffee-subscription',
     businessId: 'biz-cafe-ruta-12',
-    name: 'Coffee cart subscription',
-    description: 'Recurring coffee service for offices that need recurring brewed coffee support.',
+    name: 'Suscripcion de carrito de cafe',
+    description: 'Servicio recurrente de cafe para oficinas que necesitan apoyo continuo de cafe preparado.',
     images: ['https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80'],
     type: 'configurable',
-    configurationSummary: 'Choose service days, brewer size, pastry add-ons, and barista support windows.',
+    configurationSummary: 'Elige dias de servicio, tamano de cafetera, extras de pasteleria y franjas de apoyo con barista.',
     isFeatured: true,
     createdAt: daysAgo(80),
     lastUpdated: hoursAgo(48),
@@ -823,8 +823,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-aura-sticker-pack',
     businessId: 'biz-estudio-aura',
-    name: 'Commercial sticker pack',
-    description: 'Laminated sticker batch for packaging, labels, and counter takeaways.',
+    name: 'Paquete comercial de stickers',
+    description: 'Lote de stickers laminados para empaques, etiquetas y material de mostrador.',
     images: ['https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 32,
@@ -835,11 +835,11 @@ const products: SeedProduct[] = [
   {
     id: 'prod-aura-brand-kit',
     businessId: 'biz-estudio-aura',
-    name: 'Brand starter kit',
-    description: 'Configurable starter package for new businesses that need cohesive collateral.',
+    name: 'Kit inicial de marca',
+    description: 'Paquete inicial configurable para nuevos negocios que necesitan material coherente de marca.',
     images: ['https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=800&q=80'],
     type: 'configurable',
-    configurationSummary: 'Logo refresh, one signage layout, sticker sheet, and menu or flyer adaptation.',
+    configurationSummary: 'Actualizacion de logo, un arte de rotulacion, hoja de stickers y adaptacion de menu o volante.',
     isFeatured: true,
     createdAt: daysAgo(74),
     lastUpdated: hoursAgo(52),
@@ -847,8 +847,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-colonial-basket',
     businessId: 'biz-mercado-colonial',
-    name: 'Colonial stay basket',
-    description: 'Welcome basket with snacks, drinks, and quick essentials for short stays.',
+    name: 'Canasta de bienvenida colonial',
+    description: 'Canasta de bienvenida con snacks, bebidas y esenciales rapidos para estadias cortas.',
     images: ['https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 28,
@@ -859,8 +859,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-cocina-executive-tray',
     businessId: 'biz-cocina-central',
-    name: 'Executive lunch tray for 10',
-    description: 'Balanced corporate lunch tray with setup for boardroom meetings.',
+    name: 'Bandeja ejecutiva de almuerzo para 10',
+    description: 'Bandeja corporativa balanceada con montaje para reuniones de directorio.',
     images: ['https://images.unsplash.com/photo-1498654896293-37aacf113fd9?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 68,
@@ -871,11 +871,11 @@ const products: SeedProduct[] = [
   {
     id: 'prod-cocina-corporate-plan',
     businessId: 'biz-cocina-central',
-    name: 'Recurring office meal plan',
-    description: 'Configurable recurring plan for teams that need weekly menus and delivery slots.',
+    name: 'Plan recurrente de comidas para oficina',
+    description: 'Plan recurrente configurable para equipos que necesitan menus semanales y franjas de entrega.',
     images: ['https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80'],
     type: 'configurable',
-    configurationSummary: 'Custom weekly rotation, dietary flags, service days, and distribution notes.',
+    configurationSummary: 'Rotacion semanal personalizada, preferencias alimentarias, dias de servicio y notas de distribucion.',
     isFeatured: true,
     createdAt: daysAgo(112),
     lastUpdated: hoursAgo(58),
@@ -883,8 +883,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-verde-salad-pack',
     businessId: 'biz-verde-rapido',
-    name: 'Ready salad pack',
-    description: 'Fresh salad pack for quick lunches with dressing and toppings included.',
+    name: 'Paquete listo de ensaladas',
+    description: 'Paquete fresco de ensaladas para almuerzos rapidos con aderezo y toppings incluidos.',
     images: ['https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 9.25,
@@ -895,8 +895,8 @@ const products: SeedProduct[] = [
   {
     id: 'prod-verde-juice-pair',
     businessId: 'biz-verde-rapido',
-    name: 'Cold-pressed juice pair',
-    description: 'Two-bottle juice set for same-day pickup or office drop-off.',
+    name: 'Par de jugos prensados en frio',
+    description: 'Set de dos botellas de jugo para retiro el mismo dia o entrega en oficina.',
     images: ['https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?auto=format&fit=crop&w=800&q=80'],
     type: 'simple',
     price: 11.4,
@@ -910,8 +910,8 @@ const promotions: SeedPromotion[] = [
   {
     id: 'promo-casa-delivery-boost',
     businessId: 'biz-casa-norte',
-    title: '30-minute delivery bundle',
-    description: 'Discounted delivery bundle for office pantry refills ordered before 2 PM.',
+    title: 'Combo de entrega en 30 minutos',
+    description: 'Combo con descuento para reposiciones de despensa de oficina pedidas antes de las 2 PM.',
     type: 'DISCOUNT',
     status: 'ACTIVE',
     promoPrice: 24.9,
@@ -925,8 +925,8 @@ const promotions: SeedPromotion[] = [
   {
     id: 'promo-casa-back-to-office',
     businessId: 'biz-casa-norte',
-    title: 'Back to office snack week',
-    description: 'Expired campaign used to reactivate recurring office snack accounts.',
+    title: 'Semana de snacks de regreso a la oficina',
+    description: 'Campana vencida usada para reactivar cuentas recurrentes de snacks para oficina.',
     type: 'ANNOUNCEMENT',
     status: 'EXPIRED',
     promoPrice: 29,
@@ -940,8 +940,8 @@ const promotions: SeedPromotion[] = [
   {
     id: 'promo-sabor-executive-lunch',
     businessId: 'biz-sabor-urbano',
-    title: 'Executive lunch express',
-    description: 'Active lunch combo for weekday office orders between 11 AM and 2 PM.',
+    title: 'Almuerzo ejecutivo express',
+    description: 'Combo de almuerzo activo para pedidos de oficina entre semana de 11 AM a 2 PM.',
     type: 'DISCOUNT',
     status: 'ACTIVE',
     promoPrice: 10.5,
@@ -955,8 +955,8 @@ const promotions: SeedPromotion[] = [
   {
     id: 'promo-sabor-meeting-catering',
     businessId: 'biz-sabor-urbano',
-    title: 'Meeting catering preview',
-    description: 'Draft announcement prepared for small office tasting sessions.',
+    title: 'Vista previa de catering para reuniones',
+    description: 'Anuncio en borrador preparado para sesiones de degustacion con oficinas pequenas.',
     type: 'ANNOUNCEMENT',
     status: 'DRAFT',
     promoPrice: 0,
@@ -970,8 +970,8 @@ const promotions: SeedPromotion[] = [
   {
     id: 'promo-fit-trial-week',
     businessId: 'biz-barrio-fit',
-    title: 'Trial week plus assessment',
-    description: 'New client event with onboarding assessment and guided class entry.',
+    title: 'Semana de prueba con evaluacion',
+    description: 'Evento para nuevos clientes con evaluacion inicial y entrada guiada a clases.',
     type: 'EVENT',
     status: 'ACTIVE',
     promoPrice: 19,
@@ -985,8 +985,8 @@ const promotions: SeedPromotion[] = [
   {
     id: 'promo-ruta-brunch-office',
     businessId: 'biz-cafe-ruta-12',
-    title: 'Brunch office bundle',
-    description: 'Curated breakfast drop for teams booking recurring meetings.',
+    title: 'Combo de brunch para oficina',
+    description: 'Entrega de desayuno seleccionada para equipos que reservan reuniones recurrentes.',
     type: 'ANNOUNCEMENT',
     status: 'ACTIVE',
     promoPrice: 26,
@@ -1000,8 +1000,8 @@ const promotions: SeedPromotion[] = [
   {
     id: 'promo-aura-brand-refresh',
     businessId: 'biz-estudio-aura',
-    title: 'Brand refresh sprint',
-    description: 'Expired short-run campaign for menu redesign and retail sticker production.',
+    title: 'Sprint de renovacion de marca',
+    description: 'Campana vencida de corta duracion para rediseno de menus y produccion de stickers comerciales.',
     type: 'DISCOUNT',
     status: 'EXPIRED',
     promoPrice: 59,
@@ -1015,8 +1015,8 @@ const promotions: SeedPromotion[] = [
   {
     id: 'promo-cocina-launch',
     businessId: 'biz-cocina-central',
-    title: 'Corporate tray launch',
-    description: 'Live event pricing for first-time office lunch tray buyers.',
+    title: 'Lanzamiento de bandejas corporativas',
+    description: 'Precios de lanzamiento para compradores primerizos de bandejas de almuerzo para oficina.',
     type: 'EVENT',
     status: 'ACTIVE',
     promoPrice: 89,
@@ -1030,8 +1030,8 @@ const promotions: SeedPromotion[] = [
   {
     id: 'promo-verde-healthy-week',
     businessId: 'biz-verde-rapido',
-    title: 'Healthy week sampler',
-    description: 'Draft campaign for a light catalog while the free trial business validates demand.',
+    title: 'Muestra de semana saludable',
+    description: 'Campana en borrador para un catalogo ligero mientras el negocio en prueba gratuita valida la demanda.',
     type: 'DISCOUNT',
     status: 'DRAFT',
     promoPrice: 8.5,
@@ -1045,8 +1045,8 @@ const promotions: SeedPromotion[] = [
   {
     id: 'promo-colonial-soft-launch',
     businessId: 'biz-mercado-colonial',
-    title: 'Soft launch for host partners',
-    description: 'Draft communication to attract boutique hotels and short-stay hosts before approval.',
+    title: 'Lanzamiento suave para aliados anfitriones',
+    description: 'Comunicacion en borrador para atraer hoteles boutique y anfitriones de estadias cortas antes de la aprobacion.',
     type: 'ANNOUNCEMENT',
     status: 'DRAFT',
     promoPrice: 0,
@@ -1066,7 +1066,7 @@ const leads: SeedLead[] = [
     name: 'Valentina Guzman',
     source: 'PROMOTION_CLICK',
     status: 'NEW',
-    summary: 'Asked for pantry refill pricing and same-day delivery for a 12-person office.',
+    summary: 'Solicito precios para reposicion de despensa y entrega el mismo dia para una oficina de 12 personas.',
     createdAt: hoursAgo(8),
     updatedAt: hoursAgo(2),
   },
@@ -1076,7 +1076,7 @@ const leads: SeedLead[] = [
     name: 'Andrea Tejada',
     source: 'WHATSAPP_CLICK',
     status: 'CONTACTED',
-    summary: 'Needs a recurring cleaning and snack bundle for a coworking floor.',
+    summary: 'Necesita un combo recurrente de limpieza y snacks para un piso de coworking.',
     createdAt: hoursAgo(30),
     updatedAt: hoursAgo(14),
   },
@@ -1086,7 +1086,7 @@ const leads: SeedLead[] = [
     name: 'Paula Infante',
     source: 'CONTACT_CLICK',
     status: 'QUALIFIED',
-    summary: 'Requested a quote for weekly meeting pantry restocks across two branches.',
+    summary: 'Pidio una cotizacion para reposiciones semanales de despensa para reuniones en dos sucursales.',
     createdAt: daysAgo(2),
     updatedAt: hoursAgo(20),
   },
@@ -1096,7 +1096,7 @@ const leads: SeedLead[] = [
     name: 'Rafael Aristy',
     source: 'CONTACT_CLICK',
     status: 'CLOSED',
-    summary: 'Converted into a small monthly pantry contract after a two-week trial.',
+    summary: 'Se convirtio en un pequeno contrato mensual de despensa tras una prueba de dos semanas.',
     createdAt: daysAgo(7),
     updatedAt: daysAgo(1),
   },
@@ -1106,7 +1106,7 @@ const leads: SeedLead[] = [
     name: 'Julio Pena',
     source: 'WHATSAPP_CLICK',
     status: 'QUALIFIED',
-    summary: 'Requested menu rotation and pricing for a team of 25 people.',
+    summary: 'Solicito rotacion de menu y precios para un equipo de 25 personas.',
     createdAt: daysAgo(1),
     updatedAt: hoursAgo(10),
   },
@@ -1116,7 +1116,7 @@ const leads: SeedLead[] = [
     name: 'Mariela Soto',
     source: 'PROMOTION_CLICK',
     status: 'NEW',
-    summary: 'Asked whether the executive combo applies to standing weekly orders.',
+    summary: 'Pregunto si el combo ejecutivo aplica para pedidos semanales recurrentes.',
     createdAt: hoursAgo(18),
     updatedAt: hoursAgo(12),
   },
@@ -1126,7 +1126,7 @@ const leads: SeedLead[] = [
     name: 'Daniel Acosta',
     source: 'CONTACT_CLICK',
     status: 'CONTACTED',
-    summary: 'Needs vegetarian and gluten-free options for team lunch every Friday.',
+    summary: 'Necesita opciones vegetarianas y sin gluten para el almuerzo del equipo todos los viernes.',
     createdAt: daysAgo(3),
     updatedAt: daysAgo(1),
   },
@@ -1136,7 +1136,7 @@ const leads: SeedLead[] = [
     name: 'Carla Jimenez',
     source: 'CONTACT_CLICK',
     status: 'NEW',
-    summary: 'Interested in a wellness package for a remote-first startup visiting the office twice per week.',
+    summary: 'Interesada en un paquete de bienestar para una startup remota que visita la oficina dos veces por semana.',
     createdAt: hoursAgo(11),
     updatedAt: hoursAgo(5),
   },
@@ -1146,7 +1146,7 @@ const leads: SeedLead[] = [
     name: 'Nathaly Perdomo',
     source: 'WHATSAPP_CLICK',
     status: 'QUALIFIED',
-    summary: 'Asked for pricing on a 3-month functional program for leadership cohorts.',
+    summary: 'Pidio precios para un programa funcional de 3 meses para cohortes de liderazgo.',
     createdAt: daysAgo(4),
     updatedAt: hoursAgo(18),
   },
@@ -1156,7 +1156,7 @@ const leads: SeedLead[] = [
     name: 'Samuel Mateo',
     source: 'CONTACT_CLICK',
     status: 'CONTACTED',
-    summary: 'Requested recurring breakfast trays for Tuesday planning sessions.',
+    summary: 'Solicito bandejas recurrentes de desayuno para sesiones de planificacion de los martes.',
     createdAt: daysAgo(2),
     updatedAt: hoursAgo(21),
   },
@@ -1166,7 +1166,7 @@ const leads: SeedLead[] = [
     name: 'Giselle Ramirez',
     source: 'PROMOTION_CLICK',
     status: 'NEW',
-    summary: 'Asked whether the launch pricing can cover vegetarian and high-protein trays.',
+    summary: 'Pregunto si el precio de lanzamiento puede cubrir bandejas vegetarianas y altas en proteina.',
     createdAt: hoursAgo(22),
     updatedAt: hoursAgo(8),
   },
@@ -1176,7 +1176,7 @@ const leads: SeedLead[] = [
     name: 'Orlando Veloz',
     source: 'CONTACT_CLICK',
     status: 'CONTACTED',
-    summary: 'Needs weekly lunch delivery for a legal office with rotating attendance.',
+    summary: 'Necesita entrega semanal de almuerzo para una oficina legal con asistencia rotativa.',
     createdAt: daysAgo(3),
     updatedAt: hoursAgo(16),
   },
@@ -1186,7 +1186,7 @@ const leads: SeedLead[] = [
     name: 'Lorena Taveras',
     source: 'WHATSAPP_CLICK',
     status: 'CLOSED',
-    summary: 'Closed a 4-week recurring lunch pilot after a successful tasting session.',
+    summary: 'Cerro un piloto recurrente de almuerzos por 4 semanas tras una sesion de degustacion exitosa.',
     createdAt: daysAgo(9),
     updatedAt: daysAgo(2),
   },
@@ -1196,7 +1196,7 @@ const leads: SeedLead[] = [
     name: 'Paola Nunez',
     source: 'PROMOTION_CLICK',
     status: 'NEW',
-    summary: 'Interested in health-focused pantry alternatives for a boutique agency team.',
+    summary: 'Interesada en alternativas de despensa enfocadas en salud para el equipo de una agencia boutique.',
     createdAt: hoursAgo(26),
     updatedAt: hoursAgo(12),
   },
@@ -1208,7 +1208,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerAna',
     businessId: 'biz-casa-norte',
     rating: 5,
-    comment: 'Fast delivery and the pantry bundle was exactly what our office needed.',
+    comment: 'La entrega fue rapida y el combo de despensa fue exactamente lo que nuestra oficina necesitaba.',
     createdAt: daysAgo(10),
   },
   {
@@ -1216,7 +1216,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerPaola',
     businessId: 'biz-casa-norte',
     rating: 4,
-    comment: 'Reliable for recurring snack orders, though substitutions should be messaged sooner.',
+    comment: 'Confiable para pedidos recurrentes de snacks, aunque los cambios deberian avisarse con mas anticipacion.',
     createdAt: daysAgo(7),
   },
   {
@@ -1224,7 +1224,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerEduardo',
     businessId: 'biz-sabor-urbano',
     rating: 5,
-    comment: 'The executive combo arrived hot and the portion sizes were consistent.',
+    comment: 'El combo ejecutivo llego caliente y los tamanos de las porciones fueron consistentes.',
     createdAt: daysAgo(8),
   },
   {
@@ -1232,7 +1232,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerMariela',
     businessId: 'biz-sabor-urbano',
     rating: 3,
-    comment: 'Good flavor, but one delivery window slipped during a busy lunch hour.',
+    comment: 'Buen sabor, pero una entrega se retraso durante una hora pico de almuerzo.',
     createdAt: daysAgo(4),
   },
   {
@@ -1240,7 +1240,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerValeria',
     businessId: 'biz-barrio-fit',
     rating: 5,
-    comment: 'The assessment and follow-up were very structured, not just a generic trial class.',
+    comment: 'La evaluacion y el seguimiento fueron muy estructurados, no solo una clase de prueba generica.',
     createdAt: daysAgo(6),
   },
   {
@@ -1248,7 +1248,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerRafael',
     businessId: 'biz-barrio-fit',
     rating: 4,
-    comment: 'Strong coaching quality and clear onboarding instructions for first-time attendees.',
+    comment: 'Buena calidad de entrenamiento e instrucciones claras para quienes asistian por primera vez.',
     createdAt: daysAgo(12),
   },
   {
@@ -1256,7 +1256,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerAna',
     businessId: 'biz-cafe-ruta-12',
     rating: 5,
-    comment: 'The breakfast trays arrived polished and on time for our client meeting.',
+    comment: 'Las bandejas de desayuno llegaron impecables y a tiempo para nuestra reunion con clientes.',
     createdAt: daysAgo(5),
   },
   {
@@ -1264,7 +1264,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerPaola',
     businessId: 'biz-cafe-ruta-12',
     rating: 4,
-    comment: 'Very good coffee program, though I would like one more pastry option in the bundle.',
+    comment: 'Muy buen programa de cafe, aunque me gustaria una opcion adicional de pasteleria en el combo.',
     createdAt: daysAgo(3),
   },
   {
@@ -1272,7 +1272,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerMariela',
     businessId: 'biz-estudio-aura',
     rating: 5,
-    comment: 'The print turnaround was fast and the branding suggestions were practical.',
+    comment: 'La entrega de impresion fue rapida y las sugerencias de marca fueron practicas.',
     createdAt: daysAgo(11),
   },
   {
@@ -1280,7 +1280,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerEduardo',
     businessId: 'biz-cocina-central',
     rating: 5,
-    comment: 'Recurring lunch delivery simplified operations for our team and the menu stayed varied.',
+    comment: 'La entrega recurrente de almuerzos simplifico la operacion de nuestro equipo y el menu se mantuvo variado.',
     createdAt: daysAgo(9),
   },
   {
@@ -1288,7 +1288,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerValeria',
     businessId: 'biz-cocina-central',
     rating: 4,
-    comment: 'Good quality and setup, but one vegetarian tray was under-seasoned.',
+    comment: 'Buena calidad y montaje, pero una bandeja vegetariana estuvo poco sazonada.',
     createdAt: daysAgo(2),
   },
   {
@@ -1296,7 +1296,7 @@ const reviews: SeedReview[] = [
     userKey: 'customerPaola',
     businessId: 'biz-verde-rapido',
     rating: 4,
-    comment: 'Fresh products and a focused catalog that works well for healthy office snacks.',
+    comment: 'Productos frescos y un catalogo enfocado que funciona bien para snacks saludables de oficina.',
     createdAt: daysAgo(1),
   },
 ];
@@ -1307,7 +1307,7 @@ const auditLogs: SeedAuditLog[] = [
     actorKey: 'superadminLuis',
     targetKey: 'adminLaura',
     action: 'USER_PLATFORM_ROLE_UPDATED',
-    metadata: { fromRole: 'USER', toRole: 'ADMIN', reason: 'Platform operations coverage' },
+    metadata: { fromRole: 'USER', toRole: 'ADMIN', reason: 'Cobertura operativa de la plataforma' },
     createdAt: daysAgo(40),
   },
   {
@@ -1315,7 +1315,7 @@ const auditLogs: SeedAuditLog[] = [
     actorKey: 'superadminLuis',
     targetKey: 'ownerMateo',
     action: 'USER_PROFILE_UPDATED',
-    metadata: { fields: ['phone', 'avatarUrl'] },
+    metadata: { fields: ['telefono', 'avatarUrl'] },
     createdAt: daysAgo(18),
   },
   {
@@ -1323,7 +1323,7 @@ const auditLogs: SeedAuditLog[] = [
     actorKey: 'globalCamila',
     targetKey: 'ownerValentina',
     action: 'USER_BASE_ROLE_UPDATED',
-    metadata: { fromRole: 'UNASSIGNED', toRole: 'USER' },
+    metadata: { fromRole: 'SIN_ASIGNAR', toRole: 'USER' },
     createdAt: daysAgo(26),
   },
   {
@@ -1331,7 +1331,7 @@ const auditLogs: SeedAuditLog[] = [
     actorKey: 'superadminLuis',
     targetKey: 'customerRafael',
     action: 'USER_STATUS_UPDATED',
-    metadata: { fromActive: true, toActive: false, reason: 'Dormant test account preserved for history coverage' },
+    metadata: { fromActive: true, toActive: false, reason: 'Cuenta de prueba inactiva conservada para cubrir historial' },
     createdAt: daysAgo(5),
   },
   {
@@ -1340,7 +1340,7 @@ const auditLogs: SeedAuditLog[] = [
     targetKey: 'managerCarlos',
     businessId: 'biz-casa-norte',
     action: 'USER_BUSINESS_ROLE_ASSIGNED',
-    metadata: { role: 'MANAGER' },
+    metadata: { role: 'GERENTE' },
     createdAt: daysAgo(33),
   },
   {
@@ -1349,7 +1349,7 @@ const auditLogs: SeedAuditLog[] = [
     targetKey: 'managerElena',
     businessId: 'biz-cocina-central',
     action: 'USER_BUSINESS_ROLE_ASSIGNED',
-    metadata: { role: 'MANAGER' },
+    metadata: { role: 'GERENTE' },
     createdAt: daysAgo(29),
   },
   {
@@ -1358,7 +1358,7 @@ const auditLogs: SeedAuditLog[] = [
     targetKey: 'managerDiego',
     businessId: 'biz-mercado-colonial',
     action: 'USER_BUSINESS_ROLE_REMOVED',
-    metadata: { role: 'MANAGER', reason: 'Staff rotation before approval' },
+    metadata: { role: 'GERENTE', reason: 'Rotacion de personal antes de la aprobacion' },
     createdAt: daysAgo(3),
   },
   {
@@ -1370,7 +1370,7 @@ const auditLogs: SeedAuditLog[] = [
     metadata: {
       fromUserEmail: 'valentina@encuentralotodo.app',
       toUserEmail: 'lucia@encuentralotodo.app',
-      reason: 'Route 12 portfolio consolidation',
+      reason: 'Consolidacion del portafolio de Ruta 12',
     },
     createdAt: daysAgo(21),
   },
@@ -1380,7 +1380,7 @@ const auditLogs: SeedAuditLog[] = [
     targetKey: 'managerMariana',
     businessId: 'biz-barrio-fit',
     action: 'USER_BUSINESS_ROLE_ASSIGNED',
-    metadata: { role: 'MANAGER', reason: 'Opening support for premium-plus studio' },
+    metadata: { role: 'GERENTE', reason: 'Apoyo de apertura para estudio premium plus' },
     createdAt: daysAgo(14),
   },
 ];
@@ -1392,7 +1392,7 @@ function mergeUserMaps(...maps: Array<Record<string, string>>) {
 function requireUserId(userIdsByKey: Record<string, string>, userKey: string) {
   const userId = userIdsByKey[userKey];
   if (!userId) {
-    throw new Error(`Missing seeded user mapping for ${userKey}.`);
+    throw new Error(`Falta el mapeo del usuario sembrado para ${userKey}.`);
   }
 
   return userId;
@@ -1403,21 +1403,21 @@ function assertBusinessRelationships() {
 
   for (const business of businesses) {
     if (!knownUserKeys.has(business.ownerKey)) {
-      throw new Error(`Business ${business.id} references unknown owner ${business.ownerKey}.`);
+      throw new Error(`El negocio ${business.id} referencia un propietario desconocido ${business.ownerKey}.`);
     }
 
     const managerSet = new Set<string>();
     for (const managerKey of business.managerKeys) {
       if (!knownUserKeys.has(managerKey)) {
-        throw new Error(`Business ${business.id} references unknown manager ${managerKey}.`);
+        throw new Error(`El negocio ${business.id} referencia un gerente desconocido ${managerKey}.`);
       }
 
       if (managerKey === business.ownerKey) {
-        throw new Error(`Business ${business.id} cannot assign the owner as a manager.`);
+        throw new Error(`El negocio ${business.id} no puede asignar al propietario como gerente.`);
       }
 
       if (managerSet.has(managerKey)) {
-        throw new Error(`Business ${business.id} repeats manager ${managerKey}.`);
+        throw new Error(`El negocio ${business.id} repite al gerente ${managerKey}.`);
       }
 
       managerSet.add(managerKey);
@@ -1748,27 +1748,27 @@ async function logSeedSummary(seededCounts: {
   ]);
 
   console.table([
-    { entity: 'users', seeded: seededCounts.users, total: totalUsers },
-    { entity: 'userIdentities', seeded: seededCounts.identities, total: totalIdentities },
-    { entity: 'businesses', seeded: seededCounts.businesses, total: totalBusinesses },
-    { entity: 'userBusinessRoles', seeded: seededCounts.userBusinessRoles, total: totalRoles },
-    { entity: 'businessManagers', seeded: seededCounts.businessManagers, total: totalManagers },
-    { entity: 'products', seeded: seededCounts.products, total: totalProducts },
-    { entity: 'promotions', seeded: seededCounts.promotions, total: totalPromotions },
-    { entity: 'leads', seeded: seededCounts.leads, total: totalLeads },
-    { entity: 'reviews', seeded: seededCounts.reviews, total: totalReviews },
-    { entity: 'auditLogs', seeded: seededCounts.auditLogs, total: totalAuditLogs },
+    { entidad: 'usuarios', sembrados: seededCounts.users, total: totalUsers },
+    { entidad: 'identidadesDeUsuario', sembrados: seededCounts.identities, total: totalIdentities },
+    { entidad: 'negocios', sembrados: seededCounts.businesses, total: totalBusinesses },
+    { entidad: 'rolesUsuarioNegocio', sembrados: seededCounts.userBusinessRoles, total: totalRoles },
+    { entidad: 'gerentesDeNegocio', sembrados: seededCounts.businessManagers, total: totalManagers },
+    { entidad: 'productos', sembrados: seededCounts.products, total: totalProducts },
+    { entidad: 'promociones', sembrados: seededCounts.promotions, total: totalPromotions },
+    { entidad: 'leads', sembrados: seededCounts.leads, total: totalLeads },
+    { entidad: 'resenas', sembrados: seededCounts.reviews, total: totalReviews },
+    { entidad: 'registrosDeAuditoria', sembrados: seededCounts.auditLogs, total: totalAuditLogs },
   ]);
 
-  console.log('Business status distribution:', {
-    APPROVED: businesses.filter((business) => business.status === 'APPROVED').length,
-    PENDING: businesses.filter((business) => business.status === 'PENDING').length,
+  console.log('Distribucion por estado de negocio:', {
+    APROBADOS: businesses.filter((business) => business.status === 'APPROVED').length,
+    PENDIENTES: businesses.filter((business) => business.status === 'PENDING').length,
   });
 
-  console.log('Promotion status distribution:', {
-    ACTIVE: promotions.filter((promotion) => promotion.status === 'ACTIVE').length,
-    DRAFT: promotions.filter((promotion) => promotion.status === 'DRAFT').length,
-    EXPIRED: promotions.filter((promotion) => promotion.status === 'EXPIRED').length,
+  console.log('Distribucion por estado de promocion:', {
+    ACTIVAS: promotions.filter((promotion) => promotion.status === 'ACTIVE').length,
+    BORRADOR: promotions.filter((promotion) => promotion.status === 'DRAFT').length,
+    VENCIDAS: promotions.filter((promotion) => promotion.status === 'EXPIRED').length,
   });
 }
 
