@@ -256,15 +256,64 @@ export const deletePromotionInputSchema = z.object({
     promotionId: z.string().min(2),
 });
 
+export const leadCaptureMetadataSchema = z.object({
+    name: z.string().trim().min(2).max(120).optional(),
+    phone: z.string().trim().min(7).max(20).optional(),
+});
+
 export const createLeadInputSchema = z.object({
     businessId: z.string().min(2),
-    name: z.string().min(2).max(120),
+    productId: z.string().min(2).optional(),
+    promotionId: z.string().min(2).optional(),
+    name: z.string().trim().min(2).max(120).optional(),
+    phone: z.string().trim().min(7).max(20).optional(),
     source: leadSourceSchema,
     summary: z.string().min(8).max(300),
+    notes: z.string().trim().max(2000).optional(),
+    status: leadStatusSchema.default('NEW'),
 });
 
 export const getLeadByIdInputSchema = z.object({
     leadId: z.string().min(2),
+});
+
+export const listBusinessLeadsInputSchema = z.object({
+    businessId: z.string().min(2),
+});
+
+export const createLeadFromWhatsappClickInputSchema = z.object({
+    businessId: z.string().min(2),
+    metadata: leadCaptureMetadataSchema.optional(),
+});
+
+export const createLeadFromCallClickInputSchema = z.object({
+    businessId: z.string().min(2),
+    metadata: leadCaptureMetadataSchema.optional(),
+});
+
+export const createLeadFromContactClickInputSchema = z.object({
+    businessId: z.string().min(2),
+    metadata: leadCaptureMetadataSchema.optional(),
+});
+
+export const createLeadFromPromotionClickInputSchema = z.object({
+    promotionId: z.string().min(2),
+    metadata: leadCaptureMetadataSchema.optional(),
+});
+
+export const createLeadFromProductClickInputSchema = z.object({
+    productId: z.string().min(2),
+    metadata: leadCaptureMetadataSchema.optional(),
+});
+
+export const updateLeadStatusInputSchema = z.object({
+    leadId: z.string().min(2),
+    status: leadStatusSchema,
+});
+
+export const updateLeadNotesInputSchema = z.object({
+    leadId: z.string().min(2),
+    notes: z.string().trim().max(2000).optional().or(z.literal('')),
 });
 
 export const createReviewInputSchema = z.object({
@@ -389,6 +438,15 @@ export type UpdatePromotionInput = z.infer<typeof updatePromotionInputSchema>;
 export type DeletePromotionInput = z.infer<typeof deletePromotionInputSchema>;
 export type CreateLeadInput = z.infer<typeof createLeadInputSchema>;
 export type GetLeadByIdInput = z.infer<typeof getLeadByIdInputSchema>;
+export type ListBusinessLeadsInput = z.infer<typeof listBusinessLeadsInputSchema>;
+export type LeadCaptureMetadata = z.infer<typeof leadCaptureMetadataSchema>;
+export type CreateLeadFromWhatsappClickInput = z.infer<typeof createLeadFromWhatsappClickInputSchema>;
+export type CreateLeadFromCallClickInput = z.infer<typeof createLeadFromCallClickInputSchema>;
+export type CreateLeadFromContactClickInput = z.infer<typeof createLeadFromContactClickInputSchema>;
+export type CreateLeadFromPromotionClickInput = z.infer<typeof createLeadFromPromotionClickInputSchema>;
+export type CreateLeadFromProductClickInput = z.infer<typeof createLeadFromProductClickInputSchema>;
+export type UpdateLeadStatusInput = z.infer<typeof updateLeadStatusInputSchema>;
+export type UpdateLeadNotesInput = z.infer<typeof updateLeadNotesInputSchema>;
 export type CreateReviewInput = z.infer<typeof createReviewInputSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;
 export type UpdatePlatformUserRoleInput = z.infer<typeof updatePlatformUserRoleInputSchema>;

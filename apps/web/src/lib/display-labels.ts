@@ -2,10 +2,15 @@ const statusLabels: Record<string, string> = {
   APPROVED: 'Aprobado',
   ACTIVE: 'Activo',
   CLOSED: 'Cerrado',
+  CALL_CLICK: 'Llamada',
+  CONTACT_CLICK: 'Contacto',
   PENDING: 'Pendiente',
   NEW: 'Nuevo',
   CONTACTED: 'Contactado',
   QUALIFIED: 'Calificado',
+  LOST: 'Perdido',
+  PRODUCT_CLICK: 'Producto',
+  PROMOTION_CLICK: 'Promoción',
   QUEUED: 'En cola',
   BLOCKED: 'Bloqueado',
   EXPIRED: 'Vencido',
@@ -20,6 +25,7 @@ const statusLabels: Record<string, string> = {
   USER: 'Usuario',
   FEATURED: 'Destacado',
   CATALOG: 'Catálogo',
+  WHATSAPP_CLICK: 'WhatsApp',
 };
 
 const subscriptionLabels: Record<string, string> = {

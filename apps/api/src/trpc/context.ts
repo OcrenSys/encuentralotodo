@@ -185,6 +185,8 @@ export async function createTrpcContext({ req, env }: { req: Request; res: Respo
     leadService: new LeadService({
       repository: leadRepository,
       businessRepository,
+      productRepository,
+      promotionRepository,
       currentUser,
     }),
     reviewService: new ReviewService({

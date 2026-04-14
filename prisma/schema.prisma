@@ -44,10 +44,11 @@ enum BusinessStatus {
 }
 
 enum LeadSource {
-    WhatsApp
-    Promo
-    Perfil
-    Formulario
+    WHATSAPP_CLICK
+    CALL_CLICK
+    CONTACT_CLICK
+    PROMOTION_CLICK
+    PRODUCT_CLICK
 }
 
 enum LeadStatus {
@@ -55,6 +56,11 @@ enum LeadStatus {
     CONTACTED
     QUALIFIED
     CLOSED
+    LOST
+}
+
+enum AnalyticsEventName {
+    lead_created
 }
 
 enum AuditAction {
@@ -188,6 +194,7 @@ model Product {
     isFeatured           Boolean  @default(false)
     businessId           String
     business             Business @relation(fields: [businessId], references: [id])
+    leads                Lead[]
     lastUpdated          DateTime @updatedAt
     createdAt            DateTime @default(now())
 }
@@ -205,20 +212,45 @@ model Promotion {
     image         String
     businessId    String
     business      Business @relation(fields: [businessId], references: [id])
+    leads         Lead[]
     updatedAt     DateTime @updatedAt
     createdAt     DateTime @default(now())
 }
 
 model Lead {
-    id         String     @id @default(cuid())
-    name       String
-    source     LeadSource
-    status     LeadStatus @default(NEW)
-    summary    String
+    id          String     @id @default(cuid())
+    name        String?
+    phone       String?
+    source      LeadSource
+    status      LeadStatus @default(NEW)
+    summary     String
+    notes       String?
+    businessId  String
+    productId   String?
+    promotionId String?
+    business    Business   @relation(fields: [businessId], references: [id])
+    product     Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
+    promotion   Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+    updatedAt   DateTime   @updatedAt
+    createdAt   DateTime   @default(now())
+
+    @@index([businessId, status, createdAt])
+    @@index([productId])
+    @@index([promotionId])
+    @@index([source, createdAt])
+}
+
+model AnalyticsEvent {
+    id         String             @id @default(cuid())
+    name       AnalyticsEventName
     businessId String
-    business   Business   @relation(fields: [businessId], references: [id])
-    updatedAt  DateTime   @updatedAt
-    createdAt  DateTime   @default(now())
+    leadId     String?
+    payload    Json
+    createdAt  DateTime           @default(now())
+
+    @@index([name, createdAt])
+    @@index([businessId, createdAt])
+    @@index([leadId])
 }
 
 model Review {

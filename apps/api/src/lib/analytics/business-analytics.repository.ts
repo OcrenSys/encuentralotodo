@@ -1,3 +1,5 @@
+import type { LeadSource, LeadStatus } from 'types';
+
 import type { getPrismaClient } from '../prisma';
 
 export interface RepositoryBusinessAnalyticsRecentLeadRecord {
@@ -5,8 +7,8 @@ export interface RepositoryBusinessAnalyticsRecentLeadRecord {
     name: string;
     businessId: string;
     businessName: string;
-    source: 'WhatsApp' | 'Promo' | 'Perfil' | 'Formulario';
-    status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'CLOSED';
+    source: LeadSource;
+    status: LeadStatus;
     summary: string;
     createdAt: Date;
 }

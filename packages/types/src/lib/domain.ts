@@ -24,10 +24,10 @@ export type SubscriptionType = (typeof subscriptionTypes)[number];
 export const businessStatuses = ['PENDING', 'APPROVED'] as const;
 export type BusinessStatus = (typeof businessStatuses)[number];
 
-export const leadSources = ['WhatsApp', 'Promo', 'Perfil', 'Formulario'] as const;
+export const leadSources = ['WHATSAPP_CLICK', 'CALL_CLICK', 'CONTACT_CLICK', 'PROMOTION_CLICK', 'PRODUCT_CLICK'] as const;
 export type LeadSource = (typeof leadSources)[number];
 
-export const leadStatuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'CLOSED'] as const;
+export const leadStatuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'CLOSED', 'LOST'] as const;
 export type LeadStatus = (typeof leadStatuses)[number];
 
 export const analyticsPeriods = ['7D', '30D', 'ALL'] as const;
@@ -138,13 +138,20 @@ export interface Promotion {
 
 export interface Lead {
     id: string;
-    name: string;
+    name?: string;
     businessId: string;
     businessName: string;
+    productId?: string;
+    productName?: string;
+    promotionId?: string;
+    promotionTitle?: string;
     source: LeadSource;
     status: LeadStatus;
+    phone?: string;
     updatedAt: string;
+    createdAt: string;
     summary: string;
+    notes?: string;
 }
 
 export interface Review {
