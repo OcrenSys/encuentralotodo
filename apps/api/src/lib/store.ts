@@ -114,7 +114,7 @@ export class MarketplaceStore {
     return this.listBusinesses({ includePending: true }).filter((business) => business.status === 'PENDING');
   }
 
-  createBusiness(input: CreateBusinessInput) {
+  createBusiness(input: CreateBusinessInput & { ownerId: string }) {
     const business: Business = {
       id: `biz-${input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
       name: input.name,
@@ -162,11 +162,29 @@ export class MarketplaceStore {
       throw new Error('FREE_TRIAL permite un máximo de 5 productos destacados.');
     }
 
-    const product: Product = {
-      id: `prod-${Date.now()}`,
-      ...input,
-      lastUpdated: now(),
-    };
+    const product: Product = input.type === 'configurable'
+      ? {
+        id: `prod-${Date.now()}`,
+        businessId: input.businessId,
+        name: input.name,
+        description: input.description,
+        images: input.images,
+        type: 'configurable',
+        configurationSummary: input.configurationSummary ?? 'Configurable al solicitarlo',
+        isFeatured: input.isFeatured,
+        lastUpdated: now(),
+      }
+      : {
+        id: `prod-${Date.now()}`,
+        businessId: input.businessId,
+        name: input.name,
+        description: input.description,
+        images: input.images,
+        type: 'simple',
+        price: input.price,
+        isFeatured: input.isFeatured,
+        lastUpdated: now(),
+      };
 
     this.data.products.unshift(product);
     return product;
@@ -176,6 +194,10 @@ export class MarketplaceStore {
     const promotion: Promotion = {
       id: `promo-${Date.now()}`,
       ...input,
+      endDate: input.endDate,
+      validUntil: input.endDate,
+      createdAt: now(),
+      updatedAt: now(),
       lastUpdated: now(),
     };
 
@@ -203,7 +225,7 @@ export class MarketplaceStore {
   }
 
   listPromotions() {
-    return this.data.promotions.filter((promotion) => new Date(promotion.validUntil) >= new Date());
+    return this.data.promotions.filter((promotion) => promotion.status !== 'DRAFT' && new Date(promotion.endDate) >= new Date());
   }
 }
 

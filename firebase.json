@@ -1,0 +1,5 @@
+{
+  "storage": {
+    "rules": "tools/firebase/storage.rules"
+  }
+}

@@ -1,0 +1,86 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "web-typecheck",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"tsc",
+				"--noEmit",
+				"-p",
+				"apps/web/tsconfig.json"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "web-typecheck-2",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"tsc",
+				"--noEmit",
+				"-p",
+				"apps/web/tsconfig.json"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "web-typecheck-seeds",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"tsc",
+				"--noEmit",
+				"-p",
+				"apps/web/tsconfig.json"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "api-serve-dev",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"./.nx/nxw.js",
+				"serve",
+				"api"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "api-serve-dev-fixed",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"./.nx/nxw.js",
+				"serve",
+				"api"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "api-serve-dev-clean",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"./.nx/nxw.js",
+				"serve",
+				"api"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "web-typecheck-visual-refinement",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"tsc",
+				"--noEmit",
+				"-p",
+				"apps/web/tsconfig.json"
+			],
+			"isBackground": false
+		}
+	]
+}
