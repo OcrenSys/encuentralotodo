@@ -48,6 +48,8 @@ MVP de marketplace local orientado a discovery de negocios, productos y promocio
 4. Ejecuta la web con `npm run dev:web`
 5. Ejecuta mobile con `npm run dev:mobile`
 
+Para probar autenticacion real con Firebase y el bridge hacia Prisma, revisa `AUTH_TESTING.md`.
+
 ## Base de datos
 
 - El backend corre por defecto con `DATA_MODE=memory` para tener un flujo funcional sin depender de una base local.
