@@ -30,7 +30,10 @@ function getSeed() {
   return global.__encuentralotodoSeed__;
 }
 
-function getVisibleProducts(subscriptionType: Business['subscriptionType'], products: Product[]) {
+function getVisibleProducts(
+  subscriptionType: Business['subscriptionType'],
+  products: Product[],
+) {
   if (subscriptionType === 'FREE_TRIAL') {
     return products.filter((product) => product.isFeatured).slice(0, 5);
   }
@@ -42,20 +45,33 @@ function getVisibleProducts(subscriptionType: Business['subscriptionType'], prod
   return products;
 }
 
-function buildSummary(data: MarketplaceSeedData, business: Business): BusinessSummary {
-  const products = data.products.filter((product) => product.businessId === business.id);
-  const activePromotions = data.promotions.filter(
-    (promotion) => promotion.businessId === business.id && new Date(promotion.validUntil) >= new Date()
+function buildSummary(
+  data: MarketplaceSeedData,
+  business: Business,
+): BusinessSummary {
+  const products = data.products.filter(
+    (product) => product.businessId === business.id,
   );
-  const reviews = data.reviews.filter((review) => review.businessId === business.id);
+  const activePromotions = data.promotions.filter(
+    (promotion) =>
+      promotion.businessId === business.id &&
+      new Date(promotion.validUntil) >= new Date(),
+  );
+  const reviews = data.reviews.filter(
+    (review) => review.businessId === business.id,
+  );
 
   return {
     ...business,
     rating: calculateAverageRating(reviews),
     reviewCount: reviews.length,
-    featuredProducts: products.filter((product) => product.isFeatured).slice(0, 5),
+    featuredProducts: products
+      .filter((product) => product.isFeatured)
+      .slice(0, 5),
     activePromotions,
-    distanceKm: Number(calculateDistanceKm(defaultOrigin, business.location).toFixed(1)),
+    distanceKm: Number(
+      calculateDistanceKm(defaultOrigin, business.location).toFixed(1),
+    ),
   };
 }
 
@@ -64,54 +80,83 @@ export class MarketplaceStore {
 
   listBusinesses(filters: BusinessListFilters = {}) {
     return this.data.businesses
-      .filter((business) => (filters.includePending ? true : business.status === 'APPROVED'))
-      .filter((business) => (filters.category && filters.category !== 'ALL' ? business.category === filters.category : true))
+      .filter((business) =>
+        filters.includePending ? true : business.status === 'APPROVED',
+      )
+      .filter((business) =>
+        filters.category && filters.category !== 'ALL'
+          ? business.category === filters.category
+          : true,
+      )
       .filter((business) => {
         if (!filters.search) {
           return true;
         }
 
         const normalizedSearch = filters.search.toLowerCase();
-        return [business.name, business.description, business.location.zone].some((value) =>
-          value.toLowerCase().includes(normalizedSearch)
-        );
+        return [
+          business.name,
+          business.description,
+          business.location.zone,
+        ].some((value) => value.toLowerCase().includes(normalizedSearch));
       })
       .map((business) => buildSummary(this.data, business))
-      .filter((business) => (filters.promosOnly ? business.activePromotions.length > 0 : true))
-      .filter((business) => (filters.maxDistanceKm ? business.distanceKm <= filters.maxDistanceKm : true))
-      .sort((left, right) => right.rating - left.rating || left.distanceKm - right.distanceKm);
+      .filter((business) =>
+        filters.promosOnly ? business.activePromotions.length > 0 : true,
+      )
+      .filter((business) =>
+        filters.maxDistanceKm
+          ? business.distanceKm <= filters.maxDistanceKm
+          : true,
+      )
+      .sort(
+        (left, right) =>
+          right.rating - left.rating || left.distanceKm - right.distanceKm,
+      );
   }
 
   getBusinessById(businessId: string) {
-    const business = this.data.businesses.find((candidate) => candidate.id === businessId);
+    const business = this.data.businesses.find(
+      (candidate) => candidate.id === businessId,
+    );
     if (!business) {
       return null;
     }
 
     const summary = buildSummary(this.data, business);
-    const reviews = this.data.reviews.filter((review) => review.businessId === business.id);
+    const reviews = this.data.reviews.filter(
+      (review) => review.businessId === business.id,
+    );
     const visibleProducts = getVisibleProducts(
       business.subscriptionType,
-      this.data.products.filter((product) => product.businessId === business.id)
+      this.data.products.filter(
+        (product) => product.businessId === business.id,
+      ),
     );
 
     const details: BusinessDetails = {
       ...summary,
       products: visibleProducts,
-      promotions: this.data.promotions.filter((promotion) => promotion.businessId === business.id),
+      promotions: this.data.promotions.filter(
+        (promotion) => promotion.businessId === business.id,
+      ),
       reviews: reviews.map((review) => ({
         ...review,
         user: this.data.users.find((user) => user.id === review.userId),
       })),
       owner: this.data.users.find((user) => user.id === business.ownerId),
-      managersDetailed: this.data.users.filter((user) => business.managers.includes(user.id)),
+      managersDetailed: this.data.users.filter((user) =>
+        business.managers.includes(user.id),
+      ),
     };
 
     return details;
   }
 
   listPendingBusinesses() {
-    return this.listBusinesses({ includePending: true }).filter((business) => business.status === 'PENDING');
+    return this.listBusinesses({ includePending: true }).filter(
+      (business) => business.status === 'PENDING',
+    );
   }
 
   createBusiness(input: CreateBusinessInput & { ownerId: string }) {
@@ -135,7 +180,9 @@ export class MarketplaceStore {
   }
 
   approveBusiness(businessId: string) {
-    const business = this.data.businesses.find((candidate) => candidate.id === businessId);
+    const business = this.data.businesses.find(
+      (candidate) => candidate.id === businessId,
+    );
     if (!business) {
       throw new Error('Business not found');
     }
@@ -146,45 +193,59 @@ export class MarketplaceStore {
   }
 
   createProduct(input: CreateProductInput) {
-    const business = this.data.businesses.find((candidate) => candidate.id === input.businessId);
+    const business = this.data.businesses.find(
+      (candidate) => candidate.id === input.businessId,
+    );
     if (!business) {
       throw new Error('Business not found');
     }
 
-    const businessProducts = this.data.products.filter((product) => product.businessId === business.id);
-    const featuredCount = businessProducts.filter((product) => product.isFeatured).length;
+    const businessProducts = this.data.products.filter(
+      (product) => product.businessId === business.id,
+    );
+    const featuredCount = businessProducts.filter(
+      (product) => product.isFeatured,
+    ).length;
 
     if (business.subscriptionType === 'FREE_TRIAL' && !input.isFeatured) {
       throw new Error('FREE_TRIAL solo permite productos destacados.');
     }
 
-    if (business.subscriptionType === 'FREE_TRIAL' && input.isFeatured && featuredCount >= 5) {
-      throw new Error('FREE_TRIAL permite un máximo de 5 productos destacados.');
+    if (
+      business.subscriptionType === 'FREE_TRIAL' &&
+      input.isFeatured &&
+      featuredCount >= 5
+    ) {
+      throw new Error(
+        'FREE_TRIAL permite un máximo de 5 productos destacados.',
+      );
     }
 
-    const product: Product = input.type === 'configurable'
-      ? {
-        id: `prod-${Date.now()}`,
-        businessId: input.businessId,
-        name: input.name,
-        description: input.description,
-        images: input.images,
-        type: 'configurable',
-        configurationSummary: input.configurationSummary ?? 'Configurable al solicitarlo',
-        isFeatured: input.isFeatured,
-        lastUpdated: now(),
-      }
-      : {
-        id: `prod-${Date.now()}`,
-        businessId: input.businessId,
-        name: input.name,
-        description: input.description,
-        images: input.images,
-        type: 'simple',
-        price: input.price,
-        isFeatured: input.isFeatured,
-        lastUpdated: now(),
-      };
+    const product: Product =
+      input.type === 'configurable'
+        ? {
+            id: `prod-${Date.now()}`,
+            businessId: input.businessId,
+            name: input.name,
+            description: input.description,
+            images: input.images,
+            type: 'configurable',
+            configurationSummary:
+              input.configurationSummary ?? 'Configurable al solicitarlo',
+            isFeatured: input.isFeatured,
+            lastUpdated: now(),
+          }
+        : {
+            id: `prod-${Date.now()}`,
+            businessId: input.businessId,
+            name: input.name,
+            description: input.description,
+            images: input.images,
+            type: 'simple',
+            price: input.price,
+            isFeatured: input.isFeatured,
+            lastUpdated: now(),
+          };
 
     this.data.products.unshift(product);
     return product;
@@ -221,11 +282,19 @@ export class MarketplaceStore {
   }
 
   findUserByEmail(email: string) {
-    return this.data.users.find((user) => user.email.toLowerCase() === email.toLowerCase()) ?? null;
+    return (
+      this.data.users.find(
+        (user) => user.email.toLowerCase() === email.toLowerCase(),
+      ) ?? null
+    );
   }
 
   listPromotions() {
-    return this.data.promotions.filter((promotion) => promotion.status !== 'DRAFT' && new Date(promotion.endDate) >= new Date());
+    return this.data.promotions.filter(
+      (promotion) =>
+        promotion.status !== 'DRAFT' &&
+        new Date(promotion.endDate) >= new Date(),
+    );
   }
 }
 

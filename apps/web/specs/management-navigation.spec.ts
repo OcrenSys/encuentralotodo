@@ -44,7 +44,9 @@ describe('management navigation', () => {
   });
 
   it('exposes business sections to real users only when they manage businesses', () => {
-    expect(isPathAllowedForAccess('/business', { mode: 'mock', role: 'OWNER' })).toBe(true);
+    expect(
+      isPathAllowedForAccess('/business', { mode: 'mock', role: 'OWNER' }),
+    ).toBe(true);
     expect(
       isPathAllowedForAccess('/business', {
         mode: 'real',

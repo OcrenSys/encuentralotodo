@@ -1,4 +1,3 @@
-
 export * from './lib/discovery';
 export * from './lib/command';
 export * from './lib/dialog';

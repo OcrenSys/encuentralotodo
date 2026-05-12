@@ -5,108 +5,136 @@ import type { UserRole, UserProfile } from 'types';
 type RoleSubject = Pick<UserProfile, 'role'> | null | undefined;
 type ActiveSubject = Pick<CurrentUser, 'isActive'> | null | undefined;
 
-export const platformAdminRoles = ['ADMIN', 'SUPERADMIN', 'GLOBALADMIN'] as const satisfies readonly UserRole[];
-export const superAdminRoles = ['SUPERADMIN', 'GLOBALADMIN'] as const satisfies readonly UserRole[];
+export const platformAdminRoles = [
+  'ADMIN',
+  'SUPERADMIN',
+  'GLOBALADMIN',
+] as const satisfies readonly UserRole[];
+export const superAdminRoles = [
+  'SUPERADMIN',
+  'GLOBALADMIN',
+] as const satisfies readonly UserRole[];
 
 export interface FutureBusinessAuthorizationContext {
-    userId: string;
-    businessId: string;
-    membershipRoles?: readonly string[];
+  userId: string;
+  businessId: string;
+  membershipRoles?: readonly string[];
 }
 
 export interface FutureBusinessPlanAuthorizationContext {
-    businessId: string;
-    featureKey?: string;
-    limitKey?: string;
+  businessId: string;
+  featureKey?: string;
+  limitKey?: string;
 }
 
 export interface BusinessAccessContext {
-    ownerId: string;
-    managers: readonly string[];
-    memberships?: ReadonlyArray<{
-        userId: string;
-        role: 'OWNER' | 'MANAGER';
-    }>;
+  ownerId: string;
+  managers: readonly string[];
+  memberships?: ReadonlyArray<{
+    userId: string;
+    role: 'OWNER' | 'MANAGER';
+  }>;
 }
 
-export function hasPlatformRole(subject: RoleSubject, allowedRoles: readonly UserRole[]) {
-    return Boolean(subject && allowedRoles.includes(subject.role));
+export function hasPlatformRole(
+  subject: RoleSubject,
+  allowedRoles: readonly UserRole[],
+) {
+  return Boolean(subject && allowedRoles.includes(subject.role));
 }
 
 export function isSuperAdmin(subject: RoleSubject) {
-    return hasPlatformRole(subject, superAdminRoles);
+  return hasPlatformRole(subject, superAdminRoles);
 }
 
 export function hasBusinessAccess(
-    subject: Pick<CurrentUser, 'id' | 'role'> | null | undefined,
-    business: BusinessAccessContext,
+  subject: Pick<CurrentUser, 'id' | 'role'> | null | undefined,
+  business: BusinessAccessContext,
 ) {
-    if (!subject) {
-        return false;
-    }
+  if (!subject) {
+    return false;
+  }
 
-    if (hasPlatformRole(subject, platformAdminRoles)) {
-        return true;
-    }
+  if (hasPlatformRole(subject, platformAdminRoles)) {
+    return true;
+  }
 
-    const canonicalMembership = business.memberships?.some((membership) => membership.userId === subject.id);
-    if (canonicalMembership) {
-        return true;
-    }
+  const canonicalMembership = business.memberships?.some(
+    (membership) => membership.userId === subject.id,
+  );
+  if (canonicalMembership) {
+    return true;
+  }
 
-    return subject.id === business.ownerId || business.managers.includes(subject.id);
+  return (
+    subject.id === business.ownerId || business.managers.includes(subject.id)
+  );
 }
 
-export function requireAuthenticatedUser(currentUser: CurrentUser | null | undefined): CurrentUser {
-    if (!currentUser) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required.' });
-    }
+export function requireAuthenticatedUser(
+  currentUser: CurrentUser | null | undefined,
+): CurrentUser {
+  if (!currentUser) {
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required.',
+    });
+  }
 
-    return currentUser;
+  return currentUser;
 }
 
-export function requireActiveUser<TCurrentUser extends CurrentUser | null | undefined>(currentUser: TCurrentUser) {
-    const authenticatedUser = requireAuthenticatedUser(currentUser);
+export function requireActiveUser<
+  TCurrentUser extends CurrentUser | null | undefined,
+>(currentUser: TCurrentUser) {
+  const authenticatedUser = requireAuthenticatedUser(currentUser);
 
-    if (isInactiveSubject(authenticatedUser)) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'User account is disabled.' });
-    }
+  if (isInactiveSubject(authenticatedUser)) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'User account is disabled.',
+    });
+  }
 
-    return authenticatedUser;
+  return authenticatedUser;
 }
 
 export function requirePlatformRole(
-    currentUser: CurrentUser | null | undefined,
-    allowedRoles: readonly UserRole[],
-    message = 'Platform role access required.',
+  currentUser: CurrentUser | null | undefined,
+  allowedRoles: readonly UserRole[],
+  message = 'Platform role access required.',
 ) {
-    const activeUser = requireActiveUser(currentUser);
+  const activeUser = requireActiveUser(currentUser);
 
-    if (!hasPlatformRole(activeUser, allowedRoles)) {
-        throw new TRPCError({ code: 'FORBIDDEN', message });
-    }
+  if (!hasPlatformRole(activeUser, allowedRoles)) {
+    throw new TRPCError({ code: 'FORBIDDEN', message });
+  }
 
-    return activeUser;
+  return activeUser;
 }
 
 export function requireSuperAdmin(currentUser: CurrentUser | null | undefined) {
-    return requirePlatformRole(currentUser, superAdminRoles, 'SuperAdmin access required.');
+  return requirePlatformRole(
+    currentUser,
+    superAdminRoles,
+    'SuperAdmin access required.',
+  );
 }
 
 export function requireBusinessAccess(
-    currentUser: CurrentUser | null | undefined,
-    business: BusinessAccessContext,
-    message = 'Business access required.',
+  currentUser: CurrentUser | null | undefined,
+  business: BusinessAccessContext,
+  message = 'Business access required.',
 ) {
-    const activeUser = requireActiveUser(currentUser);
+  const activeUser = requireActiveUser(currentUser);
 
-    if (!hasBusinessAccess(activeUser, business)) {
-        throw new TRPCError({ code: 'FORBIDDEN', message });
-    }
+  if (!hasBusinessAccess(activeUser, business)) {
+    throw new TRPCError({ code: 'FORBIDDEN', message });
+  }
 
-    return activeUser;
+  return activeUser;
 }
 
 function isInactiveSubject(subject: ActiveSubject) {
-    return subject?.isActive === false;
+  return subject?.isActive === false;
 }

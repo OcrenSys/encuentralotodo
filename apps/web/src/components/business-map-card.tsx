@@ -22,19 +22,34 @@ export function BusinessMapCard({ business }: { business: BusinessDetails }) {
                 <MapPinned className="size-6" />
               </div>
               <p>
-                Usa `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` para habilitar el mapa interactivo. Mientras tanto, el perfil mantiene acceso directo a Google Maps.
+                Usa `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` para habilitar el mapa
+                interactivo. Mientras tanto, el perfil mantiene acceso directo a
+                Google Maps.
               </p>
             </div>
           </div>
           <div className="flex flex-col justify-between gap-6 p-6">
             <div className="space-y-3">
-              <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">{business.location.zone}</h3>
-              <p className="text-sm leading-6 text-[var(--color-text-muted)]">{business.location.address}</p>
+              <h3 className="font-display text-xl font-semibold text-[var(--color-primary)]">
+                {business.location.zone}
+              </h3>
+              <p className="text-sm leading-6 text-[var(--color-text-muted)]">
+                {business.location.address}
+              </p>
               <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
-                {business.location.lat.toFixed(4)}, {business.location.lng.toFixed(4)}
+                {business.location.lat.toFixed(4)},{' '}
+                {business.location.lng.toFixed(4)}
               </p>
             </div>
-            <a href={buildMapsLink(business.location.lat, business.location.lng, business.name)} rel="noreferrer" target="_blank">
+            <a
+              href={buildMapsLink(
+                business.location.lat,
+                business.location.lng,
+                business.name,
+              )}
+              rel="noreferrer"
+              target="_blank"
+            >
               <GhostButton className="gap-2">
                 <Compass className="size-4" />
                 Abrir navegación

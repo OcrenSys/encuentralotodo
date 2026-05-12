@@ -35,9 +35,10 @@ function isRuntimeFileStorageProvider(
 
 export function getPublicRuntimeEnv(): PublicRuntimeEnv {
   const browserEnv =
-    typeof window !== 'undefined' ? window.__ET_PUBLIC_ENV__ ?? {} : {};
+    typeof window !== 'undefined' ? (window.__ET_PUBLIC_ENV__ ?? {}) : {};
   const authProviderCandidate =
-    browserEnv.NEXT_PUBLIC_AUTH_PROVIDER ?? process.env.NEXT_PUBLIC_AUTH_PROVIDER;
+    browserEnv.NEXT_PUBLIC_AUTH_PROVIDER ??
+    process.env.NEXT_PUBLIC_AUTH_PROVIDER;
   const fileStorageProviderCandidate =
     browserEnv.NEXT_PUBLIC_FILE_STORAGE_PROVIDER ??
     process.env.NEXT_PUBLIC_FILE_STORAGE_PROVIDER;
@@ -69,7 +70,8 @@ export function getPublicRuntimeEnv(): PublicRuntimeEnv {
       browserEnv.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ??
       process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     NEXT_PUBLIC_FIREBASE_APP_ID:
-      browserEnv.NEXT_PUBLIC_FIREBASE_APP_ID ?? process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+      browserEnv.NEXT_PUBLIC_FIREBASE_APP_ID ??
+      process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   };
 }
 

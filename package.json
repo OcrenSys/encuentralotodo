@@ -9,6 +9,7 @@
     "dev:web": "node ./.nx/nxw.js dev web",
     "dev:api": "node ./.nx/nxw.js serve api",
     "dev:mobile": "node ./.nx/nxw.js start mobile",
+    "format": "node ./.nx/nxw.js format:write",
     "lint": "node ./.nx/nxw.js run-many -t lint --all",
     "typecheck": "tsc --noEmit -p tsconfig.base.json && tsc --noEmit -p apps/api/tsconfig.app.json && tsc --noEmit -p apps/web/tsconfig.json && tsc --noEmit -p apps/mobile/tsconfig.app.json",
     "test": "node ./.nx/nxw.js run-many -t test --all",

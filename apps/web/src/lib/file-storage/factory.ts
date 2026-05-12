@@ -8,25 +8,25 @@ import { UnsupportedFileStorageProviderError } from './types';
 let storageProvider: FileStorageProvider | null = null;
 
 export function createFileStorageProvider(
-    provider: FileStorageProviderName,
+  provider: FileStorageProviderName,
 ): FileStorageProvider {
-    switch (provider) {
-        case 'firebase':
-            return new FirebaseStorageProvider();
-        case 's3':
-        default:
-            throw new UnsupportedFileStorageProviderError(provider);
-    }
+  switch (provider) {
+    case 'firebase':
+      return new FirebaseStorageProvider();
+    case 's3':
+    default:
+      throw new UnsupportedFileStorageProviderError(provider);
+  }
 }
 
 export function getFileStorageProvider() {
-    if (!storageProvider) {
-        storageProvider = createFileStorageProvider(getPublicFileStorageProvider());
-    }
+  if (!storageProvider) {
+    storageProvider = createFileStorageProvider(getPublicFileStorageProvider());
+  }
 
-    return storageProvider;
+  return storageProvider;
 }
 
 export function resetFileStorageProviderForTests() {
-    storageProvider = null;
+  storageProvider = null;
 }

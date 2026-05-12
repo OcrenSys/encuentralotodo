@@ -1,6 +1,12 @@
 import type { Request, Response } from 'express';
 
-import { createAuthProvider, createCurrentUser, type AuthProvider, type CurrentUser, type VerifiedIdentity } from 'auth';
+import {
+  createAuthProvider,
+  createCurrentUser,
+  type AuthProvider,
+  type CurrentUser,
+  type VerifiedIdentity,
+} from 'auth';
 
 import { BusinessAnalyticsRepository } from '../lib/analytics/business-analytics.repository';
 import { BusinessAnalyticsService } from '../lib/analytics/business-analytics.service';
@@ -65,14 +71,18 @@ function resolveMockCurrentUser(identity: VerifiedIdentity | null) {
     return null;
   }
 
-  const seededUser = marketplaceStore.getUser(identity.externalUserId) ??
+  const seededUser =
+    marketplaceStore.getUser(identity.externalUserId) ??
     (identity.email ? marketplaceStore.findUserByEmail(identity.email) : null);
 
   if (!seededUser) {
     return createCurrentUser({
       id: identity.externalUserId,
-      fullName: identity.displayName ?? identity.email ?? identity.externalUserId,
-      email: identity.email ?? `${identity.externalUserId}@mock.encuentralotodo.local`,
+      fullName:
+        identity.displayName ?? identity.email ?? identity.externalUserId,
+      email:
+        identity.email ??
+        `${identity.externalUserId}@mock.encuentralotodo.local`,
       role: 'UNASSIGNED',
       avatarUrl: identity.avatarUrl,
       isActive: true,
@@ -120,7 +130,14 @@ export async function resolveRequestAuthContext(input: {
   };
 }
 
-export async function createTrpcContext({ req, env }: { req: Request; res: Response; env: TrpcContext['env'] }): Promise<TrpcContext> {
+export async function createTrpcContext({
+  req,
+  env,
+}: {
+  req: Request;
+  res: Response;
+  env: TrpcContext['env'];
+}): Promise<TrpcContext> {
   const authProvider = createAuthProvider(env.AUTH_PROVIDER, {
     firebase: {
       projectId: env.FIREBASE_PROJECT_ID,
@@ -132,10 +149,14 @@ export async function createTrpcContext({ req, env }: { req: Request; res: Respo
   const emailService = createEmailService(env.RESEND_API_KEY);
   const prisma = getPrismaClient();
   const businessRepository = new BusinessRepository(prisma);
-  const businessMembershipSyncService = new BusinessMembershipSyncService(businessRepository);
+  const businessMembershipSyncService = new BusinessMembershipSyncService(
+    businessRepository,
+  );
   const businessAnalyticsRepository = new BusinessAnalyticsRepository(prisma);
   const authIdentityRepository = new PrismaAuthIdentityRepository(prisma);
-  const authIdentityService = new AuthIdentityService({ repository: authIdentityRepository });
+  const authIdentityService = new AuthIdentityService({
+    repository: authIdentityRepository,
+  });
   const leadRepository = new LeadRepository(prisma);
   const platformAnalyticsRepository = new PlatformAnalyticsRepository(prisma);
   const productRepository = new ProductRepository(prisma);

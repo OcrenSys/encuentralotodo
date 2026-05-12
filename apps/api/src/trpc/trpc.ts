@@ -8,8 +8,7 @@ import {
   requireSuperAdmin,
 } from '../lib/auth/authorization';
 
-const t = initTRPC.context<TrpcContext>().create({
-});
+const t = initTRPC.context<TrpcContext>().create({});
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
@@ -25,7 +24,11 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 });
 
 export const adminProcedure = t.procedure.use(({ ctx, next }) => {
-  requirePlatformRole(ctx.currentUser, platformAdminRoles, 'Admin access required.');
+  requirePlatformRole(
+    ctx.currentUser,
+    platformAdminRoles,
+    'Admin access required.',
+  );
 
   return next();
 });

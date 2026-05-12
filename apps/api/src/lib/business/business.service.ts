@@ -1,310 +1,423 @@
 import { TRPCError } from '@trpc/server';
 import type { CurrentUser } from 'auth';
 import type {
-    BusinessListFilters,
-    CreateBusinessForOwnerInput,
-    CreateBusinessInput,
-    ListManagedBusinessesInput,
-    ManagementListResult,
-    BusinessDetails,
-    PlatformUserSearchResult,
-    SearchBusinessUsersInput,
-    TransferBusinessOwnershipInput,
-    UpdateBusinessInput,
+  BusinessListFilters,
+  CreateBusinessForOwnerInput,
+  CreateBusinessInput,
+  ListManagedBusinessesInput,
+  ManagementListResult,
+  BusinessDetails,
+  PlatformUserSearchResult,
+  SearchBusinessUsersInput,
+  TransferBusinessOwnershipInput,
+  UpdateBusinessInput,
 } from 'types';
 
-import { isSuperAdmin, platformAdminRoles, requireActiveUser, requirePlatformRole } from '../auth/authorization';
+import {
+  isSuperAdmin,
+  platformAdminRoles,
+  requireActiveUser,
+  requirePlatformRole,
+} from '../auth/authorization';
 import type { EmailService } from '../email';
-import { canEditBusiness, canManageBusiness, isAdminUser, isBusinessOwner } from './business-access';
+import {
+  canEditBusiness,
+  canManageBusiness,
+  isAdminUser,
+  isBusinessOwner,
+} from './business-access';
 import type { BusinessMembershipSyncPort } from './business-membership-sync.service';
-import { mapBusiness, mapBusinessDetails, mapBusinessSummary } from './business.mappers';
+import {
+  mapBusiness,
+  mapBusinessDetails,
+  mapBusinessSummary,
+} from './business.mappers';
 import type { BusinessRepositoryPort } from './business.repository';
 import type { UserAdminRepositoryPort } from '../user/user-admin.repository';
 
 interface BusinessServiceDependencies {
-    repository: BusinessRepositoryPort;
-    emailService: EmailService;
-    currentUser: CurrentUser | null;
-    userAdminRepository?: Pick<UserAdminRepositoryPort, 'countBusinessOwners' | 'createAuditLog' | 'transferBusinessOwnership'>;
-    businessMembershipSyncService?: BusinessMembershipSyncPort;
+  repository: BusinessRepositoryPort;
+  emailService: EmailService;
+  currentUser: CurrentUser | null;
+  userAdminRepository?: Pick<
+    UserAdminRepositoryPort,
+    'countBusinessOwners' | 'createAuditLog' | 'transferBusinessOwnership'
+  >;
+  businessMembershipSyncService?: BusinessMembershipSyncPort;
 }
 
-function sortBusinessSummaries(left: ReturnType<typeof mapBusinessSummary>, right: ReturnType<typeof mapBusinessSummary>) {
-    return right.rating - left.rating || left.distanceKm - right.distanceKm;
+function sortBusinessSummaries(
+  left: ReturnType<typeof mapBusinessSummary>,
+  right: ReturnType<typeof mapBusinessSummary>,
+) {
+  return right.rating - left.rating || left.distanceKm - right.distanceKm;
 }
 
 function sortBusinessLikeSummaries(
-    left: Pick<ReturnType<typeof mapBusinessSummary>, 'rating' | 'distanceKm'>,
-    right: Pick<ReturnType<typeof mapBusinessSummary>, 'rating' | 'distanceKm'>,
+  left: Pick<ReturnType<typeof mapBusinessSummary>, 'rating' | 'distanceKm'>,
+  right: Pick<ReturnType<typeof mapBusinessSummary>, 'rating' | 'distanceKm'>,
 ) {
-    return right.rating - left.rating || left.distanceKm - right.distanceKm;
+  return right.rating - left.rating || left.distanceKm - right.distanceKm;
 }
 
 export class BusinessService {
-    private readonly repository: BusinessRepositoryPort;
-    private readonly emailService: EmailService;
-    private readonly currentUser: CurrentUser | null;
-    private readonly userAdminRepository?: Pick<UserAdminRepositoryPort, 'countBusinessOwners' | 'createAuditLog' | 'transferBusinessOwnership'>;
-    private readonly businessMembershipSyncService?: BusinessMembershipSyncPort;
+  private readonly repository: BusinessRepositoryPort;
+  private readonly emailService: EmailService;
+  private readonly currentUser: CurrentUser | null;
+  private readonly userAdminRepository?: Pick<
+    UserAdminRepositoryPort,
+    'countBusinessOwners' | 'createAuditLog' | 'transferBusinessOwnership'
+  >;
+  private readonly businessMembershipSyncService?: BusinessMembershipSyncPort;
 
-    constructor({ repository, emailService, currentUser, userAdminRepository, businessMembershipSyncService }: BusinessServiceDependencies) {
-        this.repository = repository;
-        this.emailService = emailService;
-        this.currentUser = currentUser;
-        this.userAdminRepository = userAdminRepository;
-        this.businessMembershipSyncService = businessMembershipSyncService;
+  constructor({
+    repository,
+    emailService,
+    currentUser,
+    userAdminRepository,
+    businessMembershipSyncService,
+  }: BusinessServiceDependencies) {
+    this.repository = repository;
+    this.emailService = emailService;
+    this.currentUser = currentUser;
+    this.userAdminRepository = userAdminRepository;
+    this.businessMembershipSyncService = businessMembershipSyncService;
+  }
+
+  async listBusinesses(filters: BusinessListFilters = {}) {
+    const businesses = await this.repository.listBusinesses(filters);
+
+    return businesses
+      .map(mapBusinessSummary)
+      .filter((business) =>
+        filters.promosOnly ? business.activePromotions.length > 0 : true,
+      )
+      .filter((business) =>
+        filters.maxDistanceKm
+          ? business.distanceKm <= filters.maxDistanceKm
+          : true,
+      )
+      .sort(sortBusinessSummaries);
+  }
+
+  async getBusinessById(businessId: string) {
+    const business = await this.repository.findBusinessById(businessId);
+
+    return business ? mapBusinessDetails(business) : null;
+  }
+
+  async listManagedBusinesses(filters: BusinessListFilters = {}) {
+    const currentUser = requireActiveUser(this.currentUser);
+    const managedFilters = {
+      ...filters,
+      includePending: true,
+    };
+
+    if (!isAdminUser(currentUser)) {
+      await this.businessMembershipSyncService?.synchronizeAllBusinessMemberships();
     }
 
-    async listBusinesses(filters: BusinessListFilters = {}) {
-        const businesses = await this.repository.listBusinesses(filters);
+    const businesses = isAdminUser(currentUser)
+      ? await this.repository.listBusinessesForManagement(managedFilters)
+      : await this.repository.listBusinessesByUserAccess(
+          currentUser.id,
+          managedFilters,
+        );
 
-        return businesses
-            .map(mapBusinessSummary)
-            .filter((business) => (filters.promosOnly ? business.activePromotions.length > 0 : true))
-            .filter((business) => (filters.maxDistanceKm ? business.distanceKm <= filters.maxDistanceKm : true))
-            .sort(sortBusinessSummaries);
+    return businesses.map(mapBusinessDetails).sort(sortBusinessLikeSummaries);
+  }
+
+  async listManagedBusinessesPage(
+    filters: ListManagedBusinessesInput,
+  ): Promise<ManagementListResult<BusinessDetails>> {
+    const currentUser = requireActiveUser(this.currentUser);
+
+    if (!isAdminUser(currentUser)) {
+      await this.businessMembershipSyncService?.synchronizeAllBusinessMemberships();
     }
 
-    async getBusinessById(businessId: string) {
-        const business = await this.repository.findBusinessById(businessId);
+    const result = isAdminUser(currentUser)
+      ? await this.repository.listBusinessesForManagementPage(filters)
+      : await this.repository.listBusinessesByUserAccessPage(
+          currentUser.id,
+          filters,
+        );
 
-        return business ? mapBusinessDetails(business) : null;
+    return {
+      items: result.items.map(mapBusinessDetails),
+      page: filters.page,
+      pageSize: filters.pageSize,
+      total: result.total,
+      totalPages: Math.max(1, Math.ceil(result.total / filters.pageSize)),
+    };
+  }
+
+  async searchAssignableUsers(
+    input: SearchBusinessUsersInput,
+  ): Promise<PlatformUserSearchResult[]> {
+    const currentUser = requireActiveUser(this.currentUser);
+    const business = await this.repository.findBusinessAccessById(
+      input.businessId,
+    );
+
+    if (!business) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Business not found.',
+      });
     }
 
-    async listManagedBusinesses(filters: BusinessListFilters = {}) {
-        const currentUser = requireActiveUser(this.currentUser);
-        const managedFilters = {
-            ...filters,
-            includePending: true,
-        };
-
-        if (!isAdminUser(currentUser)) {
-            await this.businessMembershipSyncService?.synchronizeAllBusinessMemberships();
-        }
-
-        const businesses = isAdminUser(currentUser)
-            ? await this.repository.listBusinessesForManagement(managedFilters)
-            : await this.repository.listBusinessesByUserAccess(currentUser.id, managedFilters);
-
-        return businesses.map(mapBusinessDetails).sort(sortBusinessLikeSummaries);
+    if (!canEditBusiness(currentUser, business)) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message:
+          'Only the owner or a SuperAdmin can manage business membership.',
+      });
     }
 
-    async listManagedBusinessesPage(filters: ListManagedBusinessesInput): Promise<ManagementListResult<BusinessDetails>> {
-        const currentUser = requireActiveUser(this.currentUser);
+    const users = await this.repository.searchUsers({
+      search: input.search,
+      limit: Math.min(input.limit, 10),
+    });
 
-        if (!isAdminUser(currentUser)) {
-            await this.businessMembershipSyncService?.synchronizeAllBusinessMemberships();
-        }
+    return users.map((user) => ({
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      avatarUrl: user.avatarUrl ?? undefined,
+      isActive: user.isActive,
+    }));
+  }
 
-        const result = isAdminUser(currentUser)
-            ? await this.repository.listBusinessesForManagementPage(filters)
-            : await this.repository.listBusinessesByUserAccessPage(currentUser.id, filters);
+  async createBusiness(input: CreateBusinessInput) {
+    const currentUser = requireActiveUser(this.currentUser);
+    const owner = await this.repository.findUserById(currentUser.id);
 
-        return {
-            items: result.items.map(mapBusinessDetails),
-            page: filters.page,
-            pageSize: filters.pageSize,
-            total: result.total,
-            totalPages: Math.max(1, Math.ceil(result.total / filters.pageSize)),
-        };
+    if (!owner) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'Authenticated owner not found.',
+      });
     }
 
-    async searchAssignableUsers(input: SearchBusinessUsersInput): Promise<PlatformUserSearchResult[]> {
-        const currentUser = requireActiveUser(this.currentUser);
-        const business = await this.repository.findBusinessAccessById(input.businessId);
+    const business = await this.createBusinessRecord({
+      input,
+      ownerId: owner.id,
+    });
 
-        if (!business) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
-        }
+    return mapBusinessSummary(business);
+  }
 
-        if (!canEditBusiness(currentUser, business)) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can manage business membership.' });
-        }
+  async createBusinessForOwner(input: CreateBusinessForOwnerInput) {
+    requirePlatformRole(
+      this.currentUser,
+      platformAdminRoles,
+      'Admin access required.',
+    );
 
-        const users = await this.repository.searchUsers({
-            search: input.search,
-            limit: Math.min(input.limit, 10),
-        });
-
-        return users.map((user) => ({
-            id: user.id,
-            fullName: user.fullName,
-            email: user.email,
-            role: user.role,
-            avatarUrl: user.avatarUrl ?? undefined,
-            isActive: user.isActive,
-        }));
+    const owner = await this.repository.findUserById(input.ownerId);
+    if (!owner) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Selected owner does not exist.',
+      });
     }
 
-    async createBusiness(input: CreateBusinessInput) {
-        const currentUser = requireActiveUser(this.currentUser);
-        const owner = await this.repository.findUserById(currentUser.id);
+    const business = await this.createBusinessRecord({
+      input,
+      ownerId: owner.id,
+    });
 
-        if (!owner) {
-            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authenticated owner not found.' });
-        }
+    return mapBusinessSummary(business);
+  }
 
-        const business = await this.createBusinessRecord({
-            input,
-            ownerId: owner.id,
-        });
+  async updateBusiness(input: UpdateBusinessInput) {
+    const currentUser = requireActiveUser(this.currentUser);
+    const [businessAccess, currentBusiness] = await Promise.all([
+      this.repository.findBusinessAccessById(input.businessId),
+      this.repository.findBusinessById(input.businessId),
+    ]);
 
-        return mapBusinessSummary(business);
+    if (!businessAccess || !currentBusiness) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Business not found.',
+      });
     }
 
-    async createBusinessForOwner(input: CreateBusinessForOwnerInput) {
-        requirePlatformRole(this.currentUser, platformAdminRoles, 'Admin access required.');
-
-        const owner = await this.repository.findUserById(input.ownerId);
-        if (!owner) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Selected owner does not exist.' });
-        }
-
-        const business = await this.createBusinessRecord({
-            input,
-            ownerId: owner.id,
-        });
-
-        return mapBusinessSummary(business);
+    if (!canManageBusiness(currentUser, businessAccess)) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Only the owner or a platform admin can update this business.',
+      });
     }
 
-    async updateBusiness(input: UpdateBusinessInput) {
-        const currentUser = requireActiveUser(this.currentUser);
-        const [businessAccess, currentBusiness] = await Promise.all([
-            this.repository.findBusinessAccessById(input.businessId),
-            this.repository.findBusinessById(input.businessId),
-        ]);
+    const managers = await this.resolveManagerIds(
+      input.managers ?? businessAccess.managers,
+      businessAccess.ownerId,
+    );
+    const updatedBusiness = await this.repository.updateBusiness({
+      ...input,
+      managers,
+      subscriptionType:
+        input.subscriptionType ?? businessAccess.subscriptionType,
+    });
 
-        if (!businessAccess || !currentBusiness) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
-        }
-
-        if (!canManageBusiness(currentUser, businessAccess)) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a platform admin can update this business.' });
-        }
-
-        const managers = await this.resolveManagerIds(input.managers ?? businessAccess.managers, businessAccess.ownerId);
-        const updatedBusiness = await this.repository.updateBusiness({
-            ...input,
-            managers,
-            subscriptionType: input.subscriptionType ?? businessAccess.subscriptionType,
-        });
-
-        if (!updatedBusiness) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
-        }
-
-        return mapBusinessDetails(updatedBusiness);
+    if (!updatedBusiness) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Business not found.',
+      });
     }
 
-    async listPendingBusinesses() {
-        this.ensureAdmin();
+    return mapBusinessDetails(updatedBusiness);
+  }
 
-        const businesses = await this.repository.listPendingBusinesses();
-        return businesses.map(mapBusinessDetails).sort(sortBusinessLikeSummaries);
+  async listPendingBusinesses() {
+    this.ensureAdmin();
+
+    const businesses = await this.repository.listPendingBusinesses();
+    return businesses.map(mapBusinessDetails).sort(sortBusinessLikeSummaries);
+  }
+
+  async approveBusiness(input: { businessId: string }) {
+    this.ensureAdmin();
+
+    const approvedBusiness = await this.repository.approveBusiness(
+      input.businessId,
+    );
+    if (!approvedBusiness) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Business not found.',
+      });
     }
 
-    async approveBusiness(input: { businessId: string }) {
-        this.ensureAdmin();
-
-        const approvedBusiness = await this.repository.approveBusiness(input.businessId);
-        if (!approvedBusiness) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
+    const business = mapBusiness(approvedBusiness);
+    const owner = approvedBusiness.owner
+      ? {
+          id: approvedBusiness.owner.id,
+          fullName: approvedBusiness.owner.fullName,
+          email: approvedBusiness.owner.email,
+          role: approvedBusiness.owner.role,
+          avatarUrl: approvedBusiness.owner.avatarUrl ?? undefined,
         }
+      : undefined;
 
-        const business = mapBusiness(approvedBusiness);
-        const owner = approvedBusiness.owner
-            ? {
-                id: approvedBusiness.owner.id,
-                fullName: approvedBusiness.owner.fullName,
-                email: approvedBusiness.owner.email,
-                role: approvedBusiness.owner.role,
-                avatarUrl: approvedBusiness.owner.avatarUrl ?? undefined,
-            }
-            : undefined;
+    await this.emailService.sendBusinessApprovedEmail({ business, owner });
 
-        await this.emailService.sendBusinessApprovedEmail({ business, owner });
+    return { business, owner };
+  }
 
-        return { business, owner };
+  async transferOwnership(input: TransferBusinessOwnershipInput) {
+    const currentUser = requireActiveUser(this.currentUser);
+    const businessAccess = await this.repository.findBusinessAccessById(
+      input.businessId,
+    );
+
+    if (!this.userAdminRepository) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Ownership transfer support is not available.',
+      });
     }
 
-    async transferOwnership(input: TransferBusinessOwnershipInput) {
-        const currentUser = requireActiveUser(this.currentUser);
-        const businessAccess = await this.repository.findBusinessAccessById(input.businessId);
-
-        if (!this.userAdminRepository) {
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Ownership transfer support is not available.' });
-        }
-
-        if (!businessAccess) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Business not found.' });
-        }
-
-        const isAllowedSuperAdmin = isSuperAdmin(currentUser);
-        if (!isAllowedSuperAdmin && !isBusinessOwner(currentUser, businessAccess)) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the owner or a SuperAdmin can transfer ownership.' });
-        }
-
-        if (!isAllowedSuperAdmin && currentUser.id !== input.fromUserId) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Ownership transfer must originate from the current owner.' });
-        }
-
-        const ownerCount = await this.userAdminRepository.countBusinessOwners(input.businessId);
-        if (ownerCount <= 1 && input.fromUserId === input.toUserId) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Ownership transfer requires a different target owner.',
-            });
-        }
-
-        await this.userAdminRepository.transferBusinessOwnership({
-            businessId: input.businessId,
-            fromUserId: input.fromUserId,
-            toUserId: input.toUserId,
-        });
-
-        await this.userAdminRepository.createAuditLog({
-            actorUserId: currentUser.id,
-            targetUserId: input.toUserId,
-            businessId: input.businessId,
-            action: 'BUSINESS_OWNERSHIP_TRANSFERRED',
-            metadata: {
-                fromUserId: input.fromUserId,
-                toUserId: input.toUserId,
-                reason: input.reason,
-            },
-        });
-
-        return this.getBusinessById(input.businessId);
+    if (!businessAccess) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Business not found.',
+      });
     }
 
-    private ensureAdmin() {
-        return requirePlatformRole(this.currentUser, platformAdminRoles, 'Admin access required.');
+    const isAllowedSuperAdmin = isSuperAdmin(currentUser);
+    if (!isAllowedSuperAdmin && !isBusinessOwner(currentUser, businessAccess)) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Only the owner or a SuperAdmin can transfer ownership.',
+      });
     }
 
-    private async createBusinessRecord(input: { input: CreateBusinessInput | CreateBusinessForOwnerInput; ownerId: string }) {
-        const managers = await this.resolveManagerIds(input.input.managers, input.ownerId);
-
-        return this.repository.createBusiness({
-            ...input.input,
-            ownerId: input.ownerId,
-            managers,
-            status: 'PENDING',
-        });
+    if (!isAllowedSuperAdmin && currentUser.id !== input.fromUserId) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Ownership transfer must originate from the current owner.',
+      });
     }
 
-    private async resolveManagerIds(managerIds: string[], ownerId: string) {
-        const normalizedIds = Array.from(new Set(managerIds.filter(Boolean))).filter((managerId) => managerId !== ownerId);
-
-        if (normalizedIds.length === 0) {
-            return [];
-        }
-
-        const users = await this.repository.findUsersByIds(normalizedIds);
-        if (users.length !== normalizedIds.length) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'One or more managers do not exist.' });
-        }
-
-        return normalizedIds;
+    const ownerCount = await this.userAdminRepository.countBusinessOwners(
+      input.businessId,
+    );
+    if (ownerCount <= 1 && input.fromUserId === input.toUserId) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Ownership transfer requires a different target owner.',
+      });
     }
+
+    await this.userAdminRepository.transferBusinessOwnership({
+      businessId: input.businessId,
+      fromUserId: input.fromUserId,
+      toUserId: input.toUserId,
+    });
+
+    await this.userAdminRepository.createAuditLog({
+      actorUserId: currentUser.id,
+      targetUserId: input.toUserId,
+      businessId: input.businessId,
+      action: 'BUSINESS_OWNERSHIP_TRANSFERRED',
+      metadata: {
+        fromUserId: input.fromUserId,
+        toUserId: input.toUserId,
+        reason: input.reason,
+      },
+    });
+
+    return this.getBusinessById(input.businessId);
+  }
+
+  private ensureAdmin() {
+    return requirePlatformRole(
+      this.currentUser,
+      platformAdminRoles,
+      'Admin access required.',
+    );
+  }
+
+  private async createBusinessRecord(input: {
+    input: CreateBusinessInput | CreateBusinessForOwnerInput;
+    ownerId: string;
+  }) {
+    const managers = await this.resolveManagerIds(
+      input.input.managers,
+      input.ownerId,
+    );
+
+    return this.repository.createBusiness({
+      ...input.input,
+      ownerId: input.ownerId,
+      managers,
+      status: 'PENDING',
+    });
+  }
+
+  private async resolveManagerIds(managerIds: string[], ownerId: string) {
+    const normalizedIds = Array.from(
+      new Set(managerIds.filter(Boolean)),
+    ).filter((managerId) => managerId !== ownerId);
+
+    if (normalizedIds.length === 0) {
+      return [];
+    }
+
+    const users = await this.repository.findUsersByIds(normalizedIds);
+    if (users.length !== normalizedIds.length) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'One or more managers do not exist.',
+      });
+    }
+
+    return normalizedIds;
+  }
 }

@@ -51,7 +51,10 @@ export interface AuthProvider {
 export class AuthTokenVerificationError extends Error {
   readonly code: 'INVALID_TOKEN';
 
-  constructor(message = 'The provided auth token is invalid.', options?: { cause?: unknown }) {
+  constructor(
+    message = 'The provided auth token is invalid.',
+    options?: { cause?: unknown },
+  ) {
     super(message);
     this.name = 'AuthTokenVerificationError';
     this.code = 'INVALID_TOKEN';
